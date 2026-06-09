@@ -62,6 +62,8 @@
   #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
   #bossfillwrap{height:10px;background:rgba(40,10,16,.7);border:1px solid rgba(255,59,84,.45);border-radius:5px;overflow:hidden;}
   #bossfill{height:100%;width:100%;background:linear-gradient(90deg,#ff3b54,#ff8a3a);}
+#combo{position:absolute;left:50%;top:84px;transform:translateX(-50%);font:700 26px 'Chakra Petch';letter-spacing:2px;color:#ffd23f;text-shadow:0 0 12px rgba(255,180,40,.6),0 2px 3px #000;display:none;pointer-events:none;}
+  #hurt{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,40,40,0) 40%,rgba(255,30,30,.5) 100%);opacity:0;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -80,7 +82,9 @@
   <div id="bottom"></div>
   <div id="bossWarn">⚠ BOSS APPROACHING ⚠</div>
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
-  <div id="badge">3D MVP · build 17（ボス演出＋状態異常＋画面揺れ）</div>
+  <div id="combo"></div>
+  <div id="hurt"></div>
+  <div id="badge">3D MVP · build 18（コンボ表示・着弾火花・被弾フラッシュ・調整）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -5890,7 +5894,7 @@ function killEnemy(e,byPlayer){
   if(byPlayer){ G.parts+=e.def.reward; G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;
     spawnRing(e.x,e.z,0x46f08a); spawnBurst(e.x,e.z,(e.def&&e.def.color)||0xff8a3a,(e.def&&e.def.boss)?18:9); if(e.def&&e.def.boss)G.shake=Math.max(G.shake||0,0.7); sfx.kill(G.combo); }
 }
-function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35);
+function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;
   sfx.baseHit();
   if(G.hp<=0){ G.hp=0; gameOver(); } }
 
@@ -5901,6 +5905,7 @@ function spawnRing(x,z,color){
 }
 function spawnBurst(x,z,color,n){ n=n||8; for(let k=0;k<n;k++){ const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,0.07), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:1})); m.position.set(x,0.32,z); scene.add(m); const a=Math.random()*6.2832, sp=1.4+Math.random()*2.6; G.fx.push({mesh:m,life:0.6,max:0.6,kind:'particle',vx:Math.cos(a)*sp,vy:2.0+Math.random()*2.6,vz:Math.sin(a)*sp}); } }
 function muzzleFlash(x,z,ang,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,8), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.95})); m.position.set(x+Math.cos(ang)*0.55,0.55,z+Math.sin(ang)*0.55); scene.add(m); G.fx.push({mesh:m,life:0.09,max:0.09,kind:'flash'}); }
+function hitSpark(x,z,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,6), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.95})); m.position.set(x,0.5,z); scene.add(m); G.fx.push({mesh:m,life:0.08,max:0.08,kind:'flash'}); }
 function statusPuff(x,y,z,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.8})); m.position.set(x+(Math.random()-0.5)*0.3,y,z+(Math.random()-0.5)*0.3); scene.add(m); G.fx.push({mesh:m,life:0.5,max:0.5,kind:'puff',vy:0.7+Math.random()*0.4}); }
 function updateFx(dt){
   for(let i=G.fx.length-1;i>=0;i--){ const f=G.fx[i]; f.life-=dt;
@@ -5919,7 +5924,7 @@ function update(dt){
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
-    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=24+Math.round(G.wave*2.4); G.parts+=cb; sfx.waveClear(); }
+    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=28+Math.round(G.wave*2.8); G.parts+=cb; sfx.waveClear(); }
   } else { G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }
   // 敵移動（フローフィールド）
   for(let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if(e.dead){ G.enemies.splice(i,1); continue; }
@@ -6022,7 +6027,7 @@ function fireShot(tw,target){
 }
 function hitEnemy(e,dmg,s){
   if(s&&s.splash>0){ for(const o of G.enemies){ if(o.dead)continue; const dx=o.x-e.x,dz=o.z-e.z; if(dx*dx+dz*dz<=s.splash*s.splash){ o.hp-=dmg*(o===e?1:0.6); if(s.slow>0)o.slowT=1.2; if(s.dot)applyDot(o,s.dot); if(o.hp<=0)killEnemy(o,true);} } spawnRing(e.x,e.z,0xffb22e); }
-  else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(s&&s.dot)applyDot(e,s.dot); if(e.hp<=0)killEnemy(e,true); }
+  else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(s&&s.dot)applyDot(e,s.dot); hitSpark(e.x,e.z,(s&&s.color)||0xffd060); if(e.hp<=0)killEnemy(e,true); }
   if(s&&s.chain){ let hops=s.chain, from=e; const used=new Set([e]); const R2=2.6*2.6;
     while(hops-->0){ let best=null,bd=R2; for(const o of G.enemies){ if(o.dead||used.has(o))continue; const dx=o.x-from.x,dz=o.z-from.z,dd=dx*dx+dz*dz; if(dd<bd){bd=dd;best=o;} }
       if(!best)break; used.add(best); spawnRing(best.x,best.z,s.color||0x18d0ff); best.hp-=dmg*0.6; if(best.hp<=0)killEnemy(best,true); from=best; } }
@@ -6089,6 +6094,7 @@ function syncHUD(){
   document.getElementById('score').textContent=G.score.toLocaleString();
   document.getElementById('bSpeed').textContent='x'+G.speed;
   document.getElementById('bPause').textContent=G.paused?'▶':'❚❚';
+  const cm=document.getElementById('combo'); if(cm){ if(G.combo>=2){ cm.style.display='block'; cm.textContent='×'+G.combo+' COMBO'; const ht=Math.min(1,(G.combo-2)/16); cm.style.color=ht<0.5?'#ffd23f':'#ff7a3f'; cm.style.opacity=Math.min(1,(G.comboT||0)/1.5+0.35); } else cm.style.display='none'; }
   const boss=G.enemies.find(e=>e.def&&e.def.boss&&!e.dead); const bb=document.getElementById('bossbar');
   if(boss){ bb.style.display='block'; document.getElementById('bossfill').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%'; document.getElementById('bossname').textContent='☠ ZERO BRUTE'; } else if(bb) bb.style.display='none';
   const bw=document.getElementById('bossWarn'); if(bw){ if((G.bossWarnT||0)>0){ bw.style.display='block'; bw.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); } else bw.style.display='none'; }
@@ -6100,7 +6106,7 @@ document.getElementById('bStart').addEventListener('click',startGame);
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
-  G.scene='playing'; G.parts=200; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
+  G.scene='playing'; G.parts=220; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; hideTowerPanel(); buildWeaponBar(); initAudio();
@@ -6163,6 +6169,7 @@ function loop(now){
   const t=now/1000; let frame=last?t-last:0; last=t; if(frame>0.25)frame=0.25;
   if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
+  if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=document.getElementById('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
   const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
