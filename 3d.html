@@ -70,7 +70,7 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
-  <div id="badge">3D MVP · build 9（マット/環境光オフ）</div>
+  <div id="badge">3D MVP · build 10（脱ACES・色ベタ）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -188,17 +188,17 @@ function initScene(){
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;           // 映画的トーンマップ
-  renderer.toneMappingExposure=0.82;                          // 露出を下げて白飛び回避＝色が乗る
+  renderer.toneMapping=THREE.NoToneMapping;           // ACES廃止＝当たった面が脱色して白くならない
+  renderer.toneMappingExposure=1.0;                          // 露出を下げて白飛び回避＝色が乗る
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.Fog(0x05070c, 38, 160);
   camera=new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   raycaster=new THREE.Raycaster();
   // IBL環境マップ（金属の反射＝写実感の要）
   try{ const pmrem=new THREE.PMREMGenerator(renderer); envTex=pmrem.fromScene(new THREE.RoomEnvironment(renderer),0.04).texture; scene.environment=null; void envTex; }catch(e){}
   // ライト（キー＋フィル＋リム、ソフトシャドウ）
-  scene.add(new THREE.AmbientLight(0x2a3340, 0.14));
-  scene.add(new THREE.HemisphereLight(0x5a708a, 0x0a0e16, 0.18));
-  const key=new THREE.DirectionalLight(0xe6ecf2, 1.5); key.position.set(-10,18,12); key.castShadow=true;
+  scene.add(new THREE.AmbientLight(0x33404f, 0.22));
+  scene.add(new THREE.HemisphereLight(0x5a708a, 0x0a0e16, 0.25));
+  const key=new THREE.DirectionalLight(0xdfe6ee, 1.0); key.position.set(-10,18,12); key.castShadow=true;
   key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
