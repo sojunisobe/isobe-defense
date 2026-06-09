@@ -119,9 +119,9 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 
 // ---- 兵器定義（MVP 3種）----
 const TOWERS=[
-  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x33e0ff, splash:0,   slow:0},
-  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xffb22e, splash:1.6, slow:0},
-  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x8fd8ff, splash:0,   slow:0.5},
+  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x4a93a3, splash:0,   slow:0},   // くすんだティール
+  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xc2853f, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x7fb0c4, splash:0,   slow:0.5}, // 寒色スチール
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -258,21 +258,31 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
   geo.translate(0,0,-(d-2*bt)/2-bt); geo.computeVertexNormals(); return geo; }
 
 /* ====================== タワー/敵 メッシュ（丸み＋陰影＋反射） ====================== */
+// 使い込まれた軍用メタル（彩度控えめ・ツヤ抑制）
+function steel(c){ return pbr(c,{metalness:0.74,roughness:0.56,clearcoat:0.1,ccr:0.6,envI:0.65}); }
 function makeTowerMesh(def){
-  const g=new THREE.Group();
-  // 台座（面取りの円盤＋脚）
-  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.58,0.16,24), pbr(0x1b222c,{metalness:0.7,roughness:0.5,clearcoat:0.2})); plinth.position.y=0.08; plinth.castShadow=true; plinth.receiveShadow=true; g.add(plinth);
-  const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.42,0.2,24), pbr(0x2a3340,{metalness:0.85,roughness:0.35,clearcoat:0.4})); collar.position.y=0.24; collar.castShadow=true; g.add(collar);
+  const g=new THREE.Group(); const acc=def.color;
+  // 共通台座
+  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.58,0.16,24), pbr(0x20242a,{metalness:0.6,roughness:0.7,envI:0.4})); plinth.position.y=0.08; plinth.castShadow=true; plinth.receiveShadow=true; g.add(plinth);
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.42,0.18,24), steel(0x2a2f36)); collar.position.y=0.24; collar.castShadow=true; g.add(collar);
   const turret=new THREE.Group(); turret.position.y=0.42; g.add(turret); g.userData.turret=turret;
-  // 砲塔ボディ（角丸）
-  const bodyMesh=new THREE.Mesh(roundedBox(0.56,0.32,0.5,0.12), pbr(def.color,{metalness:0.9,roughness:0.3,clearcoat:0.6,ccr:0.3,emissive:def.color,ei:0.06})); bodyMesh.castShadow=true; turret.add(bodyMesh);
-  // ドーム（上面の丸み）
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.22,20,14,0,Math.PI*2,0,Math.PI/2), pbr(0x39424f,{metalness:0.9,roughness:0.25,clearcoat:0.7})); dome.position.set(-0.05,0.16,0); dome.castShadow=true; turret.add(dome);
-  // 砲身（滑らか・先端リング）
-  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.085,0.7,20), pbr(0x9aa6b4,{metalness:0.95,roughness:0.22,clearcoat:0.5})); barrel.rotation.z=Math.PI/2; barrel.position.set(0.46,0.02,0); barrel.castShadow=true; turret.add(barrel);
-  const muzzle=new THREE.Mesh(new THREE.TorusGeometry(0.1,0.03,10,18), pbr(0x4a5360,{metalness:0.9,roughness:0.3})); muzzle.rotation.y=Math.PI/2; muzzle.position.set(0.82,0.02,0); turret.add(muzzle);
-  // 発光レンズ（ブルームで光る）
-  const lens=new THREE.Mesh(new THREE.SphereGeometry(0.09,16,16), emis(def.color,1.8)); lens.position.set(0.04,0.2,0); turret.add(lens);
+
+  if(def.key==='gun'){            // 連射＝小型・二連バレル・俊敏
+    const body=new THREE.Mesh(roundedBox(0.5,0.3,0.46,0.11), steel(0x3c434c)); body.castShadow=true; turret.add(body);
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.17,20,14,0,Math.PI*2,0,Math.PI/2), steel(0x474f59)); dome.position.set(-0.05,0.15,0); dome.castShadow=true; turret.add(dome);
+    for(const s of [-1,1]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.05,0.6,16), steel(0x5e656d)); b.rotation.z=Math.PI/2; b.position.set(0.42,0.0,s*0.085); b.castShadow=true; turret.add(b); }
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.055,14,14), emis(acc,0.9)); lens.position.set(0.0,0.17,0); turret.add(lens);
+  } else if(def.key==='cannon'){  // 重砲＝大型・極太単砲身・マズルブレーキ
+    const body=new THREE.Mesh(roundedBox(0.64,0.42,0.62,0.14), steel(0x44423a)); body.castShadow=true; turret.add(body);
+    const mantlet=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.23,0.3,18), steel(0x35332c)); mantlet.rotation.z=Math.PI/2; mantlet.position.set(0.26,0.03,0); mantlet.castShadow=true; turret.add(mantlet);
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.13,0.98,20), steel(0x504d45)); b.rotation.z=Math.PI/2; b.position.set(0.64,0.03,0); b.castShadow=true; turret.add(b);
+    for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.035,8,16), steel(0x6a665b)); r.rotation.y=Math.PI/2; r.position.set(0.88+i*0.11,0.03,0); turret.add(r); }
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.06,14,14), emis(acc,0.85)); lens.position.set(-0.12,0.24,0); turret.add(lens);
+  } else {                         // 氷結＝砲身なし・結晶エミッタ・冷却フィン
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.37,0.32,10), steel(0x39424c)); body.position.y=0.02; body.castShadow=true; turret.add(body);
+    for(let i=0;i<6;i++){ const a=i*Math.PI/3; const f=new THREE.Mesh(roundedBox(0.07,0.24,0.46,0.03), steel(0x515c66)); f.position.set(Math.cos(a)*0.3,0.1,Math.sin(a)*0.3); f.rotation.y=-a; f.castShadow=true; turret.add(f); }
+    const cry=new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({color:0x8fb6c8,emissive:acc,emissiveIntensity:1.1,metalness:0.25,roughness:0.18,envMapIntensity:0.8})); cry.position.y=0.34; cry.castShadow=true; turret.add(cry); g.userData.crystal=cry;
+  }
   return g;
 }
 function makeEnemyMesh(def){
@@ -379,6 +389,7 @@ function update(dt){
     if(best){ const ang=Math.atan2(best.z-tw.z, best.x-tw.x); tw.ang=ang;
       const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=-ang;
       if(tw.cd<=0){ tw.cd=def.cd; fireShot(tw,best); } }
+    if(tw.mesh.userData.crystal) tw.mesh.userData.crystal.rotation.y+=dt*1.4;   // 結晶の微回転
   }
   // 弾
   for(let i=G.shots.length-1;i>=0;i--){ const s=G.shots[i];
