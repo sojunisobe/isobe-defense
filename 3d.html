@@ -119,9 +119,9 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 
 // ---- 兵器定義（MVP 3種）----
 const TOWERS=[
-  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x4a9fff, splash:0,   slow:0},   // くすんだティール
-  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff6a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
-  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4fd8f0, splash:0,   slow:0.5}, // 寒色スチール
+  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
+  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -176,8 +176,8 @@ const tmpV=THREEOK?new THREE.Vector3():null, ndc=THREEOK?new THREE.Vector2():nul
 function gridTexture(){
   const cv=document.createElement('canvas'); cv.width=COLS*32; cv.height=ROWS*32; const g=cv.getContext('2d');
   g.fillStyle='#0c1622'; g.fillRect(0,0,cv.width,cv.height);
-  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){ if((c+r)%2===0){ g.fillStyle='rgba(255,255,255,0.018)'; g.fillRect(c*32,r*32,32,32); } }
-  g.strokeStyle='rgba(90,140,190,0.22)'; g.lineWidth=1;
+  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){ if((c+r)%2===0){ g.fillStyle='rgba(120,160,200,0.05)'; g.fillRect(c*32,r*32,32,32); } }
+  g.strokeStyle='rgba(110,170,210,0.5)'; g.lineWidth=1.5;
   for(let c=0;c<=COLS;c++){ g.beginPath(); g.moveTo(c*32,0); g.lineTo(c*32,cv.height); g.stroke(); }
   for(let r=0;r<=ROWS;r++){ g.beginPath(); g.moveTo(0,r*32); g.lineTo(cv.width,r*32); g.stroke(); }
   const tx=new THREE.CanvasTexture(cv); tx.anisotropy=4; return tx;
@@ -189,7 +189,7 @@ function initScene(){
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.ACESFilmicToneMapping;           // 映画的トーンマップ
-  renderer.toneMappingExposure=0.72;                          // 露出を下げて白飛び回避＝色が乗る
+  renderer.toneMappingExposure=0.82;                          // 露出を下げて白飛び回避＝色が乗る
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.Fog(0x05070c, 38, 160);
   camera=new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   raycaster=new THREE.Raycaster();
@@ -205,11 +205,11 @@ function initScene(){
   const rim=new THREE.DirectionalLight(0x4aa0ff, 1.4); rim.position.set(12,8,-14); scene.add(rim);
   const fill=new THREE.PointLight(0x7a2f3a, 0.12, 30); fill.position.set(WW/2,6,0); scene.add(fill);   // スポーン側の赤フィル
   // 地面（暗いコンクリ）＋セル境界に正確一致した3Dグリッド線（敵/タワーはマス中央に乗る）
-  groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({color:0x14171c,roughness:0.96,metalness:0.0,envMapIntensity:0.12}));
+  const _gt=gridTexture(); _gt.encoding=THREE.sRGBEncoding; groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({map:_gt,color:0xffffff,roughness:0.95,metalness:0.0,envMapIntensity:0.12}));
   groundMesh.rotation.x=-Math.PI/2; groundMesh.receiveShadow=true; scene.add(groundMesh);
   { const gv=[]; for(let c=0;c<=COLS;c++){ const x=c*CELL-WW/2; gv.push(x,0.02,-WD/2,x,0.02,WD/2);} for(let r=0;r<=ROWS;r++){ const z=r*CELL-WD/2; gv.push(-WW/2,0.02,z,WW/2,0.02,z);}
     const gGeo=new THREE.BufferGeometry(); gGeo.setAttribute('position',new THREE.Float32BufferAttribute(gv,3));
-    scene.add(new THREE.LineSegments(gGeo,new THREE.LineBasicMaterial({color:0x2c5870,transparent:true,opacity:0.4}))); }
+    scene.add(new THREE.LineSegments(gGeo,new THREE.LineBasicMaterial({color:0x4aa6cc,transparent:true,opacity:0.8}))); }
   // 基地（HDF・シアン）
   baseMesh=new THREE.Group(); const bw=cellToWorld(GOAL_C,BASE_R);
   const core=new THREE.Mesh(roundedBox(1.0,1.5,1.0,0.22), pbr(0x16323f,{metalness:0.85,roughness:0.32,emissive:0x0a3a4a,ei:0.5,clearcoat:0.6}));
@@ -261,15 +261,15 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
 
 /* ====================== タワー/敵 メッシュ（丸み＋陰影＋反射） ====================== */
 // 使い込まれた軍用メタル（マット寄り・反射控えめ）。色がしっかり乗るよう metalness 抑制
-function steel(c){ return pbr(c,{metalness:0.5,roughness:0.74,clearcoat:0.04,ccr:0.8,envI:0.14}); }
+function steel(c){ return pbr(c,{metalness:0.08,roughness:0.8,clearcoat:0.03,ccr:0.85,envI:0.1}); }
 const GUNMETAL=0x4b5158;   // 二次部品の中立グレー
 function buildGun(def){
 
 var g = new THREE.Group();
 
 // ===== palette (dark, dirty military) =====
-var C_HULL   = 0x2b4a60; // olive-drab gunmetal
-var C_HULL2  = 0x1a2e3c; // darker panel
+var C_HULL   = 0x4f7d33; // olive-drab gunmetal
+var C_HULL2  = 0x33521f; // darker panel
 var C_GUN    = 0x23262a; // gunmetal barrels
 var C_GUN2   = 0x32363b; // gun housing
 var C_RUST   = 0x5a4a36; // rust / weathering
@@ -561,9 +561,9 @@ function buildCannon(def){
 var g = new THREE.Group();
 
 // ---- palette (olive drab / khaki / gunmetal / rust) ----
-var C_HULL   = 0x6b3328; // olive drab
-var C_HULL2  = 0x47221b; // lighter olive panel
-var C_KHAKI  = 0x854334; // khaki highlight
+var C_HULL   = 0x9e3525; // olive drab
+var C_HULL2  = 0x5e2018; // lighter olive panel
+var C_KHAKI  = 0xc0503a; // khaki highlight
 var C_DARK   = 0x2c2e22; // shadowed olive
 var C_GUN    = 0x2a2d31; // gunmetal
 var C_GUN2   = 0x3a3e44; // lighter gunmetal
@@ -795,9 +795,9 @@ function buildFrost(def){
 var g = new THREE.Group();
 
 // ---- palette ----
-var C_HULL   = 0x2a606b; // cold gunmetal blue-grey
-var C_HULL2  = 0x1b424b; // darker plate
-var C_TANK   = 0x376c77; // dusted steel tank
+var C_HULL   = 0x2f63b6; // cold gunmetal blue-grey
+var C_HULL2  = 0x203f74; // darker plate
+var C_TANK   = 0x3f72c0; // dusted steel tank
 var C_DARK   = 0x1d242a; // shadow/recess
 var C_BOLT   = 0x394652;
 var C_ACCENT = 0x9fd8ef; // pale chill glow
