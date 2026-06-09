@@ -108,7 +108,7 @@ const flowDX = new Float32Array(WCOLS*ROWS); // 各セル→基地方向(単位)
 const flowDY = new Float32Array(WCOLS*ROWS);
 const GOAL_GX = 0;                           // 基地ゴール列
 const BASE_GY = Math.floor(ROWS/2);          // 基地の行（中央）
-const SPAWN_GX = WCOLS-1;                     // 敵スポーンは最右端＝戦場全面を守りに使える
+const SPAWN_GX = WCOLS-2;                     // 敵スポーンは右から2列目（最右列は黒い死列・使わない）
 const SPAWN_GY = Math.floor(ROWS/2);          // 出現は右中央の1箇所のみ
 const SPAWN_CELLS = [SPAWN_GY];               // （単一スポーン）
 const BASE = cellCenter(GOAL_GX, BASE_GY);    // 基地代表座標(描画/飛行目標/リーク)
@@ -504,8 +504,9 @@ function towerAtCell(gx,gy){ return G.towers.find(t=>t.gx===gx&&t.gy===gy); }
 // 占有のみ（軽い判定）：範囲内・基地列/スポーン列でない・空き
 function cellFree(gx,gy){
   if(!inField(gx,gy)) return false;
+  if(gx>=WCOLS-1) return false;                      // 最右列は黒い死列（使わない）
   if(gx===GOAL_GX && gy===BASE_GY) return false;    // 基地マス
-  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マス（最右端の1マスのみ）
+  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マス（右から2列目）
   if(occ[idxOf(gx,gy)]) return false;
   return true;
 }
@@ -891,7 +892,9 @@ function drawField(t){
     ctx.globalAlpha=0.10+(i%5)*0.03; ctx.beginPath(); ctx.ellipse(x,y,10+(i*7%14),5+(i*3%8),(i*0.7),0,7); ctx.fill(); }
   ctx.globalAlpha=1;
   if(typeof eraOverlay==='function') eraOverlay(t);   // ERA 戦域変容（背景層）
-  // 敵の出現口（右中央の1マス）を可視化
+  // 最右列＝黒い死列（使わない・配置不可）
+  { ctx.fillStyle='#03050a'; ctx.fillRect(OX+(WCOLS-1)*CELL, OY, CELL, ROWS*CELL); }
+  // 敵の出現口（右から2列目の1マス）を可視化
   { const sc=cellCenter(SPAWN_GX,SPAWN_GY);
     ctx.save(); ctx.translate(sc.x,sc.y);
     ctx.strokeStyle='rgba(220,70,70,'+(0.5+0.3*Math.sin(t*5))+')'; ctx.lineWidth=3;
@@ -1215,9 +1218,11 @@ function drawUI(t){
   const hpr=G.baseHP/G.baseMax, hprD=Math.max(0,(G.hpDisp||G.baseHP)/G.baseMax);
   uctx.fillStyle='#222'; uctx.fillRect(10,12,150,24);
   uctx.fillStyle='rgba(255,80,80,0.5)'; uctx.fillRect(10,12,150*hprD,24);   // 遅れて削れる赤
-  uctx.fillStyle=hpr>0.5?'#3fdf5f':hpr>0.25?'#dfdf3f':'#df3f3f'; uctx.fillRect(10,12,150*hpr,24);
+  uctx.fillStyle=hpr>0.5?'#1f9a45':hpr>0.25?'#b8851a':'#c0303a'; uctx.fillRect(10,12,150*hpr,24);
   uctx.strokeStyle='#556'; uctx.lineWidth=1; uctx.strokeRect(10,12,150,24);
-  uctx.fillStyle='#fff'; uctx.font='bold 14px system-ui'; uctx.textAlign='center'; uctx.fillText(Math.ceil(G.hpDisp)+'/'+G.baseMax,85,29);
+  { const hptxt=Math.ceil(G.hpDisp)+'/'+G.baseMax; uctx.font='bold 14px system-ui'; uctx.textAlign='center';
+    uctx.lineWidth=3; uctx.strokeStyle='rgba(0,0,0,0.75)'; uctx.strokeText(hptxt,85,29);
+    uctx.fillStyle='#fff'; uctx.fillText(hptxt,85,29); }
   // 部品（マークのみ）
   uctx.textAlign='left'; uctx.font='bold 22px system-ui'; uctx.fillStyle='#ffd23f'; uctx.fillText('⚙'+Math.round(G.partsDisp),176,32);
   // ウェーブ・スコア（数値のみ・日本語ラベルなし）
