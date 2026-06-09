@@ -198,11 +198,11 @@ function initScene(){
   // ライト（キー＋フィル＋リム、ソフトシャドウ）
   scene.add(new THREE.AmbientLight(0x2a3340, 0.14));
   scene.add(new THREE.HemisphereLight(0x5a708a, 0x0a0e16, 0.18));
-  const key=new THREE.DirectionalLight(0xffe7cf, 1.9); key.position.set(-10,18,12); key.castShadow=true;
+  const key=new THREE.DirectionalLight(0xe6ecf2, 1.5); key.position.set(-10,18,12); key.castShadow=true;
   key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
-  const rim=new THREE.DirectionalLight(0x3a6a9a, 0.8); rim.position.set(12,8,-14); scene.add(rim);
+  const rim=new THREE.DirectionalLight(0x3a6a9a, 0.45); rim.position.set(12,8,-14); scene.add(rim);
   const fill=new THREE.PointLight(0x7a2f3a, 0.12, 30); fill.position.set(WW/2,6,0); scene.add(fill);   // スポーン側の赤フィル
   // 地面（暗いコンクリ）＋セル境界に正確一致した3Dグリッド線（敵/タワーはマス中央に乗る）
   const _gt=gridTexture(); _gt.encoding=THREE.sRGBEncoding; groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({map:_gt,color:0xffffff,roughness:0.95,metalness:0.0,envMapIntensity:0.12}));
@@ -261,7 +261,7 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
 
 /* ====================== タワー/敵 メッシュ（丸み＋陰影＋反射） ====================== */
 // 使い込まれた軍用メタル（マット寄り・反射控えめ）。色がしっかり乗るよう metalness 抑制
-function steel(c){ return pbr(c,{metalness:0.08,roughness:0.8,clearcoat:0.03,ccr:0.85,envI:0.1}); }
+function steel(c){ return pbr(c,{metalness:0.0,roughness:0.95,clearcoat:0.0,ccr:1.0,envI:0.0}); }
 const GUNMETAL=0x4b5158;   // 二次部品の中立グレー
 function buildGun(def){
 
@@ -272,7 +272,7 @@ var C_HULL   = 0x2e5320; // olive-drab gunmetal
 var C_HULL2  = 0x213a16; // darker panel
 var C_GUN    = 0x23262a; // gunmetal barrels
 var C_GUN2   = 0x32363b; // gun housing
-var C_RUST   = 0x5a4a36; // rust / weathering
+var C_RUST   = 0x37301f; // rust / weathering
 var C_DARK   = 0x1a1c1d; // shadow recess / grills
 var C_BOLT   = 0x33372f; // bolt metal
 var C_SENS   = 0x18e0c0; // teal sensor glow
