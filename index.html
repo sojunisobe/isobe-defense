@@ -1085,9 +1085,7 @@ function drawTower(tw,t){
   drawTurret(def, tw, recoil, t);
   ctx.restore();
 
-  // 対象タイプのリング（陸=琥珀／空=青／両=紫）で一目区別
-  ctx.save(); ctx.globalAlpha=0.7; ctx.strokeStyle=targetColor(def.target); ctx.lineWidth=2.5;
-  ctx.beginPath(); ctx.arc(0,10,21,0,7); ctx.stroke(); ctx.restore();
+  // （対象タイプの常時リングは撤去＝盤面をクリーンに。種別はパネル/カード色で表示）
   // レベル表示（星）
   ctx.fillStyle=def.acc; ctx.font='bold 9px system-ui'; ctx.textAlign='center';
   let stars=''; for(let i=0;i<tw.lv;i++)stars+='★';
@@ -1650,7 +1648,9 @@ function onTap(x,y){
     let gx=Math.floor((x+G.camX-OX)/CELL), gy=Math.floor((y-OY)/CELL);
     gx=Math.max(0,Math.min(WCOLS-1,gx)); gy=Math.max(0,Math.min(ROWS-1,gy));
     if(G.selectedPalette){
-      if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; }
+      const occT=towerAtCell(gx,gy);
+      if(occT){ G.selectedTower=occT; G.selectedPalette=null; sfx.ui(); }   // タワー上タップ＝選択（誤設置しない）
+      else if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; }
       return;
     }
     const tw=towerAtCell(gx,gy);
@@ -1680,7 +1680,7 @@ function camCur(){ return G.camTarget==null?G.camX:G.camTarget; }
 ux.addEventListener('mousedown',e=>{ const p=toLogical(e.clientX,e.clientY); mDown=p; mDrag=false; mCam0=camCur(); _pressedId=pickBtn(p.x,p.y); onMove(p.x,p.y,placeLift(p)); });
 ux.addEventListener('mousemove',e=>{ const p=toLogical(e.clientX,e.clientY);
   if(mDown){ if(Math.abs(p.x-mDown.x)>6||Math.abs(p.y-mDown.y)>6) mDrag=true;
-    if(mDrag && !G.selectedPalette && mDown.y>=FIELD.y && mDown.y<BAR_Y){ G.camTarget=clampCam(mCam0-(p.x-mDown.x)); G.camDrag=true; } }
+    if(mDrag && mDown.y>=FIELD.y && mDown.y<BAR_Y){ G.camTarget=clampCam(mCam0-(p.x-mDown.x)); G.camDrag=true; } }   // ドラッグ=パン（武器選択中でも）
   onMove(p.x,p.y,placeLift(p)); });
 ux.addEventListener('mouseup',e=>{ if(mDown && !mDrag) onTap(mDown.x,mDown.y); mDown=null; mDrag=false; G.camDrag=false; _pressedId=null; });
 ux.addEventListener('wheel',e=>{ const p=toLogical(e.clientX,e.clientY); e.preventDefault();
@@ -1690,19 +1690,21 @@ let tStart=null, tDragged=false, tScroll0=0, tCam0=0, tPlacing=false, tPanning=f
 ux.addEventListener('touchstart',e=>{ e.preventDefault(); const c=e.changedTouches[0]; const p=toLogical(c.clientX,c.clientY);
   tStart=p; tDragged=false; tScroll0=palScroll; tCam0=camCur(); _pressedId=pickBtn(p.x,p.y);
   const onCtrl=['btnBar','btnNext','btnBarClose','btnSpeed','btnPause','btnMute','btnUpgrade','btnSell','btnTarget'].some(id=>hit(id,p.x,p.y));
-  tPlacing = !!(G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);   // ボタン上で始まったタップは配置にしない（誤配置防止）
-  tPanning = (!G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);
+  const inFld = (!onCtrl && p.y>=FIELD.y && p.y<BAR_Y);
+  tPlacing = !!(G.selectedPalette && inFld);   // 配置候補（離す時にドラッグでなければ設置）
+  tPanning = inFld;                            // 戦場のドラッグは常にパン（武器選択中でも見回せる）
   onMove(p.x,p.y, tPlacing?LIFT_PX:0); },{passive:false});
 ux.addEventListener('touchmove',e=>{ e.preventDefault(); const c=e.changedTouches[0]; const p=toLogical(c.clientX,c.clientY);
   if(tStart){ const dx=p.x-tStart.x, dy=p.y-tStart.y;
     if(Math.abs(dx)>8||Math.abs(dy)>8) tDragged=true;
     if(inBar(tStart.y)) palScroll=tScroll0-(p.x-tStart.x);
-    else if(tPanning){ G.camTarget=clampCam(tCam0-(p.x-tStart.x)); G.camDrag=true; }
-    else if(tPlacing){ if(p.x<W*0.10) G.camTarget=clampCam(camCur()-9); else if(p.x>W*0.90) G.camTarget=clampCam(camCur()+9); } }
-  onMove(p.x,p.y, tPlacing?LIFT_PX:0); },{passive:false});
+    else if(tPanning && tDragged){ G.camTarget=clampCam(tCam0-(p.x-tStart.x)); G.camDrag=true; } }   // ドラッグ＝見回し（設置しない）
+  onMove(p.x,p.y, (tPlacing&&!tDragged)?LIFT_PX:0); },{passive:false});
 ux.addEventListener('touchend',e=>{ e.preventDefault();
-  if(tPlacing){ if(G.hoverCell){ const {gx,gy}=G.hoverCell;
-      if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; } } }
+  if(tPlacing && !tDragged){   // クリーンタップのみ設置。ドラッグ（見回し）では設置しない＝誤作動防止
+    if(G.hoverCell){ const {gx,gy}=G.hoverCell; const occT=towerAtCell(gx,gy);
+      if(occT){ G.selectedTower=occT; G.selectedPalette=null; sfx.ui(); }   // タワー上タップ＝選択（誤設置しない）
+      else if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; } } }
   else if(tStart && !tDragged){ onTap(tStart.x,tStart.y); }
   tStart=null; tPlacing=false; tPanning=false; G.camDrag=false; G.hoverCell=null; G.placeGhost=null; _pressedId=null; },{passive:false});
 
