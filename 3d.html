@@ -55,6 +55,8 @@
   #ov .hint{font:600 11px "Rajdhani";color:rgba(180,205,230,.55);margin-top:6px;}
   #ov.hidden{display:none;}
   #badge{position:absolute;right:10px;bottom:64px;font:600 10px "Rajdhani";color:rgba(180,205,230,.4);}
+.tpb{pointer-events:auto;cursor:pointer;font:700 12px 'Rajdhani';letter-spacing:.5px;color:#dff;padding:6px 11px;border-radius:8px;background:rgba(56,84,116,.5);}
+  .tpb.off{opacity:.45;}
 </style>
 </head>
 <body>
@@ -71,7 +73,7 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
-  <div id="badge">3D MVP · build 15（撃破爆散＋マズルフラッシュ）</div>
+  <div id="badge">3D MVP · build 16（強化/売却/狙い切替・Lv）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -5870,8 +5872,9 @@ function placeTower(c,r){
   if(G.parts<def.cost){ sfx.error(); return false; }
   G.parts-=def.cost; occ[idx(c,r)]=1; G.flowDirty=true;
   const m=makeTowerMesh(def); const w=cellToWorld(c,r); m.position.set(w.x,0,w.z); scene.add(m);
-  G.towers.push({def, mesh:m, c, r, x:w.x, z:w.z, cd:0, ang:Math.PI});
-  sfx.place(); spawnRing(w.x,w.z,def.color);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.028,8,24), emis(def.color,0.5)); ring.rotation.x=-Math.PI/2; ring.position.y=0.05; m.add(ring);
+  G.towers.push({def, mesh:m, c, r, x:w.x, z:w.z, cd:0, ang:Math.PI, lv:1, invested:def.cost, targetMode:'first', ring});
+  sfx.place(); spawnRing(w.x,w.z,def.color); hideTowerPanel();
   return true;
 }
 function killEnemy(e,byPlayer){
@@ -5926,21 +5929,25 @@ function update(dt){
     if(e.x < cellToWorld(GOAL_C,BASE_R).x+0.5 && c<=GOAL_C){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
-  for(const tw of G.towers){ const def=tw.def;
+  for(const tw of G.towers){ const def=tw.def; const st=lvlStat(def,tw.lv);
     if(def.support){   // 支援機（非攻撃）
-      if(def.support==='slow'){ const r2=def.range*def.range; for(const e of G.enemies){ if(e.dead)continue; const dx=e.x-tw.x,dz=e.z-tw.z; if(dx*dx+dz*dz<=r2) e.slowT=Math.max(e.slowT||0,0.2); } }
-      const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y+=dt*0.6;   // ゆっくり旋回（稼働感）
+      if(def.support==='slow'){ const r2=st.range*st.range; for(const e of G.enemies){ if(e.dead)continue; const dx=e.x-tw.x,dz=e.z-tw.z; if(dx*dx+dz*dz<=r2) e.slowT=Math.max(e.slowT||0,0.2); } }
+      const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y+=dt*0.6;
       continue;
     }
     tw.cd-=dt;
+    const r2=st.range*st.range; const mode=tw.targetMode||'first';
     let best=null,bestKey=1e9;
-    for(const e of G.enemies){ if(e.dead)continue; if(e.flying && !canHitAir(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz;
-      if(d2<=def.range*def.range){ const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const key=distF[ii]>=0?distF[ii]:9999;
-        if(key<bestKey){bestKey=key;best=e;} } }
+    for(const e of G.enemies){ if(e.dead)continue; if(e.flying && !canHitAir(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz; if(d2>r2)continue;
+      let key;
+      if(mode==='close') key=d2;
+      else if(mode==='strong') key=-e.hp;
+      else { const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const df=distF[ii]>=0?distF[ii]:9999; key=(mode==='last')?-df:df; }
+      if(key<bestKey){bestKey=key;best=e;} }
     if(best){ const ang=Math.atan2(best.z-tw.z, best.x-tw.x); tw.ang=ang;
       const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=-ang;
-      if(tw.cd<=0){ tw.cd=def.cd; fireShot(tw,best); } }
-    if(tw.mesh.userData.crystal) tw.mesh.userData.crystal.rotation.y+=dt*1.4;   // 結晶の微回転
+      if(tw.cd<=0){ tw.cd=st.cd; fireShot(tw,best); } }
+    if(tw.mesh.userData.crystal) tw.mesh.userData.crystal.rotation.y+=dt*1.4;
   }
   // 弾
   for(let i=G.shots.length-1;i>=0;i--){ const s=G.shots[i];
@@ -5962,10 +5969,35 @@ function canHitAir(def){ return def.air || def.key==='laser' || def.key==='tesla
 function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeometry(len,0.06,0.06), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9}));
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
 function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); }
+function lvlStat(def,lv){ const k=(lv||1)-1; return { range:def.range*(1+0.07*k), dmg:def.dmg*Math.pow(1.4,k), cd:def.cd*Math.pow(0.93,k) }; }
+function upCost(def,lv){ return Math.round(def.cost*0.6*Math.pow(1.55,(lv||1)-1)); }
+function sellValue(tw){ return Math.round((tw.invested||tw.def.cost)*0.7); }
+function towerAt(c,r){ for(const t of G.towers) if(t.c===c&&t.r===r) return t; return null; }
+let _tp=null;
+function towerPanel(){ if(_tp)return _tp; const p=document.createElement('div'); p.id='towerPanel';
+  p.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:74px;pointer-events:auto;display:none;background:linear-gradient(180deg,rgba(20,28,40,.93),rgba(10,14,22,.93));border:1px solid rgba(120,160,200,.32);border-radius:12px;padding:8px 12px;min-width:250px;text-align:center;';
+  p.innerHTML='<div id="tpName" style="font:700 15px Rajdhani;letter-spacing:1px;color:#eef"></div><div id="tpStat" style="font:600 11px JetBrains Mono;color:#8fd;margin:2px 0 7px"></div><div style="display:flex;gap:8px;justify-content:center"><div id="tpUp" class="tpb"></div><div id="tpTgt" class="tpb"></div><div id="tpSell" class="tpb"></div></div>';
+  document.getElementById('hud').appendChild(p);
+  p.querySelector('#tpUp').addEventListener('click',()=>{ if(G.selTower) upgradeTower(G.selTower); });
+  p.querySelector('#tpSell').addEventListener('click',()=>{ if(G.selTower) sellTower(G.selTower); });
+  p.querySelector('#tpTgt').addEventListener('click',()=>{ if(G.selTower) cycleTarget(G.selTower); });
+  _tp=p; return p; }
+function refreshTowerPanel(t){ const p=towerPanel(); if(!t){ p.style.display='none'; return; } p.style.display='block';
+  const st=lvlStat(t.def,t.lv);
+  p.querySelector('#tpName').textContent=t.def.name+'  Lv'+t.lv+'/5';
+  p.querySelector('#tpStat').textContent = t.def.support?('SUPPORT  RNG '+st.range.toFixed(1)):('RNG '+st.range.toFixed(1)+'  DMG '+Math.round(st.dmg)+'  ROF '+st.cd.toFixed(2)+'s');
+  const up=p.querySelector('#tpUp'); if(t.lv>=5){ up.textContent='MAX'; up.classList.add('off'); } else { up.textContent='▲ ⚙'+upCost(t.def,t.lv); up.classList.toggle('off',G.parts<upCost(t.def,t.lv)); }
+  const tg=p.querySelector('#tpTgt'); tg.style.display=t.def.support?'none':'block'; tg.textContent='◎ '+({first:'FIRST',last:'LAST',strong:'STRONG',close:'CLOSE'}[t.targetMode||'first']);
+  p.querySelector('#tpSell').textContent='✕ ⚙'+sellValue(t); }
+function selectTower(t){ G.selTower=t; refreshTowerPanel(t); sfx.ui(); }
+function hideTowerPanel(){ G.selTower=null; refreshTowerPanel(null); }
+function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.06); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.55; } spawnRing(t.x,t.z,t.def.color); sfx.place(); refreshTowerPanel(t); }
+function sellTower(t){ G.parts+=sellValue(t); scene.remove(t.mesh); occ[idx(t.c,t.r)]=0; G.flowDirty=true; const i=G.towers.indexOf(t); if(i>=0)G.towers.splice(i,1); spawnBurst(t.x,t.z,t.def.color,7); hideTowerPanel(); sfx.ui(); }
+function cycleTarget(t){ const m=['first','last','strong','close']; t.targetMode=m[(m.indexOf(t.targetMode||'first')+1)%4]; refreshTowerPanel(t); sfx.ui(); }
 function fireShot(tw,target){
   const def=tw.def;
   muzzleFlash(tw.x,tw.z,(tw.ang!=null?tw.ang:Math.PI),def.color);
-  let dmg=def.dmg;   // BOOSTER バフ（範囲内に支援機があれば威力UP）
+  let dmg=lvlStat(def,tw.lv).dmg;   // BOOSTER バフ（範囲内に支援機があれば威力UP）
   for(const o of G.towers){ if(o.def.support==='buff'){ const dx=o.x-tw.x,dz=o.z-tw.z; if(dx*dx+dz*dz<=o.def.range*o.def.range){ dmg*=1.4; break; } } }
   if(def.pierce){   // RAIL：貫通ヒットスキャン＋ビーム
     const ang=Math.atan2(target.z-tw.z,target.x-tw.x), ux=Math.cos(ang),uz=Math.sin(ang);
@@ -6017,7 +6049,7 @@ cv.addEventListener('pointermove',e=>{ if(!ptrDown) return;
   else { camTheta-=dx*0.006; camPhi=Math.max(0.30,Math.min(1.30,camPhi-dy*0.005)); updateCamera(); } });
 cv.addEventListener('pointerup',e=>{ if(!ptrDown) return; ptrDown=false;
   if(!dragged && !panMode && G.scene==='playing' && !G.paused){ const cell=raycastCell(e.clientX,e.clientY);
-    if(cell){ placeTower(cell.c,cell.r); } } });
+    if(cell){ const t=towerAt(cell.c,cell.r); if(t){ selectTower(t); } else { hideTowerPanel(); placeTower(cell.c,cell.r); } } else { hideTowerPanel(); } } });
 cv.addEventListener('pointercancel',()=>{ ptrDown=false; });
 // 2本指：平行移動（中点の移動）＋ピンチズーム（指間距離）
 cv.addEventListener('touchstart',e=>{ if(e.touches.length===2){ ptrDown=false;
@@ -6058,7 +6090,7 @@ function startGame(){
   G.scene='playing'; G.parts=200; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; buildWeaponBar(); initAudio();
+  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; hideTowerPanel(); buildWeaponBar(); initAudio();
 }
 function gameOver(){
   G.scene='gameover';
