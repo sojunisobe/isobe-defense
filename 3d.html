@@ -119,9 +119,9 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 
 // ---- 兵器定義（MVP 3種）----
 const TOWERS=[
-  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x2fe0c8, splash:0,   slow:0},   // くすんだティール
-  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xffa23a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
-  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x9fd8ef, splash:0,   slow:0.5}, // 寒色スチール
+  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x4a9fff, splash:0,   slow:0},   // くすんだティール
+  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff6a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4fd8f0, splash:0,   slow:0.5}, // 寒色スチール
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -266,8 +266,8 @@ function buildGun(def){
 var g = new THREE.Group();
 
 // ===== palette (dark, dirty military) =====
-var C_HULL   = 0x3a4038; // olive-drab gunmetal
-var C_HULL2  = 0x2c322b; // darker panel
+var C_HULL   = 0x2a6fd6; // olive-drab gunmetal
+var C_HULL2  = 0x1d4f9e; // darker panel
 var C_GUN    = 0x23262a; // gunmetal barrels
 var C_GUN2   = 0x32363b; // gun housing
 var C_RUST   = 0x5a4a36; // rust / weathering
@@ -559,9 +559,9 @@ function buildCannon(def){
 var g = new THREE.Group();
 
 // ---- palette (olive drab / khaki / gunmetal / rust) ----
-var C_HULL   = 0x4a4d36; // olive drab
-var C_HULL2  = 0x565a3f; // lighter olive panel
-var C_KHAKI  = 0x6e6a4a; // khaki highlight
+var C_HULL   = 0xc23a2a; // olive drab
+var C_HULL2  = 0x9c2c20; // lighter olive panel
+var C_KHAKI  = 0xd8553f; // khaki highlight
 var C_DARK   = 0x2c2e22; // shadowed olive
 var C_GUN    = 0x2a2d31; // gunmetal
 var C_GUN2   = 0x3a3e44; // lighter gunmetal
@@ -793,9 +793,9 @@ function buildFrost(def){
 var g = new THREE.Group();
 
 // ---- palette ----
-var C_HULL   = 0x3a4650; // cold gunmetal blue-grey
-var C_HULL2  = 0x2c353d; // darker plate
-var C_TANK   = 0x556069; // dusted steel tank
+var C_HULL   = 0x18b0d8; // cold gunmetal blue-grey
+var C_HULL2  = 0x126f8a; // darker plate
+var C_TANK   = 0x3fc0dc; // dusted steel tank
 var C_DARK   = 0x1d242a; // shadow/recess
 var C_BOLT   = 0x71808a;
 var C_ACCENT = 0x9fd8ef; // pale chill glow
@@ -1205,7 +1205,7 @@ cv.addEventListener('touchmove',e=>{ if(e.touches.length===2){ ptrDown=false;
   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
   const mx=(e.touches[0].clientX+e.touches[1].clientX)/2, my=(e.touches[0].clientY+e.touches[1].clientY)/2;
   if(pinchD){ camR=Math.max(10,Math.min(44,camR*(pinchD/d))); }
-  panCamera(mx-pinchMX, my-pinchMY);
+  panCamera(-(mx-pinchMX), -(my-pinchMY));   // 2本指は逆方向（要望）
   pinchD=d; pinchMX=mx; pinchMY=my; updateCamera(); } },{passive:true});
 cv.addEventListener('wheel',e=>{ e.preventDefault(); camR=Math.max(10,Math.min(44,camR*(1+Math.sign(e.deltaY)*0.08))); updateCamera(); },{passive:false});
 
