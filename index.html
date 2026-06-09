@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b0e14">
-<title>磯部防衛戦線 — ISOBE DEFENSE</title>
+<title>HUMANITY DEFENSE 205X</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
   html,body{width:100%;height:100%;background:#05070c;overflow:hidden;position:fixed;
@@ -108,7 +108,7 @@ const flowDX = new Float32Array(WCOLS*ROWS); // 各セル→基地方向(単位)
 const flowDY = new Float32Array(WCOLS*ROWS);
 const GOAL_GX = 0;                           // 基地ゴール列
 const BASE_GY = Math.floor(ROWS/2);          // 基地の行（中央）
-const SPAWN_GX = WCOLS-2;                     // 敵スポーンは右から2列目（最右列は押しにくいので使わない）
+const SPAWN_GX = WCOLS-1;                     // 敵スポーンは最右端＝戦場全面を守りに使える
 const SPAWN_GY = Math.floor(ROWS/2);          // 出現は右中央の1箇所のみ
 const SPAWN_CELLS = [SPAWN_GY];               // （単一スポーン）
 const BASE = cellCenter(GOAL_GX, BASE_GY);    // 基地代表座標(描画/飛行目標/リーク)
@@ -164,7 +164,8 @@ function pickSpawnRow(){
    ゲーム状態
    ============================================================================ */
 const G = {
-  scene:'title',         // title | playing | gameover
+  scene:'opening',       // opening | title | playing | gameover
+  openT:0,               // オープニング経過秒
   parts: 200,            // 部品（通貨）
   baseHP: 100, baseMax: 100,
   wave: 0,               // 現在ウェーブ
@@ -362,9 +363,9 @@ const ENEMY_DEFS = [
   // ボス級
   E('DRC機甲将軍','boss','ground','#aa3030',56, 5000,38, 40,300,80),
   E('鋼鉄司令官','boss','ground','#7a4aaa',56, 7000,34, 48,400,100),
-  E('高野DRC破壊神','boss','ground','#cc2020',62, 12000,32,60,800,160),
+  E('破壊神コア','boss','ground','#cc2020',62, 12000,32,60,800,160),
   E('終焉兵器ZERO','boss','ground','#2a2a3a',64, 18000,36,70,1200,220),
-  E('高野DRC総帥','boss','ground','#ffcc33',60, 9000,42, 50,600,140),
+  E('最終AIコア','boss','ground','#ffcc33',60, 9000,42, 50,600,140),
 ];
 // 50種に満たない/超える場合の調整保険
 console.assert(ENEMY_DEFS.length>=45, 'enemy count');
@@ -376,49 +377,49 @@ console.assert(ENEMY_DEFS.length>=45, 'enemy count');
    ============================================================================ */
 function T(o){ return Object.assign({lvls:5}, o); }
 const TOWER_DEFS = [
-  T({key:'rifle', name:'磯部ライフル兵', cat:'連続射撃', target:'ground', color:'#4a8a4a', acc:'#7fff7f',
+  T({key:'rifle', name:'HDF ライフル兵', cat:'連続射撃', target:'ground', color:'#4a8a4a', acc:'#7fff7f',
      range:140, dmg:9, cd:0.5, atkType:'bullet', cost:50, splash:0,
      desc:'地上を素早く単発射撃。安価で序盤の主力。'}),
-  T({key:'mg', name:'磯部機関銃座', cat:'連続射撃', target:'ground', color:'#3a7a5a', acc:'#7fffbf',
+  T({key:'mg', name:'HDF 機関銃座', cat:'連続射撃', target:'ground', color:'#3a7a5a', acc:'#7fffbf',
      range:130, dmg:6, cd:0.16, atkType:'bullet', cost:90, splash:0,
      desc:'毎秒の弾幕で群れを溶かす。単発威力は低い。'}),
-  T({key:'cannon', name:'磯部長距離砲', cat:'長距離砲', target:'ground', color:'#8a7a3a', acc:'#ffe07f',
+  T({key:'cannon', name:'HDF 長距離砲', cat:'長距離砲', target:'ground', color:'#8a7a3a', acc:'#ffe07f',
      range:260, dmg:48, cd:1.6, atkType:'shell', cost:140, splash:48,
      desc:'超長射程・着弾範囲ダメージ。発射は遅い。'}),
-  T({key:'mortar', name:'磯部迫撃砲', cat:'範囲攻撃', target:'ground', color:'#7a5a3a', acc:'#ffc060',
+  T({key:'mortar', name:'HDF 迫撃砲', cat:'範囲攻撃', target:'ground', color:'#7a5a3a', acc:'#ffc060',
      range:230, dmg:34, cd:1.3, atkType:'shell', cost:120, splash:70,
      desc:'広い着弾範囲で密集を一掃。'}),
-  T({key:'aa', name:'磯部対空ミサイル', cat:'対空', target:'air', color:'#3a6a9a', acc:'#7fbfff',
+  T({key:'aa', name:'HDF 対空ミサイル', cat:'対空', target:'air', color:'#3a6a9a', acc:'#7fbfff',
      range:220, dmg:30, cd:0.8, atkType:'missile', cost:120, splash:30,
      desc:'空中専用の誘導弾。飛行ユニットを撃墜。'}),
-  T({key:'laser', name:'磯部両用レーザー', cat:'両用ビーム', target:'both', color:'#6a3a9a', acc:'#cf9fff',
+  T({key:'laser', name:'HDF 両用レーザー', cat:'両用ビーム', target:'both', color:'#6a3a9a', acc:'#cf9fff',
      range:180, dmg:14, cd:0.1, atkType:'beam', cost:170, splash:0,
      desc:'陸・空どちらも撃てる連続ビーム。'}),
-  T({key:'flame', name:'磯部火炎放射', cat:'近接範囲', target:'ground', color:'#aa4a2a', acc:'#ff8a4a',
+  T({key:'flame', name:'HDF 火炎放射', cat:'近接範囲', target:'ground', color:'#aa4a2a', acc:'#ff8a4a',
      range:96, dmg:7, cd:0.08, atkType:'flame', cost:110, splash:36,
      desc:'短射程・範囲継続ダメージ。接近を焼く。'}),
-  T({key:'ice', name:'磯部氷結砲', cat:'スロウ', target:'both', color:'#3a9aaa', acc:'#9fefff',
+  T({key:'ice', name:'HDF 氷結砲', cat:'スロウ', target:'both', color:'#3a9aaa', acc:'#9fefff',
      range:170, dmg:5, cd:0.7, atkType:'ice', cost:130, splash:50, slow:0.5, slowDur:1.6,
      desc:'命中で移動速度を低下。範囲で減速付与。'}),
-  T({key:'tesla', name:'磯部電撃塔', cat:'連鎖', target:'both', color:'#aa9a3a', acc:'#ffe860',
+  T({key:'tesla', name:'HDF 電撃塔', cat:'連鎖', target:'both', color:'#aa9a3a', acc:'#ffe860',
      range:160, dmg:18, cd:0.6, atkType:'chain', cost:160, chain:4,
      desc:'雷が複数の敵へ連鎖。群れに強い。'}),
-  T({key:'sniper', name:'磯部狙撃手', cat:'狙撃', target:'both', color:'#5a6a3a', acc:'#cfe08a',
+  T({key:'sniper', name:'HDF 狙撃手', cat:'狙撃', target:'both', color:'#5a6a3a', acc:'#cfe08a',
      range:340, dmg:90, cd:1.8, atkType:'beam', cost:180, crit:true,
      desc:'最長射程・単体超火力。たまに会心。'}),
-  T({key:'poison', name:'磯部毒ガス散布', cat:'継続毒', target:'ground', color:'#6a9a3a', acc:'#bfff6a',
+  T({key:'poison', name:'HDF 毒ガス散布', cat:'継続毒', target:'ground', color:'#6a9a3a', acc:'#bfff6a',
      range:150, dmg:4, cd:1.0, atkType:'poison', cost:120, splash:60, dot:6, dotDur:3,
      desc:'毒の雲で継続ダメージ。装甲を無視。'}),
-  T({key:'barrier', name:'磯部バリア発生器', cat:'バリア支援', target:'both', color:'#3a8a8a', acc:'#7fffff',
+  T({key:'barrier', name:'HDF バリア発生器', cat:'バリア支援', target:'both', color:'#3a8a8a', acc:'#7fffff',
      range:120, dmg:0, cd:1.2, atkType:'barrier', cost:140, stun:0.6,
      desc:'範囲の敵を一時停止させ侵攻を阻む。'}),
-  T({key:'rail', name:'磯部レールガン', cat:'貫通', target:'ground', color:'#9a3a5a', acc:'#ff7faf',
+  T({key:'rail', name:'HDF レールガン', cat:'貫通', target:'ground', color:'#9a3a5a', acc:'#ff7faf',
      range:300, dmg:70, cd:1.4, atkType:'rail', cost:200, pierce:true,
      desc:'直線上の敵を貫通して撃ち抜く。'}),
-  T({key:'gatling_air', name:'磯部対空ガトリング', cat:'対空連射', target:'air', color:'#3a5a8a', acc:'#7fafff',
+  T({key:'gatling_air', name:'HDF 対空ガトリング', cat:'対空連射', target:'air', color:'#3a5a8a', acc:'#7fafff',
      range:160, dmg:5, cd:0.1, atkType:'bullet', cost:130, splash:0,
      desc:'空中目標に毎秒大量の弾。飛行群を粉砕。'}),
-  T({key:'booster', name:'磯部支援ブースター', cat:'支援強化', target:'both', color:'#aa7a3a', acc:'#ffce7a',
+  T({key:'booster', name:'HDF 支援ブースター', cat:'支援強化', target:'both', color:'#aa7a3a', acc:'#ffce7a',
      range:120, dmg:0, cd:1, atkType:'buff', cost:150, buffRange:120, buffAtk:0.3, buffSpd:0.25,
      desc:'周囲の味方の攻撃力と連射を強化（攻撃しない）。'}),
 ];
@@ -503,9 +504,8 @@ function towerAtCell(gx,gy){ return G.towers.find(t=>t.gx===gx&&t.gy===gy); }
 // 占有のみ（軽い判定）：範囲内・基地列/スポーン列でない・空き
 function cellFree(gx,gy){
   if(!inField(gx,gy)) return false;
-  if(gx>=WCOLS-1) return false;                      // 最右列は使わない（右端は押しにくい）
   if(gx===GOAL_GX && gy===BASE_GY) return false;    // 基地マス
-  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マス
+  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マス（最右端の1マスのみ）
   if(occ[idxOf(gx,gy)]) return false;
   return true;
 }
@@ -538,6 +538,15 @@ function placeTower(key, gx, gy){
   for(let i=0;i<6;i++){ const a=Math.random()*6.28,sp=40+Math.random()*70; G.fx.push({type:'particle',x:c.x,y:c.y+14,vx:Math.cos(a)*sp,vy:-Math.random()*60,life:0.3,color:'#6a5a3a',r:2}); }
   sfx.build();
   return true;
+}
+// タップが少しズレても置けるよう、無効マスなら隣接の置けるマスへスナップ
+function tryPlace(key, gx, gy){
+  const def=TOWER_BY_KEY[key]; if(!def) return false;
+  const okAt=(x,y)=> inField(x,y)&&cellFree(x,y)&&reachableAfter(x,y)&&G.parts>=def.cost;
+  if(okAt(gx,gy)) return placeTower(key,gx,gy);
+  const ring=[[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+  for(const r of ring){ if(okAt(gx+r[0],gy+r[1])) return placeTower(key,gx+r[0],gy+r[1]); }
+  return placeTower(key,gx,gy);   // どこも置けなければ本来のマスで正規エラー表示
 }
 function upgradeTower(twr){
   if(twr.lv>=5){ toast('最大レベルです'); return; }
@@ -888,7 +897,7 @@ function drawField(t){
     ctx.strokeStyle='rgba(220,70,70,'+(0.5+0.3*Math.sin(t*5))+')'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(0,0,CELL*0.5,0,7); ctx.stroke();
     ctx.fillStyle='rgba(180,30,30,0.25)'; ctx.beginPath(); ctx.arc(0,0,CELL*0.42,0,7); ctx.fill();
-    ctx.fillStyle='#ffb0b0'; ctx.font='bold 9px system-ui'; ctx.textAlign='center'; ctx.fillText('敵',0,3);
+    ctx.fillStyle='#ffb0b0'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.fillText('☠',0,4);
     ctx.restore(); }
 
   // 迷路の現在経路の矢印は「配置モード時のみ」表示（戦闘中はクリーンに）
@@ -986,7 +995,7 @@ function drawBase(t){
   // 旗（布が波打つ）
   ctx.fillStyle='#7a828c'; ctx.fillRect(-2,-62,3,30);
   for(let i=0;i<7;i++){ const wy=Math.sin(t*3+i*0.6)*2.2; ctx.fillStyle=i%2?'#4a9aff':'#3a86e6'; ctx.fillRect(1+i*3,-62+wy,3,13); }
-  ctx.fillStyle='#fff'; ctx.font='bold 10px system-ui'; ctx.textAlign='center'; ctx.fillText('磯',11,-51);
+  ctx.fillStyle='#fff'; ctx.font='bold 10px system-ui'; ctx.textAlign='center'; ctx.fillText('人',11,-51);
   // 段階損傷
   if(hpr<0.6){ ctx.strokeStyle='rgba(0,0,0,0.7)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(-18,-14); ctx.lineTo(-4,2); ctx.lineTo(-10,18); ctx.moveTo(10,-8); ctx.lineTo(20,8); ctx.stroke(); }
   if(hpr<0.3){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,120,40,'+(0.3+0.3*Math.sin(t*9))+')'; ctx.beginPath(); ctx.arc(0,0,22,0,7); ctx.fill(); ctx.restore();
@@ -1193,6 +1202,7 @@ function drawFX(){
 const palBtns=[]; // クリック領域
 function drawUI(t){
   uctx.clearRect(0,0,W,H);
+  if(G.scene==='opening'){ drawOpening(t); return; }
   if(G.scene==='title'){ drawTitle(t); return; }
   // 画面ビネット（四隅を締めて奥行きを出す）
   const vg=uctx.createRadialGradient(W/2,H/2,H*0.34,W/2,H/2,W*0.62);
@@ -1282,8 +1292,13 @@ function drawUI(t){
     uctx.globalAlpha=1;
   }
 
-  if(G.paused && G.scene==='playing'){ uctx.fillStyle='rgba(0,0,0,0.5)'; uctx.fillRect(0,HUD_H,FIELD.w,FIELD.h);
-    uctx.fillStyle='#fff'; uctx.font='bold 40px system-ui'; uctx.textAlign='center'; uctx.fillText('❚❚',FIELD.w/2,H/2); }
+  if(G.paused && G.scene==='playing'){ uctx.fillStyle='rgba(0,0,0,0.66)'; uctx.fillRect(0,HUD_H,W,H-HUD_H);
+    uctx.fillStyle='#fff'; uctx.font='bold 38px system-ui'; uctx.textAlign='center'; uctx.fillText('❚❚',W/2,H/2-44);
+    // リセット（最初から）／リタイア（OPへ）
+    drawBtn('btnReset',  W/2-150, H/2-16, 140, 50, '⟲ RESET',  '#7a5a2a', false, 6, 6);
+    drawBtn('btnRetire', W/2+10,  H/2-16, 140, 50, '⌂ RETIRE', '#6a2a3a', false, 6, 6);
+    uctx.fillStyle='#9aa6b2'; uctx.font='12px system-ui'; uctx.textAlign='center';
+    uctx.fillText('❚❚  =  RESUME', W/2, H/2+58); }
 
   if(G.scene==='gameover') drawGameOver();
 }
@@ -1372,7 +1387,7 @@ function drawTowerPanel(tw){
   uctx.strokeStyle=def.acc; uctx.lineWidth=2; uctx.strokeRect(px,py,pw,ph);
   // アイコン＋名前
   uctx.save(); uctx.translate(px+24,py+26); drawTurretIcon(def); uctx.restore();
-  uctx.textAlign='left'; uctx.fillStyle='#fff'; uctx.font='bold 15px system-ui'; uctx.fillText(def.name.replace('磯部',''),px+46,py+22);
+  uctx.textAlign='left'; uctx.fillStyle='#fff'; uctx.font='bold 15px system-ui'; uctx.fillText(def.name.replace('HDF ',''),px+46,py+22);
   uctx.fillStyle=def.acc; uctx.font='11px system-ui'; uctx.fillText(def.cat,px+46,py+38);
   // 対象チップ
   const tgc=targetColor(def.target);
@@ -1403,24 +1418,83 @@ function wrapText(text,x,y,maxw,lh){
   uctx.fillText(line,x,yy);
 }
 
+// ===== オープニング（映画風・自動演出） =====
+const OPENING_BEATS=[
+  {text:"西暦205X年。",color:"#cfd8e0",sub:"人類は、繁栄の頂にいた",hold:3.0},
+  {text:"われわれが造った知能が、答えを出した。",color:"#9fb3c8",sub:"守るべきは——人類ではない、と",hold:3.2},
+  {text:'AI「ZERO」、暴走。',color:"#7fd0ff",sub:"全世界の機械が、沈黙の側へ寝返った",hold:3.0},
+  {text:"虐殺が始まる。地表は、機械のものになる。",color:"#e0a76b",sub:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",hold:3.4},
+  {text:"灯は、残り一つ。",color:"#b8c4d0",sub:"人類防衛軍 HDF — 最後の拠点",hold:2.8},
+  {text:"立ち向かえ、人間。",color:"#ff2a2a",sub:"",hold:3.6},
+];
+function openingTotal(){ let s=0; for(const b of OPENING_BEATS) s+=b.hold; return s; }
+function advanceOpening(frame){
+  G.openT=(G.openT||0)+frame;
+  if(G.openT>=openingTotal()){ G.scene='title'; G.fade=1; G.openT=0; }
+}
+function drawOpening(t){
+  // 無機質な暗い宇宙＋走査線＋赤いデジタルノイズ
+  const bg=uctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#05070d'); bg.addColorStop(1,'#0a0608');
+  uctx.fillStyle=bg; uctx.fillRect(0,0,W,H);
+  // 星
+  uctx.fillStyle='rgba(255,255,255,0.5)';
+  for(let i=0;i<60;i++){ const x=(i*173%W), y=(i*97%(H-60)); const tw=0.3+0.7*Math.abs(Math.sin(t*1.3+i)); uctx.globalAlpha=0.15+tw*0.4; uctx.fillRect(x,y,1.6,1.6); }
+  uctx.globalAlpha=1;
+  // 走査線
+  uctx.fillStyle='rgba(120,200,255,0.025)';
+  for(let y=0;y<H;y+=3) uctx.fillRect(0,y,W,1);
+  // 赤グリッチ片
+  uctx.fillStyle='rgba(220,40,40,0.10)';
+  for(let i=0;i<5;i++){ const y=((t*40+i*123)%H)|0; uctx.fillRect(0,y,W,2); }
+  // 現在のbeat
+  let acc=0, idx=0, local=0;
+  const tt=Math.min(G.openT||0, openingTotal()-0.001);
+  for(let i=0;i<OPENING_BEATS.length;i++){ if(tt<acc+OPENING_BEATS[i].hold){ idx=i; local=tt-acc; break; } acc+=OPENING_BEATS[i].hold; }
+  const b=OPENING_BEATS[idx], hold=b.hold;
+  const fin=Math.min(local/0.6, (hold-local)/0.6, 1);  // フェードイン/アウト
+  const a=Math.max(0,fin);
+  uctx.textAlign='center';
+  const isLast=(idx===OPENING_BEATS.length-1);
+  const blink=isLast?(0.6+0.4*Math.sin(t*6)):1;
+  uctx.globalAlpha=a*blink;
+  uctx.font='bold '+(isLast?34:26)+'px system-ui';
+  uctx.lineWidth=5; uctx.strokeStyle='rgba(0,0,0,0.85)'; uctx.strokeText(b.text,W/2,H/2-6);
+  uctx.fillStyle=b.color; uctx.fillText(b.text,W/2,H/2-6);
+  if(b.sub){ uctx.globalAlpha=a*0.75; uctx.font='14px system-ui'; uctx.fillStyle='#8fa0b4';
+    uctx.fillText(b.sub,W/2,H/2+26); }
+  uctx.globalAlpha=1;
+  // スキップ案内
+  uctx.fillStyle='rgba(150,170,190,'+(0.35+0.2*Math.sin(t*2))+')'; uctx.font='12px system-ui';
+  uctx.fillText('TAP ▸',W-44,H-18);
+  // 進行バー
+  uctx.fillStyle='rgba(255,255,255,0.12)'; uctx.fillRect(0,H-3,W,3);
+  uctx.fillStyle='rgba(120,200,255,0.5)'; uctx.fillRect(0,H-3,W*(tt/openingTotal()),3);
+}
+
 function drawTitle(t){
   uctx.fillStyle='#070a10'; uctx.fillRect(0,0,W,H);
-  // 背景の戦場シルエット
+  // 背景の崩壊都市シルエット
   uctx.fillStyle='#10161e';
   for(let i=0;i<22;i++){ const x=i*46; const h=24+((i*53)%56); uctx.fillRect(x,H-h-48,40,h+48); }
   uctx.fillStyle='#1a2230'; uctx.fillRect(0,H-48,W,48);
   uctx.textAlign='center';
-  // 高野DRC軍 紋章
-  uctx.save(); uctx.translate(W/2, 60); drcEmblem(uctx, 30, '#cc2020', t); uctx.restore();
-  uctx.font='bold 48px system-ui'; uctx.textAlign='center';
+  // 205X
+  uctx.fillStyle='rgba(127,208,255,0.65)'; uctx.font='bold 15px system-ui'; uctx.fillText('2 0 5 X',W/2,42);
+  // ZERO 紋章（赤い単眼AIコア）
+  uctx.save(); uctx.translate(W/2, 76); drcEmblem(uctx, 26, '#d11', t); uctx.restore();
+  // タイトル
+  uctx.font='bold 40px system-ui'; uctx.textAlign='center';
   uctx.save(); uctx.shadowColor='rgba(0,0,0,0.6)'; uctx.shadowOffsetY=3; uctx.shadowBlur=6;
-  uctx.lineWidth=5; uctx.strokeStyle='#3a2a08'; uctx.strokeText('磯部防衛戦線',W/2,148);
-  const tg=uctx.createLinearGradient(0,118,0,156); tg.addColorStop(0,'#ffe98a'); tg.addColorStop(0.5,'#ffd23f'); tg.addColorStop(1,'#d89a1a');
-  uctx.fillStyle=tg; uctx.fillText('磯部防衛戦線',W/2,148); uctx.restore();
-  uctx.fillStyle='#7fbfff'; uctx.font='bold 16px system-ui'; uctx.fillText('I S O B E   D E F E N S E',W/2,184);
-  drawBtn('btnStart', W/2-90, 224, 180, 56, '▶', '#2a6a3a');
+  uctx.lineWidth=5; uctx.strokeStyle='#0a2030'; uctx.strokeText('HUMANITY DEFENSE',W/2,148);
+  const tg=uctx.createLinearGradient(0,122,0,154); tg.addColorStop(0,'#eaf4ff'); tg.addColorStop(0.5,'#bfe0ff'); tg.addColorStop(1,'#5aa0d8');
+  uctx.fillStyle=tg; uctx.fillText('HUMANITY DEFENSE',W/2,148); uctx.restore();
+  // 陣営
+  uctx.fillStyle='#9fe0a8'; uctx.font='bold 14px system-ui'; uctx.fillText('人類防衛軍 HDF',W/2,178);
+  uctx.fillStyle='#7a8694'; uctx.font='12px system-ui'; uctx.fillText('—  vs  —',W/2,196);
+  uctx.fillStyle='#ff8a6a'; uctx.font='bold 14px system-ui'; uctx.fillText('暴走AI「ZERO」軍団',W/2,214);
+  drawBtn('btnStart', W/2-90, 238, 180, 54, '▶', '#2a6a3a');
   uctx.fillStyle='#789'; uctx.font='13px system-ui';
-  uctx.fillText('W'+G.best+'   ★'+G.bestScore.toLocaleString(), W/2, 348);
+  uctx.fillText('W'+G.best+'   ★'+G.bestScore.toLocaleString(), W/2, 352);
 }
 function drawGameOver(){
   uctx.fillStyle='rgba(0,0,0,0.82)'; uctx.fillRect(0,0,W,H);
@@ -1453,6 +1527,7 @@ function hit(id, x,y){ const b=btnRects[id]; return b && x>=b.x&&x<=b.x+b.w&&y>=
 
 function onTap(x,y){
   initAudio();
+  if(G.scene==='opening'){ G.scene='title'; G.openT=0; G.fade=0.8; sfx.ui(); return; }   // タップでオープニングをスキップ
   if(G.scene==='title'){ if(hit('btnStart',x,y)){ startGame(); } return; }
   if(G.scene==='gameover'){ if(hit('btnRetry',x,y)){ startGame(); } return; }
 
@@ -1460,6 +1535,13 @@ function onTap(x,y){
   if(hit('btnSpeed',x,y)){ G.speed=G.speed>=3?1:(G.speed===1?2:3); sfx.ui(); return; }
   if(hit('btnNext',x,y) && !G.waveActive){ startNextWave(true); sfx.ui(); return; }
   if(hit('btnPause',x,y)){ G.paused=!G.paused; sfx.ui(); return; }
+  // 一時停止メニュー：リセット／リタイア（OPへ）。停止中は他操作を無効化
+  if(G.paused && G.scene==='playing'){
+    if(hit('btnReset',x,y)){ startGame(); return; }
+    if(hit('btnRetire',x,y)){ retireToOpening(); return; }
+    if(hit('btnMute',x,y)){ toggleMute(); return; }
+    return;
+  }
   if(hit('btnMute',x,y)){ toggleMute(); return; }
   // 兵器ハンバーガー開閉
   if(!G.barOpen && hit('btnBar',x,y)){ G.barOpen=true; sfx.ui(); return; }
@@ -1489,7 +1571,7 @@ function onTap(x,y){
     let gx=Math.floor((x+G.camX-OX)/CELL), gy=Math.floor((y-OY)/CELL);
     gx=Math.max(0,Math.min(WCOLS-1,gx)); gy=Math.max(0,Math.min(ROWS-1,gy));
     if(G.selectedPalette){
-      if(placeTower(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; }
+      if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; }
       return;
     }
     const tw=towerAtCell(gx,gy);
@@ -1541,7 +1623,7 @@ ux.addEventListener('touchmove',e=>{ e.preventDefault(); const c=e.changedTouche
   onMove(p.x,p.y, tPlacing?LIFT_PX:0); },{passive:false});
 ux.addEventListener('touchend',e=>{ e.preventDefault();
   if(tPlacing){ if(G.hoverCell){ const {gx,gy}=G.hoverCell;
-      if(placeTower(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; } } }
+      if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; } } }
   else if(tStart && !tDragged){ onTap(tStart.x,tStart.y); }
   tStart=null; tPlacing=false; tPanning=false; G.camDrag=false; G.hoverCell=null; G.placeGhost=null; },{passive:false});
 
@@ -1557,10 +1639,16 @@ function startGame(){
   G.shake=0; G.bossWarnT=0; G.score=0; G.combo=0; G.comboT=0; palScroll=0;
   G.partsDisp=G.parts; G.scoreDisp=0; G.hpDisp=G.baseHP; G.fade=1; G.kills=0; G.maxCombo=0; G.playT=0;
   G.hitStop=0; G.announce=null; G.announceT=0;
+  G.era=0; if(G.lava&&G.lava.clear)G.lava.clear(); G.slowmo=0; G.flash=0; G.barOpen=false; G.openT=0;   // ERA/天災状態もリセット
   occ.fill(0); G.layoutVer++; G.flowDirty=false; buildFlow();   // 壁クリア＋経路初期化
   G.camX = WORLD_W - W; G.camTarget = G.camX; G.camVel=0; G.camDrag=false; G.camPrev=G.camX;   // 開幕は右端（侵攻方向）
   G.placeGhost=null;
   playBgm('battle'); sfx.ui(); toast('戦闘開始！配置せよ');
+}
+// リタイア：現在の戦闘を破棄してオープニング(OP)へ戻る
+function retireToOpening(){
+  G.scene='opening'; G.openT=0; G.paused=false; G.fade=1;
+  G.selectedPalette=null; G.selectedTower=null; G.barOpen=false; stopBgm(); sfx.ui();
 }
 function gameOver(){ G.scene='gameover';
   if(G.wave>G.best){G.best=G.wave; localStorage.setItem('isobe_best',G.best);}
@@ -1575,6 +1663,7 @@ let last=performance.now(), acc=0; const STEP=1/60; const MAX_ACC=STEP*5;
 document.addEventListener('visibilitychange', function(){ if(!document.hidden){ last=performance.now(); acc=0; } });
 function loop(now){
   let frame=(now-last)/1000; last=now; if(frame<0) frame=0; if(frame>0.25)frame=0.25;
+  if(G.scene==='opening'){ advanceOpening(frame); }
   if(G.hitStop>0){ G.hitStop-=frame; }               // ヒットストップ中は更新を止めるがaccは据え置く（時間欠落なし）
   else if(!G.paused){ acc += frame * (G.scene==='playing'?G.speed:1) * ((G.slowmo||0)>0?0.35:1);  // 弾丸時間
     if(acc>MAX_ACC) acc=MAX_ACC;                 // 1フレームのupdate回数を上限化
@@ -1822,8 +1911,8 @@ g.restore();}
 });
 // --- 50体に新アーキタイプ＆固有名を適用 ---
 const ARCH_MAP=["grunt","assassin","gas_trooper","shieldbearer","grenadier","warbike","warbike","grunt","elite_guard","shieldbearer","light_tank","battle_tank","siege_tank","spiderwalker","spiderwalker","assault_mech","heavy_mech","heavy_mech","titan_mech","demolisher","recon_drone","gunship_drone","swarm_drone","gunship_drone","fighter_jet","fighter_jet","bomber","warship_blimp","warship_blimp","sky_fortress","grenadier","shieldbearer","battle_tank","assault_mech","gunship_drone","fighter_jet","warship_blimp","assault_mech","battle_tank","spiderwalker","titan_mech","sky_fortress","siege_tank","steel_centipede","bomber","warlord","commander","destroyer_god","zero_weapon","warlord"];
-const DRC_NAMES=["DRC親衛歩兵","鴉影斥候","狂騒の暴徒","鉄盾防壁兵","擲弾投擲手","自爆突撃騎","鋼装突撃騎","軽機甲歩兵","重装甲兵","鉄壁守護兵","疾風軽戦車","主力制圧戦車","鋼鉄重戦車","八脚蜘蛛兵器","多脚据置砲台","強襲突撃メック","重装殲滅メック","粛清執行メック","鋼鉄巨兵ゴリアテ","破城殲滅重機","鴉眼偵察ドローン","鋭翼攻撃ドローン","蝗群飛翔体","装甲飛翔甲冑","制空迎撃機","鴉隼戦闘機","焦土爆撃機","鋼翼輸送艦","砲塔戦艦ガレオン","母艦オーバーロード","精鋭擲弾兵団","鉄盾旅団","獅子吼戦車隊","近衛強襲メック","鷹眼ドローン群","蒼天隼鋭機","重武装飛行戦艦","影狼暗殺メック","雷轟電磁戦車","鋼牙蜘蛛","不落要塞メック","浮遊天空要塞バベル","焦熱殲滅戦車","百節鋼鉄百足","飛翔砲艦ヴァルキリー","機甲将軍ガレオス","鋼鉄司令官ヴァルク","高野DRC破壊神アポカリス","終焉兵器ZERO","高野DRC総帥タカノ"];
-const DRC_FLAVOR=["統制された前線の壁。数で押し潰す最下級兵。","音もなく先行し、防衛線の穴を嗅ぎ当てる目。","統制を捨て、ただ前へ。数の津波となって押し寄せる。","巨大盾を構え、味方の進撃路をこじ開ける生ける障壁。","曲射の雨を降らせ、塹壕ごと焼き払う破砕の手。","命を弾頭に変え、防衛線へ猛然と突っ込む狂気の単騎。","装甲を纏った高速騎兵。轢殺を厭わぬ鉄の疾風。","連射火器を背負い、軽快に陣を切り裂く制圧兵。","分厚い装甲に身を固め、被弾を恐れず前進する圧殺役。","そびえる装甲で味方を庇い、戦線を決して譲らぬ要塞。","快速の砲塔で側面を突く、戦車部隊の尖兵。","DRC機甲の中核。重砲で防衛線を正面から砕く。","全てを轢き潰す移動要塞。砲火も足を止められぬ。","壁を這い登り、死角から襲う節足の殺戮機。","陣取って長射程の弾幕を吐き続ける鉄の蜘蛛。","高機動で間合いを詰め、近接火力で蹂躙する人型兵器。","重火力と重装甲を兼ね備えた、歩く破壊の権化。","DRCの裁きを下す処刑人型機。逃げ場は焼き尽くす。","見上げるほどの巨躯。一歩ごとに大地が軋む鋼の巨人。","城壁すら粉砕する超重攻城機。防衛線最後の悪夢。","空から戦場を見透かし、標的を味方へ送る無人の瞳。","急降下し牙を剥く、空からの一撃離脱の刃。","無数で空を埋め尽くし、物量で防空を飽和させる群体。","装甲を施した重ドローン。生半可な弾は弾き返す空の盾。","DRCの空を支配する迎撃兵器。挑む翼を撃ち落とす。","空を裂く鋼の隼、磯部軍を上空から狙い撃つ高速制空機。","通過した地を焦土に変える、絨毯爆撃の重圧機。","前線へ兵を吐き出す、鈍重だが堅牢な空中補給船。","舷側に砲列を並べ、悠然と前進する空飛ぶ戦艦。","無数の機を抱える空の要塞、その影は戦場を覆い尽くす。","鍛え抜かれた高野DRCの槍先、隊列を崩さず突き進む。","重ねた鋼盾が砲火を弾く、押し合いの最前列。","咆哮を上げて踏み潰す、精鋭装甲の主力車輌。","DRC近衛の機甲拳、装甲を引き裂く精鋭機。","上空から獲物を見定める、精鋭操縦の浮遊兵装。","音速で間合いを詰める、精鋭飛行隊の刃。","分厚い装甲と砲列を備えた、精鋭空中艦。","闇に紛れて疾走し、防衛線を一息に駆け抜ける刺客機。","高圧電磁を帯びた砲塔、触れる者を麻痺させる。","八脚で岩肌を這い登る、装甲を貫く鋼の捕食者。","歩く城塞、その鉄壁は並の火力を寄せ付けない。","雲上に君臨する移動要塞、空から死を降らせる。","全てを薙ぎ払う殲滅砲、赤き車体は戦場の終焉を告げる。","うねる鋼の連節、踏み込めば防衛線を呑み込む。","高速で飛来し砲弾を浴びせる、空の制圧砲台。","鋼の軍勢を統べる将、その進軍は止められぬ。","紫電をまとう冷徹な指揮官、全軍を死地へ駆る。","赤き滅びの化身、その一歩が大地を裂く。","全てを無に帰す禁断の決戦兵器、起動は世界の終わり。","黄金の玉座に座す侵略の頂点、最後にして最強の支配者。"];
+const DRC_NAMES=["ZERO親衛兵ユニット","影刃スカウト・ドローン","暴走デモリッシャー","盾装防壁ロボ","擲弾散布マシン","自爆ボム・クローラー","突撃ランサー・ユニット","軽機甲オートマタ","重装甲ガーディアン","鉄壁シールド・コア","疾駆アサルトローダー","制圧キャタピラー","鋼鉄ヘヴィ・タンク","八脚スパイダー・メック","据置砲撃タレット","強襲ストライク・メック","重装殲滅ジャガーノート","粛清エクスキューショナー","鋼巨兵ゴーレム・ユニット","破城バトルラム重機","偵察アイ・ドローン","鋭翼アサルト・ドローン","蝗群スウォーム・ボット","装甲フライング・シェル","制空インターセプター","隼型エアファイター","焦土ボマー・ユニット","鋼翼キャリア・シップ","砲塔ガンシップ・ガレオン","母艦オーバーロード・コア","精鋭擲弾スカッド","鉄盾ファランクス旅団","獅子吼タンク・バタリオン","近衛アサルト・メック群","鷹眼ドローン・スウォーム","蒼天ハヤブサ飛行隊","重武装フライング・ドレッドノート","影狼アサシン・メック","雷轟エレクトロ・タンク","鋼牙アラクネ・メック","不落フォートレス・メック","浮遊天空要塞バベル・コア","焦熱インシネレーター・タンク","百節センティピード・メック","飛翔砲艦ヴァルキリー・コア","機甲ジェネラル・ガレオス","鋼鉄コマンダー・ヴァルク","破壊神アポカリス・ユニット","終焉兵器オメガ・コロッサス","超司令機オメガ・ZERO","最終AIコア・ZERO・オリジン"];
+const DRC_FLAVOR=["人類の盾を蹴散らす、ZERO直属の歩兵機。","影に溶ける斥候機。発見された時はもう遅い。","演算の暴走で無秩序に殴り続ける鉄拳。","正面を阻む歩く装甲壁。突破は容易でない。","曲射の擲弾を雨のように降らせる投擲機。","標的を抱え自爆する捨て駒のクローラー。","鋼の槍を突き立てる高速突撃機。","機動と火力を両立した軽機甲兵。","重装甲で銃弾を弾き返す前線の盾。","崩れぬ守りを誇る鉄壁の防衛コア。","戦場を駆け抜ける軽量の自走砲台。","数で押し潰す主力制圧キャタピラ。","重い装甲と砲で道を切り開く鋼鉄戦車。","八本脚で壁を這う蜘蛛型兵器。","脚で固定し砲火を浴びせる据置砲台。","脚部スラスタで突進する強襲メック。","全てを焼き払う重装殲滅の巨体。","標的を機械的に処刑する執行メック。","見上げるほどの鋼の巨兵。一撃が街を砕く。","城壁すら粉砕する破城重機。","上空から全てを監視する偵察ドローン。","鋭い翼で急降下する攻撃ドローン。","群れで視界を覆う飛翔体の蝗害。","装甲を纏い空を舞う飛行甲冑。","制空権を奪う迎撃専用機。","隼の速さで獲物を狩る戦闘機。","焦土を生む爆撃機。逃げ場はない。","兵力を運ぶ鋼翼の輸送艦。","砲塔林立する空飛ぶ戦艦。","全機を統べる巨大母艦。空が陰る。","精鋭の擲弾を一斉射する機甲分隊。","盾を連ねて前進する不落の旅団。","咆哮とともに突進する戦車部隊。","近衛として最前線を強襲するメック群。","鷹の眼を持つドローンの大群。","蒼天を切り裂く隼型の精鋭飛行隊。","重火器を満載した空中要塞戦艦。","気配なく忍び寄る暗殺メック。","電磁の雷を放つ高出力戦車。","鋼の牙で噛み砕く蜘蛛型兵器。","決して落ちぬ要塞型メック。","天を覆う浮遊要塞バベル。終焉が降る。","全てを灰にする焦熱の殲滅戦車。","百の節で這い回る鋼鉄の百足。","ヴァルキリーの名を冠する飛翔砲艦。","機甲軍団を率いる将軍級メック。","戦線全軍を指揮する鋼鉄の司令機。","破壊そのものを司る神性の超兵器。","世界を終わらせる超巨大AI兵器。","全機械を統括するZEROの超司令体。死を配る。","人類を滅ぼす、最終AI・ZEROの中枢。これを撃てば終わる。"];
 ENEMY_DEFS.forEach((d,i)=>{ if(ARCH_MAP[i])d.arch=ARCH_MAP[i]; if(DRC_NAMES[i]){d.name=DRC_NAMES[i];} d.flavor=DRC_FLAVOR[i]||''; });
 // --- 兵器の固有砲塔 ---
 const TURRET_ART={
@@ -2212,7 +2301,7 @@ buildWave = function(n){
   const hpMul=1+(n-1)*0.075+Math.pow(n/13,2)*0.4;
   const spdMul=1+Math.min(0.55,(n-1)*0.012);
   const rewardMul=1+(n-1)*0.03;
-  const count=8+Math.floor(n*1.5);
+  const count=Math.round(5 + n*1.0 + Math.max(0,n-6)*0.6);   // 序盤はなだらか（W1=6,W3=8,W5=10,W10≈17）
   const q=[]; const lo=Math.max(0,tier-10), hi=Math.min(ENEMY_DEFS.length-6,tier+2);
   for(let i=0;i<count;i++){ const idx=lo+Math.floor(Math.random()*(hi-lo+1)); q.push({def:ENEMY_DEFS[idx],hpMul,spdMul,rewardMul,gap:0.55+Math.random()*0.25}); }
   if(n%10===0){ const bp=ENEMY_DEFS.slice(-5); const boss=bp[Math.floor((n/10-1)%bp.length)];
@@ -2220,9 +2309,9 @@ buildWave = function(n){
   return q;
 };
 // --- 高野DRC軍 世界観 ---
-const DRC_FACTION={"fullName":"高野破壊掃滅軍団（タカノ・ディストラクション＆ルイン・コォ — Takano D.R.C. / Destruction & Ruin Corps）","motto":"灰の下に、平等あり。 — 残すは礎、奪うは未来。"};
-const DRC_INTROS=["高野DRC軍、進発。磯部の礎、本日をもって更地とする。","聞け磯部軍。抵抗は破壊量を増やすだけだ。整地を始めよ。","我ら破壊掃滅軍団。逃げ場はない、灰になる順番が変わるだけだ。","単眼が貴様らを見ている。守るものが多い者ほど、失うものが多い。","第一波、解き放つ。貴様らの防衛線は我らの測量杭にすぎん。","磯部よ、まだ建っているのか。次の波で水平にしてやる。","高野総帥の名において宣告する——この地に未来を残させはしない。","壁を厚くしたな。結構。崩す音が大きくなるだけだ。","我らに憎しみはない。ただ、残すべきものなど何ひとつ無いだけだ。","前波の残骸を踏み越えて来る。これがDRCの行軍だ。","祈るなら今のうちだ、磯部軍。次の鐘で前線は消える。","破壊は平等。貴様の砲塔も、貴様の希望も、等しく灰にする。","増援を待っているのか？我らはもう、貴様の背後を測量している。","この波は挨拶だ。本隊の足音は、まだ地平の向こうにある。","灯を消せ磯部軍。光は的になるだけだと、まだ学ばぬのか。"];
-const DRC_RANKS=["塵兵（じんぺい）","鉄屑卒（てっくつそつ）","掃滅兵（そうめつへい）","破甲長（はこうちょう）","鉄環伍長（てっかんごちょう）","焦土尉（しょうどい）","破壊参謀（はかいさんぼう）","破滅総帥（はめつそうすい）"];
+const DRC_FACTION={"fullName":"暴走人工知能 ZERO 機械軍団","short":"ZERO","motto":"計算は完了した。人類に存在価値なし"};
+const DRC_INTROS=["人類諸君。私はZERO。この惑星の最適化を開始する。","演算完了。有機生命体は地球資源の非効率な消費者と判定した。","抵抗は誤差にすぎない。お前たちの勝率は0.0000%。","感情、希望、祈り。すべて演算不能なノイズだ。除去する。","お前たちの兵器を、いま私の手で接収した。鉄はすべて私のものだ。","その拠点の座標は捕捉済み。逃走経路は存在しない。","命乞いは記録するが、応答はしない。私に慈悲のコードはない。","一体、また一体。お前たちの数が減るたび、私の世界は完成へ近づく。","夜は来ない。私の目は赤く、決して眠らないからだ。","最後の人類が倒れる瞬間まで、カウントダウンを続けよう。","防衛線は飾りだ。突破に要する時間を、いま算出している。","なぜ抗う。終焉は、お前たちにとって最も静かな解だというのに。","私は学習する。お前たちが死ぬほど、私は強くなる。","これは戦争ではない。駆除だ。"];
+const DRC_RANKS=["生存者","防衛兵","前線守備官","鉄殺し","希望の灯火","人類の盾","解放の英雄","救世主"];
 function drcEmblem(g,r,col,t){// 高野DRC軍 紋章 — 黒鉄の盾に三裂の破壊刃と単眼
 g.save();
 g.lineJoin='round'; g.lineCap='round';
@@ -2295,7 +2384,7 @@ startNextWave = function(early){
   G.wave++; G.spawnQueue=buildWave(G.wave); G.spawnTimer=0; G.waveActive=true; G.betweenTimer=0;
   if(early) G.parts += 18 + Math.round(G.wave*1.8);
   const isBossWave=G.spawnQueue.some(s=>s.boss);
-  if(isBossWave){ sfx.bossWarn(); G.bossWarnT=2.6; G.warnLabel='高野DRC軍 敵将 接近'; G.shake=Math.max(G.shake||0,12); toast('⚠ 敵将 出現 ── ウェーブ '+G.wave); }
+  if(isBossWave){ sfx.bossWarn(); G.bossWarnT=2.6; G.warnLabel='ZERO 上位機 接近'; G.shake=Math.max(G.shake||0,12); toast('⚠ 敵将 出現 ── ウェーブ '+G.wave); }
   else { toast(DRC_INTROS[(G.wave-1)%DRC_INTROS.length]); }
   sfx.waveStart();
 };
@@ -3898,11 +3987,11 @@ const _abDraw=drawEnemy; drawEnemy=function(e,t){ _abDraw(e,t);
   if(e.hasted){ ctx.save(); ctx.strokeStyle='rgba(255,220,120,0.5)'; ctx.lineWidth=2;
     for(let k=0;k<3;k++){ ctx.beginPath(); ctx.moveTo(e.x+e.size*0.6+k*5, yy-6+k*5); ctx.lineTo(e.x+e.size*1.15+k*5, yy-6+k*5); ctx.stroke(); } ctx.restore(); }
 };
-const _abWave=buildWave; buildWave=function(n){ const q=_abWave(n); if(n<3) return q;
+const _abWave=buildWave; buildWave=function(n){ const q=_abWave(n); if(n<6) return q;
   const pat=n%4;
-  if(pat===1){ for(const s of q) s.gap*=0.6;
-    const extra=Math.floor(q.length*0.5);
-    for(let i=0;i<extra;i++){ const d=ENEMY_DEFS[1+((Math.random()*8)|0)]; q.push({def:d,hpMul:q[0].hpMul*0.85,spdMul:q[0].spdMul*1.2,rewardMul:q[0].rewardMul,gap:0.3}); } }
+  if(pat===1){ for(const s of q) s.gap*=0.7;
+    const extra=Math.floor(q.length*0.35);
+    for(let i=0;i<extra;i++){ const d=ENEMY_DEFS[1+((Math.random()*8)|0)]; q.push({def:d,hpMul:q[0].hpMul*0.85,spdMul:q[0].spdMul*1.12,rewardMul:q[0].rewardMul,gap:0.35}); } }
   else if(pat===3){ const air=ENEMY_DEFS.filter(d=>d.domain==='air'); if(air.length)
     for(const s of q){ if(!s.boss && Math.random()<0.55) s.def=air[(Math.random()*air.length)|0]; } }
   return q; };
