@@ -189,16 +189,16 @@ function initScene(){
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.ACESFilmicToneMapping;           // 映画的トーンマップ
-  renderer.toneMappingExposure=0.74;                          // 露出を下げて白飛び回避＝色が乗る
+  renderer.toneMappingExposure=0.82;                          // 露出を下げて白飛び回避＝色が乗る
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.Fog(0x05070c, 38, 160);
   camera=new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   raycaster=new THREE.Raycaster();
   // IBL環境マップ（金属の反射＝写実感の要）
-  try{ const pmrem=new THREE.PMREMGenerator(renderer); envTex=pmrem.fromScene(new THREE.RoomEnvironment(renderer),0.04).texture; scene.environment=envTex; }catch(e){}
+  try{ const pmrem=new THREE.PMREMGenerator(renderer); envTex=pmrem.fromScene(new THREE.RoomEnvironment(renderer),0.04).texture; scene.environment=null; void envTex; }catch(e){}
   // ライト（キー＋フィル＋リム、ソフトシャドウ）
-  scene.add(new THREE.AmbientLight(0x223044, 0.05));
-  scene.add(new THREE.HemisphereLight(0x86a8d0, 0x0a0e16, 0.08));
-  const key=new THREE.DirectionalLight(0xffe7cf, 2.0); key.position.set(-10,18,12); key.castShadow=true;
+  scene.add(new THREE.AmbientLight(0x2a3340, 0.14));
+  scene.add(new THREE.HemisphereLight(0x5a708a, 0x0a0e16, 0.18));
+  const key=new THREE.DirectionalLight(0xffe7cf, 1.9); key.position.set(-10,18,12); key.castShadow=true;
   key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
@@ -268,8 +268,8 @@ function buildGun(def){
 var g = new THREE.Group();
 
 // ===== palette (dark, dirty military) =====
-var C_HULL   = 0x4f7d33; // olive-drab gunmetal
-var C_HULL2  = 0x33521f; // darker panel
+var C_HULL   = 0x2e5320; // olive-drab gunmetal
+var C_HULL2  = 0x213a16; // darker panel
 var C_GUN    = 0x23262a; // gunmetal barrels
 var C_GUN2   = 0x32363b; // gun housing
 var C_RUST   = 0x5a4a36; // rust / weathering
@@ -561,9 +561,9 @@ function buildCannon(def){
 var g = new THREE.Group();
 
 // ---- palette (olive drab / khaki / gunmetal / rust) ----
-var C_HULL   = 0x9e3525; // olive drab
-var C_HULL2  = 0x5e2018; // lighter olive panel
-var C_KHAKI  = 0xc0503a; // khaki highlight
+var C_HULL   = 0x6c2418; // olive drab
+var C_HULL2  = 0x3c140e; // lighter olive panel
+var C_KHAKI  = 0x7a2c1e; // khaki highlight
 var C_DARK   = 0x2c2e22; // shadowed olive
 var C_GUN    = 0x2a2d31; // gunmetal
 var C_GUN2   = 0x3a3e44; // lighter gunmetal
@@ -795,9 +795,9 @@ function buildFrost(def){
 var g = new THREE.Group();
 
 // ---- palette ----
-var C_HULL   = 0x2f63b6; // cold gunmetal blue-grey
-var C_HULL2  = 0x203f74; // darker plate
-var C_TANK   = 0x3f72c0; // dusted steel tank
+var C_HULL   = 0x1b3a6e; // cold gunmetal blue-grey
+var C_HULL2  = 0x132851; // darker plate
+var C_TANK   = 0x224680; // dusted steel tank
 var C_DARK   = 0x1d242a; // shadow/recess
 var C_BOLT   = 0x394652;
 var C_ACCENT = 0x2f7fb8; // pale chill glow
