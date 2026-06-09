@@ -189,20 +189,20 @@ function initScene(){
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.ACESFilmicToneMapping;           // 映画的トーンマップ
-  renderer.toneMappingExposure=1.05;
+  renderer.toneMappingExposure=0.92;                          // 露出を下げて白飛び回避＝色が乗る
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.Fog(0x070b14, 30, 70);
   camera=new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   raycaster=new THREE.Raycaster();
   // IBL環境マップ（金属の反射＝写実感の要）
   try{ const pmrem=new THREE.PMREMGenerator(renderer); envTex=pmrem.fromScene(new THREE.RoomEnvironment(renderer),0.04).texture; scene.environment=envTex; }catch(e){}
   // ライト（キー＋フィル＋リム、ソフトシャドウ）
-  scene.add(new THREE.AmbientLight(0x223044, 0.35));
-  scene.add(new THREE.HemisphereLight(0x86a8d0, 0x0a0e16, 0.45));
-  const key=new THREE.DirectionalLight(0xdfeeff, 2.0); key.position.set(-10,18,12); key.castShadow=true;
+  scene.add(new THREE.AmbientLight(0x223044, 0.28));
+  scene.add(new THREE.HemisphereLight(0x86a8d0, 0x0a0e16, 0.32));
+  const key=new THREE.DirectionalLight(0xdfeeff, 1.45); key.position.set(-10,18,12); key.castShadow=true;
   key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
-  const rim=new THREE.DirectionalLight(0x4aa0ff, 0.8); rim.position.set(12,8,-14); scene.add(rim);
+  const rim=new THREE.DirectionalLight(0x4aa0ff, 0.5); rim.position.set(12,8,-14); scene.add(rim);
   const fill=new THREE.PointLight(0xff5a6e, 0.6, 30); fill.position.set(WW/2,6,0); scene.add(fill);   // スポーン側の赤フィル
   // 地面（PBR・微反射）
   const gt=gridTexture(); gt.encoding=THREE.sRGBEncoding;
@@ -224,7 +224,7 @@ function initScene(){
   try{
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
-    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight), 0.55, 0.5, 0.82);
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight), 0.42, 0.5, 0.9);
     composer.addPass(bloomPass);
   }catch(e){ composer=null; }
   buildFlow(); updateCamera(); resize();
@@ -258,30 +258,31 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
   geo.translate(0,0,-(d-2*bt)/2-bt); geo.computeVertexNormals(); return geo; }
 
 /* ====================== タワー/敵 メッシュ（丸み＋陰影＋反射） ====================== */
-// 使い込まれた軍用メタル（彩度控えめ・ツヤ抑制）
-function steel(c){ return pbr(c,{metalness:0.74,roughness:0.56,clearcoat:0.1,ccr:0.6,envI:0.65}); }
+// 使い込まれた軍用メタル（マット寄り・反射控えめ）。色がしっかり乗るよう metalness 抑制
+function steel(c){ return pbr(c,{metalness:0.45,roughness:0.62,clearcoat:0.08,ccr:0.6,envI:0.5}); }
+const GUNMETAL=0x4b5158;   // 二次部品の中立グレー
 function makeTowerMesh(def){
   const g=new THREE.Group(); const acc=def.color;
   // 共通台座
-  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.58,0.16,24), pbr(0x20242a,{metalness:0.6,roughness:0.7,envI:0.4})); plinth.position.y=0.08; plinth.castShadow=true; plinth.receiveShadow=true; g.add(plinth);
+  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.58,0.16,24), pbr(0x20242a,{metalness:0.5,roughness:0.75,envI:0.35})); plinth.position.y=0.08; plinth.castShadow=true; plinth.receiveShadow=true; g.add(plinth);
   const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.42,0.18,24), steel(0x2a2f36)); collar.position.y=0.24; collar.castShadow=true; g.add(collar);
   const turret=new THREE.Group(); turret.position.y=0.42; g.add(turret); g.userData.turret=turret;
 
-  if(def.key==='gun'){            // 連射＝小型・二連バレル・俊敏
-    const body=new THREE.Mesh(roundedBox(0.5,0.3,0.46,0.11), steel(0x3c434c)); body.castShadow=true; turret.add(body);
-    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.17,20,14,0,Math.PI*2,0,Math.PI/2), steel(0x474f59)); dome.position.set(-0.05,0.15,0); dome.castShadow=true; turret.add(dome);
-    for(const s of [-1,1]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.05,0.6,16), steel(0x5e656d)); b.rotation.z=Math.PI/2; b.position.set(0.42,0.0,s*0.085); b.castShadow=true; turret.add(b); }
-    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.055,14,14), emis(acc,0.9)); lens.position.set(0.0,0.17,0); turret.add(lens);
-  } else if(def.key==='cannon'){  // 重砲＝大型・極太単砲身・マズルブレーキ
-    const body=new THREE.Mesh(roundedBox(0.64,0.42,0.62,0.14), steel(0x44423a)); body.castShadow=true; turret.add(body);
-    const mantlet=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.23,0.3,18), steel(0x35332c)); mantlet.rotation.z=Math.PI/2; mantlet.position.set(0.26,0.03,0); mantlet.castShadow=true; turret.add(mantlet);
-    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.13,0.98,20), steel(0x504d45)); b.rotation.z=Math.PI/2; b.position.set(0.64,0.03,0); b.castShadow=true; turret.add(b);
-    for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.035,8,16), steel(0x6a665b)); r.rotation.y=Math.PI/2; r.position.set(0.88+i*0.11,0.03,0); turret.add(r); }
-    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.06,14,14), emis(acc,0.85)); lens.position.set(-0.12,0.24,0); turret.add(lens);
-  } else {                         // 氷結＝砲身なし・結晶エミッタ・冷却フィン
-    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.37,0.32,10), steel(0x39424c)); body.position.y=0.02; body.castShadow=true; turret.add(body);
-    for(let i=0;i<6;i++){ const a=i*Math.PI/3; const f=new THREE.Mesh(roundedBox(0.07,0.24,0.46,0.03), steel(0x515c66)); f.position.set(Math.cos(a)*0.3,0.1,Math.sin(a)*0.3); f.rotation.y=-a; f.castShadow=true; turret.add(f); }
-    const cry=new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({color:0x8fb6c8,emissive:acc,emissiveIntensity:1.1,metalness:0.25,roughness:0.18,envMapIntensity:0.8})); cry.position.y=0.34; cry.castShadow=true; turret.add(cry); g.userData.crystal=cry;
+  if(def.key==='gun'){            // 連射＝小型・二連バレル・俊敏【ティールグリーン】
+    const body=new THREE.Mesh(roundedBox(0.5,0.3,0.46,0.11), steel(0x2f6f68)); body.castShadow=true; turret.add(body);
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.17,20,14,0,Math.PI*2,0,Math.PI/2), steel(0x3a8079)); dome.position.set(-0.05,0.15,0); dome.castShadow=true; turret.add(dome);
+    for(const s of [-1,1]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.05,0.6,16), steel(GUNMETAL)); b.rotation.z=Math.PI/2; b.position.set(0.42,0.0,s*0.085); b.castShadow=true; turret.add(b); }
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.055,14,14), emis(0x6ffaf0,1.1)); lens.position.set(0.0,0.17,0); turret.add(lens);
+  } else if(def.key==='cannon'){  // 重砲＝大型・極太単砲身・マズルブレーキ【ラスト/ブロンズ】
+    const body=new THREE.Mesh(roundedBox(0.64,0.42,0.62,0.14), steel(0x7a4a26)); body.castShadow=true; turret.add(body);
+    const mantlet=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.23,0.3,18), steel(0x5a3a1e)); mantlet.rotation.z=Math.PI/2; mantlet.position.set(0.26,0.03,0); mantlet.castShadow=true; turret.add(mantlet);
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.13,0.98,20), steel(0x6a625a)); b.rotation.z=Math.PI/2; b.position.set(0.64,0.03,0); b.castShadow=true; turret.add(b);
+    for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.035,8,16), steel(0x8a6a40)); r.rotation.y=Math.PI/2; r.position.set(0.88+i*0.11,0.03,0); turret.add(r); }
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(0.06,14,14), emis(0xffb24a,1.1)); lens.position.set(-0.12,0.24,0); turret.add(lens);
+  } else {                         // 氷結＝砲身なし・結晶エミッタ・冷却フィン【スチールブルー】
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.37,0.32,10), steel(0x2d5170)); body.position.y=0.02; body.castShadow=true; turret.add(body);
+    for(let i=0;i<6;i++){ const a=i*Math.PI/3; const f=new THREE.Mesh(roundedBox(0.07,0.24,0.46,0.03), steel(0x3f6a88)); f.position.set(Math.cos(a)*0.3,0.1,Math.sin(a)*0.3); f.rotation.y=-a; f.castShadow=true; turret.add(f); }
+    const cry=new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({color:0xbfe6f2,emissive:0x7fd2ec,emissiveIntensity:1.3,metalness:0.2,roughness:0.15,envMapIntensity:0.7})); cry.position.y=0.34; cry.castShadow=true; turret.add(cry); g.userData.crystal=cry;
   }
   return g;
 }
@@ -418,29 +419,50 @@ function hitEnemy(e,dmg,s){
   else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(e.hp<=0)killEnemy(e,true); }
 }
 
-/* ====================== 入力（カメラ＝ドラッグ / 設置＝タップ） ====================== */
-let ptrDown=false, dragged=false, lastX=0,lastY=0, downX=0,downY=0, pinchD=0;
+/* ====================== 入力（左ドラッグ=回転 / 右・Shift・2本指=平行移動 / ピンチ=ズーム / タップ=設置） ====================== */
+let ptrDown=false, dragged=false, panMode=false, lastX=0,lastY=0, downX=0,downY=0, pinchD=0, pinchMX=0, pinchMY=0;
 function pointerNDC(x,y){ ndc.set((x/window.innerWidth)*2-1, -(y/window.innerHeight)*2+1); }
 function raycastCell(x,y){
   pointerNDC(x,y); raycaster.setFromCamera(ndc,camera);
   const hit=raycaster.intersectObject(groundMesh); if(!hit.length) return null;
   const p=hit[0].point; const cell=worldToCell(p.x,p.z); return inGrid(cell.c,cell.r)?cell:null;
 }
+// カメラ注視点を地面に沿って平行移動（横移動）
+function panCamera(dx,dy){
+  const f=new THREE.Vector3(); camera.getWorldDirection(f); f.y=0; if(f.lengthSq()<1e-6)return; f.normalize();
+  const r=new THREE.Vector3(f.z,0,-f.x);   // 地面上の右方向
+  const k=camR*0.0018;
+  camTarget.x += -dx*k*r.x - dy*k*f.x;
+  camTarget.z += -dx*k*r.z - dy*k*f.z;
+  camTarget.x=Math.max(-WW*0.75,Math.min(WW*0.75,camTarget.x));
+  camTarget.z=Math.max(-WD*0.75,Math.min(WD*0.75,camTarget.z));
+  updateCamera();
+}
 const cv=document.getElementById('cv');
-cv.addEventListener('pointerdown',e=>{ if(G.scene!=='playing'||G.paused) return; ptrDown=true; dragged=false; lastX=downX=e.clientX; lastY=downY=e.clientY; });
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{ if(G.scene!=='playing'||G.paused) return; ptrDown=true; dragged=false;
+  panMode=(e.button===2||e.button===1||e.shiftKey); lastX=downX=e.clientX; lastY=downY=e.clientY; });
 cv.addEventListener('pointermove',e=>{ if(!ptrDown) return;
   const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
   if(Math.abs(e.clientX-downX)>6||Math.abs(e.clientY-downY)>6) dragged=true;
-  if(dragged){ camTheta-=dx*0.006; camPhi=Math.max(0.35,Math.min(1.25,camPhi-dy*0.005)); updateCamera(); } });
+  if(!dragged) return;
+  if(panMode) panCamera(dx,dy);
+  else { camTheta-=dx*0.006; camPhi=Math.max(0.30,Math.min(1.30,camPhi-dy*0.005)); updateCamera(); } });
 cv.addEventListener('pointerup',e=>{ if(!ptrDown) return; ptrDown=false;
-  if(!dragged && G.scene==='playing' && !G.paused){ const cell=raycastCell(e.clientX,e.clientY);
+  if(!dragged && !panMode && G.scene==='playing' && !G.paused){ const cell=raycastCell(e.clientX,e.clientY);
     if(cell){ placeTower(cell.c,cell.r); } } });
 cv.addEventListener('pointercancel',()=>{ ptrDown=false; });
-// ピンチズーム
-cv.addEventListener('touchstart',e=>{ if(e.touches.length===2){ pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } },{passive:true});
-cv.addEventListener('touchmove',e=>{ if(e.touches.length===2){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-  if(pinchD){ camR=Math.max(12,Math.min(40,camR*(pinchD/d))); updateCamera(); } pinchD=d; ptrDown=false; } },{passive:true});
-cv.addEventListener('wheel',e=>{ e.preventDefault(); camR=Math.max(12,Math.min(40,camR*(1+Math.sign(e.deltaY)*0.08))); updateCamera(); },{passive:false});
+// 2本指：平行移動（中点の移動）＋ピンチズーム（指間距離）
+cv.addEventListener('touchstart',e=>{ if(e.touches.length===2){ ptrDown=false;
+  pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+  pinchMX=(e.touches[0].clientX+e.touches[1].clientX)/2; pinchMY=(e.touches[0].clientY+e.touches[1].clientY)/2; } },{passive:true});
+cv.addEventListener('touchmove',e=>{ if(e.touches.length===2){ ptrDown=false;
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+  const mx=(e.touches[0].clientX+e.touches[1].clientX)/2, my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+  if(pinchD){ camR=Math.max(10,Math.min(44,camR*(pinchD/d))); }
+  panCamera(mx-pinchMX, my-pinchMY);
+  pinchD=d; pinchMX=mx; pinchMY=my; updateCamera(); } },{passive:true});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); camR=Math.max(10,Math.min(44,camR*(1+Math.sign(e.deltaY)*0.08))); updateCamera(); },{passive:false});
 
 /* ====================== HUD ====================== */
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
