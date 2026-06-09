@@ -84,7 +84,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 21（ボス毎W10・敵拡張中）</div>
+  <div id="badge">3D MVP · build 22（敵50編成・12アーキタイプ・ボス毎W10）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -153,12 +153,58 @@ const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
-  {arch:'crawler', hp:30,  speed:2.6, reward:7,  scale:0.8,  color:0x262a26, dmg:4,  flying:false},
-  {arch:'walker',  hp:60,  speed:1.5, reward:10, scale:0.85, color:0x30262a, dmg:6,  flying:false},
-  {arch:'wartank', hp:150, speed:1.0, reward:16, scale:0.95, color:0x2a2622, dmg:10, flying:false},
-  {arch:'drone',   hp:26,  speed:2.8, reward:8,  scale:0.7,  color:0x2a2630, dmg:4,  flying:true},
-  {arch:'gunship', hp:95,  speed:1.7, reward:14, scale:0.9,  color:0x2c2a32, dmg:8,  flying:true},
-  {arch:'brute',   hp:340, speed:0.8, reward:32, scale:1.15, color:0x322028, dmg:18, flying:false, boss:true},
+  {arch:"swarmling", name:"スウォーム Mk.1", color:0x251c20, scale:0.55, hp:14, speed:3.2, reward:5, dmg:3, flying:false},
+  {arch:"swarmling", name:"スウォーム Mk.2", color:0x271e22, scale:0.55, hp:15, speed:3.2, reward:5, dmg:3, flying:false},
+  {arch:"swarmling", name:"スウォーム Mk.3", color:0x2a2024, scale:0.55, hp:16, speed:3.19, reward:5, dmg:3, flying:false},
+  {arch:"crawler", name:"クローラー Mk.4", color:0x303430, scale:0.81, hp:27, speed:2.59, reward:7, dmg:4, flying:false},
+  {arch:"swarmling", name:"スウォーム Mk.5", color:0x3f3639, scale:0.56, hp:17, speed:3.18, reward:5, dmg:3, flying:false},
+  {arch:"crawler", name:"クローラー Mk.6", color:0x222522, scale:0.81, hp:30, speed:2.58, reward:8, dmg:4, flying:false},
+  {arch:"swarmling", name:"スウォーム Mk.1", color:0x271e22, scale:0.56, hp:19, speed:3.18, reward:5, dmg:3, flying:false},
+  {arch:"crawler", name:"クローラー Mk.2", color:0x262a26, scale:0.81, hp:32, speed:2.58, reward:8, dmg:4, flying:false},
+  {arch:"crawler", name:"クローラー Mk.3", color:0x303430, scale:0.82, hp:33, speed:2.57, reward:8, dmg:4, flying:false},
+  {arch:"crawler", name:"クローラー Mk.4", color:0x3b3f3b, scale:0.82, hp:34, speed:2.57, reward:8, dmg:4, flying:false},
+  {arch:"drone", name:"ドローン Mk.5", color:0x25222b, scale:0.72, hp:31, speed:2.77, reward:9, dmg:4, flying:true},
+  {arch:"walker", name:"ウォーカー Mk.6", color:0x2d2427, scale:0.87, hp:71, speed:1.48, reward:12, dmg:7, flying:false},
+  {arch:"crawler", name:"クローラー Mk.1", color:0x262a26, scale:0.82, hp:38, speed:2.56, reward:8, dmg:4, flying:false},
+  {arch:"drone", name:"ドローン Mk.2", color:0x34303a, scale:0.72, hp:34, speed:2.76, reward:9, dmg:5, flying:true},
+  {arch:"walker", name:"ウォーカー Mk.3", color:0x443b3f, scale:0.88, hp:78, speed:1.47, reward:12, dmg:7, flying:false},
+  {arch:"spider", name:"スパイダー Mk.4", color:0x221e19, scale:0.98, hp:113, speed:1.77, reward:15, dmg:8, flying:false},
+  {arch:"crawler", name:"クローラー Mk.5", color:0x242724, scale:0.83, hp:43, speed:2.55, reward:9, dmg:5, flying:false},
+  {arch:"spider", name:"スパイダー Mk.6", color:0x26221c, scale:0.99, hp:120, speed:1.76, reward:15, dmg:8, flying:false},
+  {arch:"drone", name:"ドローン Mk.1", color:0x34303a, scale:0.73, hp:39, speed:2.74, reward:10, dmg:5, flying:true},
+  {arch:"walker", name:"ウォーカー Mk.2", color:0x443b3f, scale:0.89, hp:89, speed:1.47, reward:13, dmg:7, flying:false},
+  {arch:"drone", name:"ドローン Mk.3", color:0x25222b, scale:0.73, hp:41, speed:2.73, reward:10, dmg:5, flying:true},
+  {arch:"walker", name:"ウォーカー Mk.4", color:0x2d2427, scale:0.89, hp:94, speed:1.46, reward:13, dmg:7, flying:false},
+  {arch:"spider", name:"スパイダー Mk.5", color:0x26221c, scale:1, hp:136, speed:1.75, reward:16, dmg:9, flying:false},
+  {arch:"wartank", name:"戦車 Mk.6", color:0x34302d, scale:1, hp:254, speed:0.97, reward:21, dmg:12, flying:false},
+  {arch:"drone", name:"ドローン Mk.1", color:0x3f3b44, scale:0.74, hp:45, speed:2.72, reward:11, dmg:5, flying:true},
+  {arch:"spider", name:"スパイダー Mk.2", color:0x221e19, scale:1.01, hp:145, speed:1.74, reward:16, dmg:9, flying:false},
+  {arch:"gunship", name:"ガンシップ Mk.3", color:0x29272f, scale:0.96, hp:172, speed:1.65, reward:19, dmg:10, flying:true},
+  {arch:"shielded", name:"シールド Mk.4", color:0x242a2c, scale:0.96, hp:240, speed:1.16, reward:21, dmg:9, flying:false},
+  {arch:"serpent", name:"百足 Mk.5", color:0x2d342d, scale:1.07, hp:226, speed:1.55, reward:22, dmg:12, flying:false},
+  {arch:"wartank", name:"戦車 Mk.6", color:0x3f3b38, scale:1.02, hp:289, speed:0.96, reward:23, dmg:13, flying:false},
+  {arch:"shielded", name:"シールド Mk.1", color:0x202527, scale:0.97, hp:255, speed:1.16, reward:21, dmg:9, flying:false},
+  {arch:"serpent", name:"百足 Mk.2", color:0x202720, scale:1.08, hp:240, speed:1.54, reward:23, dmg:12, flying:false},
+  {arch:"serpent", name:"百足 Mk.3", color:0x222a22, scale:1.08, hp:245, speed:1.54, reward:23, dmg:12, flying:false},
+  {arch:"wartank", name:"戦車 Mk.4", color:0x34302d, scale:1.03, hp:312, speed:0.96, reward:24, dmg:13, flying:false},
+  {arch:"siege", name:"攻城 Mk.5", color:0x3e3b35, scale:1.14, hp:424, speed:0.86, reward:30, dmg:16, flying:false},
+  {arch:"hovertank", name:"ホバー Mk.6", color:0x1f232b, scale:1.09, hp:388, speed:1.05, reward:30, dmg:15, flying:true},
+  {arch:"gunship", name:"ガンシップ Mk.1", color:0x29272f, scale:0.98, hp:209, speed:1.63, reward:21, dmg:11, flying:true},
+  {arch:"wartank", name:"戦車 Mk.2", color:0x2a2622, scale:1.04, hp:335, speed:0.95, reward:24, dmg:14, flying:false},
+  {arch:"siege", name:"攻城 Mk.3", color:0x33302a, scale:1.15, hp:455, speed:0.86, reward:31, dmg:17, flying:false},
+  {arch:"hovertank", name:"ホバー Mk.4", color:0x393c44, scale:1.1, hp:416, speed:1.05, reward:31, dmg:15, flying:true},
+  {arch:"serpent", name:"百足 Mk.5", color:0x1e251e, scale:1.1, hp:282, speed:1.52, reward:25, dmg:13, flying:false},
+  {arch:"wartank", name:"戦車 Mk.6", color:0x272420, scale:1.05, hp:358, speed:0.95, reward:25, dmg:14, flying:false},
+  {arch:"siege", name:"攻城 Mk.1", color:0x29261f, scale:1.16, hp:486, speed:0.85, reward:32, dmg:17, flying:false},
+  {arch:"hovertank", name:"ホバー Mk.2", color:0x2e313a, scale:1.11, hp:444, speed:1.04, reward:32, dmg:16, flying:true},
+  {arch:"siege", name:"攻城 Mk.3", color:0x3e3b35, scale:1.16, hp:501, speed:0.85, reward:33, dmg:17, flying:false},
+  {arch:"hovertank", name:"ホバー Mk.4", color:0x1f232b, scale:1.11, hp:458, speed:1.04, reward:33, dmg:16, flying:true},
+  {arch:"siege", name:"攻城 Mk.5", color:0x26241d, scale:1.17, hp:517, speed:0.85, reward:33, dmg:18, flying:false},
+  {arch:"hovertank", name:"ホバー Mk.6", color:0x232730, scale:1.12, hp:472, speed:1.04, reward:33, dmg:16, flying:true},
+  {arch:"hovertank", name:"ホバー Mk.1", color:0x2e313a, scale:1.12, hp:479, speed:1.04, reward:34, dmg:16, flying:true},
+  {arch:"hovertank", name:"ホバー Mk.2", color:0x393c44, scale:1.12, hp:486, speed:1.03, reward:34, dmg:17, flying:true},
+  {arch:"brute", name:"ZERO ブルート", color:0x322028, scale:1.2, hp:380, speed:0.8, reward:34, dmg:18, flying:false, boss:true},
+  {arch:"siege", name:"ZERO シージ・ロード", color:0x24221b, scale:1.3, hp:520, speed:0.7, reward:46, dmg:22, flying:false, boss:true}
 ];
 
 /* ====================== フローフィールド ====================== */
@@ -5818,7 +5864,1059 @@ g.userData.body = chest;
 return g;
 
 }
-const ENEMY_BUILDERS={drone:buildEDrone,gunship:buildEGunship,walker:buildEWalker,crawler:buildECrawler,wartank:buildEWartank,brute:buildEBrute};
+function buildESpider(def){
+
+var g = new THREE.Group();
+
+var STEEL = 0x26221c;
+var matBody = steel(STEEL);
+var matDark = steel(shade(STEEL, -0.35));
+var matPlate = steel(shade(STEEL, 0.12));
+var matLeg = steel(shade(STEEL, -0.12));
+var matClaw = pbr(shade(STEEL, -0.45), {metalness:0.9, roughness:0.45});
+var matEye = emis(0xff2a2a, 2.4);
+var matEyeCore = emis(0xff5a3a, 3.2);
+var matVent = emis(0xff2a2a, 1.2);
+
+// ---------- CARAPACE (main body) ----------
+var body = new THREE.Group();
+
+// lower thorax (recessed underbelly)
+var thorax = new THREE.Mesh(roundedBox(0.72, 0.18, 0.62, 0.06), matDark);
+thorax.position.y = 0.30;
+thorax.castShadow = true;
+body.add(thorax);
+
+// upper carapace dome - flat hexagonal plate, slightly domed
+var carapace = new THREE.Mesh(roundedBox(0.86, 0.16, 0.78, 0.10), matBody);
+carapace.position.y = 0.42;
+carapace.scale.set(1.0, 1.0, 1.0);
+carapace.castShadow = true;
+body.add(carapace);
+
+// domed top crest using a flattened sphere
+var crest = new THREE.Mesh(new THREE.SphereGeometry(0.40, 18, 12), matPlate);
+crest.scale.set(1.05, 0.42, 0.95);
+crest.position.y = 0.50;
+crest.castShadow = true;
+body.add(crest);
+
+// armor spine ridge spikes along the back
+for (var s = 0; s < 5; s++) {
+  var sz = 0.085 - s * 0.008;
+  var spike = new THREE.Mesh(new THREE.ConeGeometry(sz, 0.16 - s * 0.012, 6), matClaw);
+  spike.position.set(0, 0.58 - s * 0.015, 0.20 - s * 0.11);
+  spike.castShadow = true;
+  body.add(spike);
+}
+
+// side armor flares (left/right plates)
+for (var sd = -1; sd <= 1; sd += 2) {
+  var flare = new THREE.Mesh(roundedBox(0.14, 0.10, 0.50, 0.04), matPlate);
+  flare.position.set(sd * 0.44, 0.40, -0.02);
+  flare.rotation.z = sd * 0.35;
+  flare.castShadow = true;
+  body.add(flare);
+
+  // rivet nubs on flares
+  for (var rv = 0; rv < 3; rv++) {
+    var rivet = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.04, 6), matClaw);
+    rivet.rotation.z = Math.PI / 2;
+    rivet.position.set(sd * 0.50, 0.42, -0.18 + rv * 0.16);
+    rivet.castShadow = true;
+    body.add(rivet);
+  }
+}
+
+// rear vent / exhaust nubs (emissive red glow inside)
+for (var vd = -1; vd <= 1; vd += 2) {
+  var vent = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.10, 10), matDark);
+  vent.rotation.x = Math.PI / 2;
+  vent.position.set(vd * 0.16, 0.44, -0.40);
+  vent.castShadow = true;
+  body.add(vent);
+  var ventGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.04, 10), matVent);
+  ventGlow.rotation.x = Math.PI / 2;
+  ventGlow.position.set(vd * 0.16, 0.44, -0.45);
+  body.add(ventGlow);
+}
+
+g.add(body);
+
+// ---------- SENSOR HEAD + EYE CLUSTER (front) ----------
+var head = new THREE.Group();
+head.position.set(0, 0.40, 0.40);
+
+// forward sensor housing
+var housing = new THREE.Mesh(roundedBox(0.40, 0.20, 0.26, 0.06), matDark);
+housing.position.z = 0.10;
+housing.castShadow = true;
+head.add(housing);
+
+// angled brow plate over the eyes
+var brow = new THREE.Mesh(roundedBox(0.42, 0.08, 0.16, 0.03), matPlate);
+brow.position.set(0, 0.10, 0.16);
+brow.rotation.x = -0.5;
+brow.castShadow = true;
+head.add(brow);
+
+// central large ocular dome (primary red eye)
+var mainEye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.085, 1), matEyeCore);
+mainEye.position.set(0, 0.02, 0.24);
+head.add(mainEye);
+var mainSocket = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.025, 8, 16), matClaw);
+mainSocket.position.set(0, 0.02, 0.24);
+mainSocket.castShadow = true;
+head.add(mainSocket);
+
+// compound eye cluster - smaller red lenses around the main eye
+var lensPos = [
+  [-0.13, 0.07, 0.21], [0.13, 0.07, 0.21],
+  [-0.16, -0.04, 0.18], [0.16, -0.04, 0.18],
+  [-0.07, 0.10, 0.22], [0.07, 0.10, 0.22],
+  [-0.10, -0.07, 0.20], [0.10, -0.07, 0.20]
+];
+for (var l = 0; l < lensPos.length; l++) {
+  var lens = new THREE.Mesh(new THREE.IcosahedronGeometry(0.038, 0), matEye);
+  lens.position.set(lensPos[l][0], lensPos[l][1], lensPos[l][2]);
+  head.add(lens);
+}
+
+// mandible fangs under the eye cluster
+for (var fd = -1; fd <= 1; fd += 2) {
+  var fang = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.20, 7), matClaw);
+  fang.position.set(fd * 0.09, -0.12, 0.22);
+  fang.rotation.x = 1.9;
+  fang.rotation.z = fd * 0.18;
+  fang.castShadow = true;
+  head.add(fang);
+}
+
+g.add(head);
+
+// ---------- 8 ARTICULATED LEGS ----------
+function buildLeg(side, zOff, spread, lift) {
+  var leg = new THREE.Group();
+  var hipY = 0.34;
+  leg.position.set(side * 0.34, hipY, zOff);
+
+  // coxa (hip joint)
+  var coxa = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), matLeg);
+  coxa.castShadow = true;
+  leg.add(coxa);
+
+  // thigh - angles up and out
+  var thighLen = 0.34;
+  var thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.040, thighLen, 9), matLeg);
+  thigh.castShadow = true;
+  // orient outward-up
+  var thighGrp = new THREE.Group();
+  thigh.position.y = thighLen / 2;
+  thighGrp.add(thigh);
+  // knee armor knuckle
+  var knee = new THREE.Mesh(new THREE.IcosahedronGeometry(0.060, 0), matDark);
+  knee.position.y = thighLen;
+  knee.castShadow = true;
+  thighGrp.add(knee);
+
+  thighGrp.rotation.z = side * (0.55 + spread);
+  thighGrp.rotation.x = -lift * 0.25;
+  leg.add(thighGrp);
+
+  // shin - tapered, angles down to a sharp claw foot
+  var shinLen = 0.42;
+  var shinGrp = new THREE.Group();
+  var shin = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.012, shinLen, 8), matLeg);
+  shin.position.y = -shinLen / 2;
+  shin.castShadow = true;
+  shinGrp.add(shin);
+
+  // sharp claw tip foot
+  var claw = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.12, 7), matClaw);
+  claw.position.y = -shinLen - 0.02;
+  claw.rotation.x = Math.PI;
+  claw.castShadow = true;
+  shinGrp.add(claw);
+
+  // greeble: shin segment ring
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.012, 6, 12), matDark);
+  ring.position.y = -shinLen * 0.35;
+  ring.rotation.x = Math.PI / 2;
+  ring.castShadow = true;
+  shinGrp.add(ring);
+
+  // place shin at knee position, angle downward & outward
+  shinGrp.position.set(
+    side * Math.sin(0.55 + spread) * thighLen,
+    thighLen * Math.cos(0.55 + spread),
+    -lift * 0.25 * thighLen
+  );
+  shinGrp.rotation.z = side * (0.45 + spread * 0.5);
+  shinGrp.rotation.x = lift * 0.3;
+  leg.add(shinGrp);
+
+  return leg;
+}
+
+// 4 pairs: front to back, varying spread/lift for insectoid splay
+var legConfig = [
+  { z: 0.26, spread: 0.35, lift: 1.0 },
+  { z: 0.10, spread: 0.55, lift: 0.4 },
+  { z: -0.08, spread: 0.55, lift: -0.4 },
+  { z: -0.24, spread: 0.35, lift: -1.0 }
+];
+
+for (var p = 0; p < legConfig.length; p++) {
+  var cfg = legConfig[p];
+  g.add(buildLeg(-1, cfg.z, cfg.spread, cfg.lift));
+  g.add(buildLeg(1, cfg.z, cfg.spread, cfg.lift));
+}
+
+g.userData.body = carapace;
+
+return g;
+
+}
+function buildEHovertank(def){
+var g=new THREE.Group();
+var STEEL=steel(0x232730);
+var DARK=pbr(shade(0x232730,-0.35),{metalness:1,roughness:0.55,grunge:true});
+var MID=pbr(shade(0x232730,0.12),{metalness:1,roughness:0.45,grunge:true});
+var RED=emis(0xff2a2a,2.2);
+var REDG=pbr(0x300808,{metalness:0.6,roughness:0.4,emissive:0xff2a2a,ei:1.4});
+var GUN=pbr(shade(0x232730,-0.2),{metalness:1,roughness:0.35});
+
+// ---- main armored hull (wide flat slab) ----
+var hull=new THREE.Mesh(roundedBox(1.18,0.30,0.78,0.06),STEEL);
+hull.position.y=0.0; hull.castShadow=true;
+g.add(hull);
+g.userData.body=hull;
+
+// upper bevel deck plate
+var deck=new THREE.Mesh(roundedBox(0.92,0.10,0.60,0.05),MID);
+deck.position.set(0,0.18,0); deck.castShadow=true; g.add(deck);
+
+// sloped front glacis prow
+var prow=new THREE.Mesh(roundedBox(0.70,0.22,0.24,0.05),DARK);
+prow.position.set(0.55,-0.02,0); prow.rotation.z=-0.32; prow.castShadow=true; g.add(prow);
+
+// ---- side armor skirts ----
+for(var s=-1;s<=1;s+=2){
+  var skirt=new THREE.Mesh(roundedBox(1.0,0.14,0.07,0.03),DARK);
+  skirt.position.set(-0.02,-0.10,s*0.40); skirt.castShadow=true; g.add(skirt);
+  // skirt greeble bolts
+  for(var b=-2;b<=2;b++){
+    var rv=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.05,6),MID);
+    rv.rotation.x=Math.PI/2; rv.position.set(b*0.22,-0.10,s*0.445); rv.castShadow=true; g.add(rv);
+  }
+  // side vent block
+  var vent=new THREE.Mesh(roundedBox(0.26,0.12,0.05,0.02),pbr(shade(0x232730,-0.45),{metalness:1,roughness:0.6}));
+  vent.position.set(-0.30,0.02,s*0.41); vent.castShadow=true; g.add(vent);
+}
+
+// ---- underside thruster row (4 pods, downward) ----
+var spinArr=[];
+var podX=[-0.42,-0.14,0.14,0.42];
+for(var i=0;i<podX.length;i++){
+  var ph=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.115,0.10,12),MID);
+  ph.position.set(podX[i],-0.17,0); ph.castShadow=true; g.add(ph);
+  // glowing intake ring
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(0.10,0.022,8,16),REDG);
+  ring.rotation.x=Math.PI/2; ring.position.set(podX[i],-0.215,0); ring.castShadow=true; g.add(ring);
+  // downward thrust cone (red core)
+  var cone=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.16,12,1,true),RED);
+  cone.position.set(podX[i],-0.30,0); cone.castShadow=true; g.add(cone);
+  // spinning fan blades inside pod
+  var fan=new THREE.Group();
+  for(var fb=0;fb<4;fb++){
+    var bl=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.012,0.035),GUN);
+    bl.rotation.y=fb*Math.PI/4; bl.castShadow=true; fan.add(bl);
+  }
+  fan.position.set(podX[i],-0.20,0); g.add(fan); spinArr.push(fan);
+}
+g.userData.spin=spinArr;
+
+// rear exhaust stacks
+for(var e=-1;e<=1;e+=2){
+  var ex=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.20,10),DARK);
+  ex.rotation.z=Math.PI/2; ex.position.set(-0.62,0.06,e*0.22); ex.castShadow=true; g.add(ex);
+  var exC=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.04,10),REDG);
+  exC.rotation.z=Math.PI/2; exC.position.set(-0.72,0.06,e*0.22); g.add(exC);
+}
+
+// ---- top turret assembly ----
+var turret=new THREE.Group();
+turret.position.set(0.06,0.30,0);
+// turret base ring
+var tring=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.27,0.06,16),DARK);
+tring.castShadow=true; turret.add(tring);
+// turret dome body
+var tdome=new THREE.Mesh(roundedBox(0.40,0.20,0.36,0.07),STEEL);
+tdome.position.y=0.12; tdome.castShadow=true; turret.add(tdome);
+// turret rear counterweight
+var cw=new THREE.Mesh(roundedBox(0.16,0.16,0.30,0.04),MID);
+cw.position.set(-0.22,0.12,0); cw.castShadow=true; turret.add(cw);
+// red cyclops sensor on turret face
+var eyeHous=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.085,0.06,14),DARK);
+eyeHous.rotation.z=Math.PI/2; eyeHous.position.set(0.21,0.13,0); eyeHous.castShadow=true; turret.add(eyeHous);
+var eye=new THREE.Mesh(new THREE.SphereGeometry(0.06,16,16),emis(0xff2a2a,3.0));
+eye.position.set(0.25,0.13,0); turret.add(eye);
+// twin cannon barrels
+for(var c=-1;c<=1;c+=2){
+  var barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.045,0.50,12),GUN);
+  barrel.rotation.z=Math.PI/2; barrel.position.set(0.34,0.05,c*0.09); barrel.castShadow=true; turret.add(barrel);
+  var muz=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.05,0.08,12),DARK);
+  muz.rotation.z=Math.PI/2; muz.position.set(0.60,0.05,c*0.09); muz.castShadow=true; turret.add(muz);
+}
+// turret antenna greeble
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.22,5),MID);
+ant.position.set(-0.14,0.30,0.12); ant.castShadow=true; turret.add(ant);
+var antTip=new THREE.Mesh(new THREE.SphereGeometry(0.02,8,8),emis(0xff2a2a,2.5));
+antTip.position.set(-0.14,0.42,0.12); turret.add(antTip);
+g.add(turret);
+
+// ---- deck greebles ----
+for(var gx=0;gx<3;gx++){
+  var gb=new THREE.Mesh(roundedBox(0.10,0.05,0.10,0.02),pbr(shade(0x232730,-0.3),{metalness:1,roughness:0.5}));
+  gb.position.set(-0.30+gx*0.06,0.225,0.20+ (gx%2)*0.04); gb.castShadow=true; g.add(gb);
+}
+// forward small red marker lights
+for(var m=-1;m<=1;m+=2){
+  var ml=new THREE.Mesh(new THREE.SphereGeometry(0.025,8,8),emis(0xff2a2a,2.0));
+  ml.position.set(0.62,0.02,m*0.28); g.add(ml);
+}
+// hull panel seams (thin dark strips)
+for(var ps=-1;ps<=1;ps+=2){
+  var seam=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.02,0.03),pbr(0x101216,{metalness:1,roughness:0.7}));
+  seam.position.set(0,0.05,ps*0.20); seam.castShadow=true; g.add(seam);
+}
+
+return g;
+}
+function buildESwarmling(def){
+
+var g = new THREE.Group();
+
+// ---- materials ----
+var armor   = steel(0x2a2024);
+var armorLt = steel(0x3a322c);
+var dark    = pbr(0x14110f, {metalness:0.7, roughness:0.6});
+var redEye  = emis(0xff2a2a, 1.0);
+var redDim  = emis(0xff2a2a, 0.45);
+var lensGlass = pbr(0x1a0606, {metalness:0.2, roughness:0.15, clearcoat:1.0, ccr:0.05, emissive:0xff2a2a, ei:0.25});
+
+function add(mesh, x, y, z){ mesh.position.set(x,y,z); mesh.castShadow=true; g.add(mesh); return mesh; }
+
+// ---- main body pod (rounded beetle shell) ----
+var body = new THREE.Mesh(roundedBox(0.78, 0.42, 0.62, 0.18), armor);
+body.scale.set(1, 1, 1);
+add(body, 0, 0.40, 0.0);
+g.userData.body = body;
+
+// lower belly (slightly tucked, darker)
+var belly = new THREE.Mesh(roundedBox(0.62, 0.20, 0.50, 0.12), dark);
+add(belly, 0, 0.27, 0.02);
+
+// ---- top carapace shell (swept domed cap) ----
+var carapace = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 12, 0, Math.PI*2, 0, Math.PI*0.55), armorLt);
+carapace.scale.set(1.0, 0.7, 1.05);
+add(carapace, 0, 0.48, 0.02);
+
+// carapace center ridge
+var ridge = new THREE.Mesh(roundedBox(0.10, 0.10, 0.60, 0.04), armor);
+add(ridge, 0, 0.60, 0.0);
+
+// side ridge greebles on shell
+for (var s=-1; s<=1; s+=2){
+  var sr = new THREE.Mesh(roundedBox(0.05, 0.07, 0.42, 0.02), shade(0x2a2024,0.06) && armor);
+  add(sr, s*0.20, 0.575, 0.0);
+  sr.material = armorLt;
+  sr.rotation.z = s*0.18;
+}
+
+// rear vent slats
+for (var v=0; v<3; v++){
+  var slat = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.025, 0.05), dark);
+  add(slat, 0, 0.50 - v*0.07, -0.30);
+  slat.rotation.x = -0.5;
+}
+
+// rear thruster nub
+var thr = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.13, 0.16, 12), dark);
+add(thr, 0, 0.34, -0.34);
+thr.rotation.x = Math.PI/2;
+var thrGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 10), redDim);
+add(thrGlow, 0, 0.34, -0.42);
+thrGlow.rotation.x = Math.PI/2;
+
+// ---- front face plate ----
+var face = new THREE.Mesh(roundedBox(0.56, 0.34, 0.10, 0.10), armorLt);
+add(face, 0, 0.40, 0.32);
+
+// recessed eye socket (dark ring)
+var socket = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.08, 20), dark);
+add(socket, 0, 0.41, 0.36);
+socket.rotation.x = Math.PI/2;
+
+// glowing cyclops eye lens
+var eye = new THREE.Mesh(new THREE.SphereGeometry(0.155, 20, 16), lensGlass);
+eye.scale.set(1, 1, 0.7);
+add(eye, 0, 0.41, 0.40);
+
+// bright inner pupil core
+var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 12), redEye);
+add(pupil, 0, 0.41, 0.45);
+
+// eye socket bezel ring (metal)
+var bezel = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.028, 10, 22), armor);
+add(bezel, 0, 0.41, 0.39);
+
+// ---- antenna whiskers ----
+for (var a=-1; a<=1; a+=2){
+  var ant = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.022, 0.34, 6), armorLt);
+  add(ant, a*0.22, 0.55, 0.28);
+  ant.rotation.set(-0.5, 0, a*0.55);
+  var tip = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), redDim);
+  add(tip, a*0.34, 0.70, 0.18);
+}
+
+// side latch greebles
+for (var L=-1; L<=1; L+=2){
+  var latch = new THREE.Mesh(roundedBox(0.07, 0.14, 0.20, 0.03), armor);
+  add(latch, L*0.40, 0.40, 0.02);
+  var bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.06, 8), dark);
+  add(bolt, L*0.43, 0.40, 0.08);
+  bolt.rotation.z = Math.PI/2;
+}
+
+// underside small mandible greebles near front
+for (var m=-1; m<=1; m+=2){
+  var mand = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.16, 7), armorLt);
+  add(mand, m*0.14, 0.30, 0.40);
+  mand.rotation.set(Math.PI*0.55, 0, m*0.2);
+}
+
+// ---- two thin spindly legs (insect splay) ----
+function buildLeg(side){
+  var leg = new THREE.Group();
+  // hip joint
+  var hip = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), dark);
+  hip.castShadow=true; hip.position.set(0, 0.27, 0); leg.add(hip);
+  // upper thin segment (out & down)
+  var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.038, 0.30, 7), armorLt);
+  upper.castShadow=true;
+  upper.position.set(side*0.13, 0.18, 0.0);
+  upper.rotation.z = side*0.85;
+  leg.add(upper);
+  // knee
+  var knee = new THREE.Mesh(new THREE.SphereGeometry(0.05, 9, 9), armor);
+  knee.castShadow=true; knee.position.set(side*0.26, 0.07, 0.0); leg.add(knee);
+  // lower thin segment (down to foot)
+  var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.22, 7), armor);
+  lower.castShadow=true;
+  lower.position.set(side*0.30, -0.04, 0.0);
+  lower.rotation.z = -side*0.25;
+  leg.add(lower);
+  // pointed foot tip touching ground (y~0)
+  var foot = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.12, 8), dark);
+  foot.castShadow=true;
+  foot.position.set(side*0.33, 0.01, 0.0);
+  foot.rotation.x = Math.PI;
+  leg.add(foot);
+  return leg;
+}
+g.add(buildLeg(-1));
+g.add(buildLeg(1));
+
+// small front prop/stabilizer foot so it doesn't look tip-toe forward
+var stab = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.30, 6), armor);
+stab.castShadow=true;
+stab.position.set(0, 0.16, 0.30);
+stab.rotation.x = 0.7;
+g.add(stab);
+var stabFoot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), dark);
+stabFoot.castShadow=true;
+stabFoot.position.set(0, 0.02, 0.42);
+g.add(stabFoot);
+
+return g;
+
+}
+function buildESiege(def){
+
+var g=new THREE.Group();
+var STEEL=0x29261f;
+var arm=steel(STEEL);
+var armDk=steel(shade(STEEL,-0.35));
+var armLt=steel(shade(STEEL,0.18));
+var iron=pbr(0x14110d,{metalness:1,roughness:0.5,envI:0.7,grunge:1});
+var brass=pbr(0x5a4a22,{metalness:1,roughness:0.45,envI:0.8,grunge:1});
+var rubber=pbr(0x0c0b09,{metalness:0.2,roughness:0.95});
+var glow=emis(0xff2a2a,2.4);
+var glowDim=emis(0xff2a2a,1.2);
+
+function M(geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=true;g.add(m);return m;}
+
+// ---- central armored hull / deck ----
+var hull=M(roundedBox(0.74,0.30,0.86,0.05),arm,0,0.46,0);
+g.userData.body=hull;
+// belly plate
+M(roundedBox(0.58,0.14,0.66,0.04),armDk,0,0.30,0);
+// deck top plate with bevel
+M(roundedBox(0.66,0.06,0.76,0.04),armLt,0,0.63,0.02);
+// side armor skirts
+for(var sx=-1;sx<=1;sx+=2){
+  M(roundedBox(0.06,0.26,0.7,0.03),armDk,sx*0.39,0.44,0);
+  // bolt strip
+  for(var bz=-3;bz<=3;bz++){M(new THREE.CylinderGeometry(0.018,0.018,0.05,6),iron,sx*0.42,0.44,bz*0.1).rotation.z=Math.PI/2;}
+}
+// front glacis plate (angled)
+var glac=M(roundedBox(0.6,0.30,0.1,0.03),arm,0,0.45,0.43);
+glac.rotation.x=-0.35;
+// vents on glacis
+for(var vx=-1;vx<=1;vx+=2){M(new THREE.BoxGeometry(0.14,0.13,0.02),iron,vx*0.17,0.45,0.49).rotation.x=-0.35;}
+
+// ---- front red cyclops sensor ----
+M(new THREE.TorusGeometry(0.085,0.03,8,16),armDk,0,0.5,0.5).rotation.x=Math.PI/2*0.0;
+var lensHousing=M(new THREE.CylinderGeometry(0.1,0.11,0.08,12),iron,0,0.5,0.49);
+lensHousing.rotation.x=Math.PI/2;
+var lens=M(new THREE.SphereGeometry(0.075,16,12),glow,0,0.5,0.53);
+lens.scale.set(1,1,0.6);
+// brow shade
+M(roundedBox(0.26,0.05,0.06,0.02),armDk,0,0.585,0.5).rotation.x=-0.3;
+
+// ---- quadruped planted bracing legs ----
+function leg(ax,az){
+  var rot=Math.atan2(az,ax);
+  var hipx=ax*0.34, hipz=az*0.34;
+  // hip joint
+  M(new THREE.SphereGeometry(0.09,12,10),iron,hipx,0.4,hipz);
+  // upper thigh angled outward/down
+  var foot=new THREE.Vector3(ax*0.55,0.0,az*0.55);
+  var hip=new THREE.Vector3(hipx,0.4,hipz);
+  // knee point
+  var knee=new THREE.Vector3(ax*0.52,0.22,az*0.52);
+  function strut(a,b,w,mat){
+    var dir=b.clone().sub(a);var len=dir.length();
+    var m=new THREE.Mesh(roundedBox(w,len,w,w*0.4),mat);
+    m.castShadow=true;
+    var mid=a.clone().add(b).multiplyScalar(0.5);
+    m.position.copy(mid);
+    var q=new THREE.Quaternion();q.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+    m.quaternion.copy(q);
+    g.add(m);return m;
+  }
+  strut(hip,knee,0.13,armDk); // thigh
+  M(new THREE.SphereGeometry(0.075,10,8),iron,knee.x,knee.y,knee.z); //knee
+  strut(knee,foot,0.1,arm); // shin
+  // hydraulic piston alongside shin
+  var pa=hip.clone(); var pb=foot.clone().add(new THREE.Vector3(ax*0.03,0.05,az*0.03));
+  strut(pa,pb,0.045,iron);
+  // foot pad + spike
+  M(new THREE.CylinderGeometry(0.13,0.16,0.07,10),armDk,foot.x,0.04,foot.z);
+  M(new THREE.ConeGeometry(0.05,0.12,8),iron,foot.x,-0.05,foot.z).rotation.x=Math.PI;
+  // claw spikes around pad
+  for(var c=0;c<3;c++){var an=rot+ (c-1)*0.7; M(new THREE.ConeGeometry(0.025,0.1,6),iron,foot.x+Math.cos(an)*0.13,0.0,foot.z+Math.sin(an)*0.13).rotation.x=Math.PI;}
+}
+leg(-1,-1);leg(1,-1);leg(-1,1);leg(1,1);
+
+// ---- traversing turret ring ----
+M(new THREE.CylinderGeometry(0.3,0.34,0.07,18),iron,0,0.665,0.02);
+var turret=M(new THREE.CylinderGeometry(0.26,0.3,0.12,16),armLt,0,0.72,0.02);
+
+// ---- elevation cradle holding the great barrel ----
+var cradle=new THREE.Group();
+// trunnion mounts
+for(var tx=-1;tx<=1;tx+=2){M(new THREE.CylinderGeometry(0.06,0.06,0.1,10),iron,tx*0.22,0.0,0).rotation.z=Math.PI/2;}
+// recoil housing (breech block)
+var breech=new THREE.Mesh(roundedBox(0.34,0.3,0.4,0.05),armDk,0);
+breech.castShadow=true;breech.position.set(0,0.02,-0.18);cradle.add(breech);
+// breech bolts
+for(var bx=-1;bx<=1;bx+=2)for(var by=-1;by<=1;by+=2){var b=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.05,6),brass);b.castShadow=true;b.position.set(bx*0.12,0.02+by*0.1,0.03);b.rotation.x=Math.PI/2;cradle.add(b);}
+// red breech indicator
+var bind=new THREE.Mesh(new THREE.SphereGeometry(0.04,10,8),glowDim);bind.position.set(0,0.18,-0.18);cradle.add(bind);
+// ---- the long barrel ----
+var barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.11,0.95,16),iron);
+barrel.castShadow=true;barrel.rotation.x=Math.PI/2;barrel.position.set(0,0.02,0.42);cradle.add(barrel);
+// barrel reinforcing bands
+for(var bb=0;bb<4;bb++){var band=new THREE.Mesh(new THREE.TorusGeometry(0.1,0.022,8,16),armDk);band.castShadow=true;band.rotation.x=Math.PI/2;band.position.set(0,0.02,0.12+bb*0.2);cradle.add(band);}
+// muzzle brake
+var mb=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.18,12),armDk);mb.castShadow=true;mb.rotation.x=Math.PI/2;mb.position.set(0,0.02,0.9);cradle.add(mb);
+for(var s=0;s<3;s++){var slot=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.04,0.03),iron);slot.position.set(0,0.02,0.84+s*0.05);cradle.add(slot);}
+// muzzle bore glow
+var bore=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.04,12),glowDim);bore.rotation.x=Math.PI/2;bore.position.set(0,0.02,0.99);cradle.add(bore);
+// recoil pistons under barrel
+for(var rx=-1;rx<=1;rx+=2){var rp=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.5,8),brass);rp.castShadow=true;rp.rotation.x=Math.PI/2;rp.position.set(rx*0.13,-0.1,0.2);cradle.add(rp);}
+// tilt cradle up at siege elevation
+cradle.position.set(0,0.86,-0.02);
+cradle.rotation.x=-0.32;
+g.add(cradle);
+
+// ---- loading gantry / autoloader rack behind ----
+var gantry=new THREE.Group();
+// vertical frame posts
+for(var px=-1;px<=1;px+=2){var post=new THREE.Mesh(roundedBox(0.05,0.4,0.05,0.02),armDk);post.castShadow=true;post.position.set(px*0.2,0.2,0);gantry.add(post);}
+// cross beam
+var beam=new THREE.Mesh(roundedBox(0.46,0.06,0.08,0.02),iron);beam.castShadow=true;beam.position.set(0,0.4,0);gantry.add(beam);
+// ammo shells in rack
+for(var a=0;a<3;a++){
+  var sh=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.22,12),brass);
+  sh.castShadow=true;sh.rotation.x=Math.PI/2;sh.position.set((a-1)*0.13,0.18,0.02);gantry.add(sh);
+  var tip=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.07,12),iron);tip.castShadow=true;tip.rotation.x=Math.PI/2;tip.position.set((a-1)*0.13,0.18,0.15);gantry.add(tip);
+}
+// loader arm
+var loadArm=new THREE.Mesh(roundedBox(0.08,0.08,0.3,0.03),armLt);loadArm.castShadow=true;loadArm.position.set(0,0.3,0.12);loadArm.rotation.x=0.4;gantry.add(loadArm);
+gantry.position.set(0,0.74,-0.46);
+g.add(gantry);
+
+// ---- back conduits / cables greeble ----
+for(var cc=-1;cc<=1;cc+=2){var cab=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,8),rubber);cab.castShadow=true;cab.position.set(cc*0.15,0.5,-0.4);cab.rotation.x=0.5;g.add(cab);}
+// rear exhaust stacks
+for(var ex=-1;ex<=1;ex+=2){M(new THREE.CylinderGeometry(0.04,0.05,0.16,8),iron,ex*0.24,0.7,-0.4);M(new THREE.CylinderGeometry(0.05,0.045,0.03,8),emis(0xff2a2a,0.8),ex*0.24,0.79,-0.4);}
+
+// scattered hull bolts + small red marker lights
+for(var k=0;k<6;k++){var an=k/6*Math.PI*2;M(new THREE.CylinderGeometry(0.02,0.02,0.04,6),brass,Math.cos(an)*0.3,0.6,0.02+Math.sin(an)*0.3).rotation.x=Math.PI/2;}
+M(new THREE.SphereGeometry(0.022,8,6),glowDim,0.33,0.55,0.3);
+M(new THREE.SphereGeometry(0.022,8,6),glowDim,-0.33,0.55,0.3);
+
+return g;
+
+}
+function buildEShielded(def){
+
+var g = new THREE.Group();
+var steelMat = steel(0x242a2c);
+var darkMat = pbr(shade(0x242a2c,-0.35),{metalness:0.9,roughness:0.55,envI:0.7});
+var plateMat = pbr(0x2c3336,{metalness:0.85,roughness:0.5,envI:0.8,grunge:1});
+var redMat = emis(0xff2a2a,2.4);
+var redDim = emis(0xff2a2a,1.2);
+var boltMat = pbr(shade(0x242a2c,0.15),{metalness:1.0,roughness:0.35,envI:1.0});
+
+function mk(geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m;}
+
+// ---- LEGS: wide planted stance ----
+function leg(side){
+  var lg=new THREE.Group();
+  var sx=side*0.26;
+  // hip block
+  var hip=new THREE.Mesh(roundedBox(0.22,0.18,0.24,0.04),darkMat);
+  hip.position.set(sx,0.46,-0.04);hip.castShadow=true;lg.add(hip);
+  // thigh angled out
+  var thigh=new THREE.Mesh(roundedBox(0.17,0.30,0.18,0.04),steelMat);
+  thigh.position.set(sx*1.05,0.30,-0.02);thigh.rotation.z=side*0.12;thigh.castShadow=true;lg.add(thigh);
+  // knee piston
+  var kn=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.16,10),boltMat);
+  kn.position.set(sx*1.12,0.20,0.04);kn.rotation.x=0.5;kn.castShadow=true;lg.add(kn);
+  // shin
+  var shin=new THREE.Mesh(roundedBox(0.15,0.24,0.16,0.035),steelMat);
+  shin.position.set(sx*1.12,0.12,0.0);shin.castShadow=true;lg.add(shin);
+  // foot: wide splayed
+  var foot=new THREE.Mesh(roundedBox(0.26,0.07,0.34,0.03),plateMat);
+  foot.position.set(sx*1.12,0.035,0.04);foot.castShadow=true;lg.add(foot);
+  // toe claws
+  for(var t=-1;t<=1;t++){
+    var claw=new THREE.Mesh(new THREE.ConeGeometry(0.035,0.10,6),darkMat);
+    claw.position.set(sx*1.12+t*0.075,0.03,0.22);claw.rotation.x=Math.PI/2;claw.castShadow=true;lg.add(claw);
+  }
+  // ankle bolt
+  var ab=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.18,8),boltMat);
+  ab.position.set(sx*1.12,0.085,0.0);ab.rotation.z=Math.PI/2;ab.castShadow=true;lg.add(ab);
+  g.add(lg);
+}
+leg(1); leg(-1);
+
+// ---- TORSO: hunched armored chest (BODY) ----
+var body=new THREE.Mesh(roundedBox(0.48,0.40,0.34,0.06),steelMat);
+body.position.set(0,0.66,-0.05);body.rotation.x=-0.10;body.castShadow=true;
+g.add(body);
+g.userData.body=body;
+
+// chest center armor plate
+var chestPlate=mk(roundedBox(0.30,0.26,0.06,0.03),plateMat,0,0.66,0.14);
+chestPlate.rotation.x=-0.10;
+// chest vents (grille slats)
+for(var v=0;v<4;v++){
+  mk(new THREE.BoxGeometry(0.22,0.018,0.03),darkMat,0,0.74-v*0.05,0.165);
+}
+// belly grille glow
+mk(new THREE.BoxGeometry(0.18,0.05,0.02),redDim,0,0.55,0.16);
+
+// back power spine / heat sink fins
+for(var f=0;f<5;f++){
+  var fin=mk(roundedBox(0.34,0.05,0.04,0.015),darkMat,0,0.80-f*0.07,-0.22);
+  fin.rotation.x=-0.10;
+}
+// back core glow
+mk(new THREE.SphereGeometry(0.05,12,12),redDim,0,0.62,-0.24);
+
+// shoulder collar / neck base
+mk(roundedBox(0.40,0.10,0.26,0.04),darkMat,0,0.86,-0.04);
+
+// ---- HEAD: recessed between pauldrons, red cyclops eye ----
+var head=mk(roundedBox(0.20,0.18,0.20,0.05),plateMat,0,0.96,0.02);
+head.rotation.x=-0.08;
+// brow ridge
+mk(roundedBox(0.22,0.05,0.10,0.02),darkMat,0,1.03,0.08);
+// single red eye (cyclops)
+var eye=mk(new THREE.CylinderGeometry(0.055,0.055,0.05,16),redMat,0,0.96,0.13);
+eye.rotation.x=Math.PI/2;
+// eye housing ring
+var eyeRing=mk(new THREE.TorusGeometry(0.065,0.018,8,18),boltMat,0,0.96,0.115);
+// jaw/vent under head
+mk(roundedBox(0.16,0.05,0.12,0.02),darkMat,0,0.885,0.06);
+
+// ---- PAULDRONS: heavy shoulders ----
+function pauldron(side){
+  var sx=side*0.31;
+  var p=mk(roundedBox(0.22,0.20,0.28,0.06),steelMat,sx,0.86,-0.04);
+  p.rotation.z=side*0.18;
+  // pauldron ridge
+  var ridge=mk(roundedBox(0.20,0.05,0.26,0.02),darkMat,sx,0.95,-0.04);
+  ridge.rotation.z=side*0.18;
+  // rivets
+  for(var r=-1;r<=1;r++){
+    mk(new THREE.SphereGeometry(0.018,8,8),boltMat,sx+side*0.02,0.86+r*0.07,0.10);
+  }
+}
+pauldron(1); pauldron(-1);
+
+// ============================================================
+// ---- LEFT ARM SHIELD: the huge front slab ----
+// ============================================================
+var shieldGrp=new THREE.Group();
+// upper arm holding shield
+var uArm=new THREE.Mesh(roundedBox(0.14,0.22,0.16,0.04),steelMat);
+uArm.position.set(0.30,0.66,0.04);uArm.castShadow=true;shieldGrp.add(uArm);
+// forearm
+var fArm=new THREE.Mesh(roundedBox(0.12,0.12,0.20,0.035),darkMat);
+fArm.position.set(0.30,0.54,0.16);fArm.castShadow=true;shieldGrp.add(fArm);
+
+// SHIELD slab: large, angled to cover front
+var shGrp=new THREE.Group();
+// main slab
+var slab=new THREE.Mesh(roundedBox(0.46,0.78,0.08,0.05),steelMat);
+slab.castShadow=true;shGrp.add(slab);
+// bolted edge frame (4 sides)
+var fT=new THREE.Mesh(roundedBox(0.50,0.07,0.10,0.02),plateMat);fT.position.set(0,0.40,0.01);fT.castShadow=true;shGrp.add(fT);
+var fB=new THREE.Mesh(roundedBox(0.50,0.07,0.10,0.02),plateMat);fB.position.set(0,-0.40,0.01);fB.castShadow=true;shGrp.add(fB);
+var fL=new THREE.Mesh(roundedBox(0.07,0.86,0.10,0.02),plateMat);fL.position.set(-0.24,0,0.01);fL.castShadow=true;shGrp.add(fL);
+var fR=new THREE.Mesh(roundedBox(0.07,0.86,0.10,0.02),plateMat);fR.position.set(0.24,0,0.01);fR.castShadow=true;shGrp.add(fR);
+// central vertical reinforcement rib
+var rib=new THREE.Mesh(roundedBox(0.10,0.74,0.12,0.03),darkMat);rib.position.set(0,0,0.04);rib.castShadow=true;shGrp.add(rib);
+// rib bolts
+for(var rb=-3;rb<=3;rb++){
+  var b=new THREE.Mesh(new THREE.SphereGeometry(0.022,8,8),boltMat);
+  b.position.set(0,rb*0.10,0.10);b.castShadow=true;shGrp.add(b);
+}
+// horizontal red sensor viewslit
+var slit=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.045,0.03),redMat);
+slit.position.set(0,0.16,0.075);slit.castShadow=true;shGrp.add(slit);
+// slit frame
+var slitF=new THREE.Mesh(roundedBox(0.40,0.09,0.06,0.02),darkMat);slitF.position.set(0,0.16,0.05);slitF.castShadow=true;shGrp.add(slitF);
+shGrp.add(slit); // re-add so slit draws over frame (already added; harmless)
+// corner rivets on frame
+var corners=[[-0.21,0.36],[0.21,0.36],[-0.21,-0.36],[0.21,-0.36],[-0.21,0.0],[0.21,0.0]];
+for(var c=0;c<corners.length;c++){
+  var cb=new THREE.Mesh(new THREE.SphereGeometry(0.02,8,8),boltMat);
+  cb.position.set(corners[c][0],corners[c][1],0.06);cb.castShadow=true;shGrp.add(cb);
+}
+// scratched lower panel detail
+var panel=new THREE.Mesh(roundedBox(0.30,0.20,0.04,0.02),plateMat);panel.position.set(0,-0.22,0.06);panel.castShadow=true;shGrp.add(panel);
+
+// position + angle shield forward over the front
+shGrp.position.set(0.34,0.55,0.30);
+shGrp.rotation.set(0.0,-0.18,0.0);
+shieldGrp.add(shGrp);
+g.add(shieldGrp);
+
+// ============================================================
+// ---- RIGHT ARM: piston ram / mace ----
+// ============================================================
+var rGrp=new THREE.Group();
+var ruArm=new THREE.Mesh(roundedBox(0.14,0.24,0.16,0.04),steelMat);
+ruArm.position.set(-0.30,0.64,-0.02);ruArm.rotation.z=0.12;ruArm.castShadow=true;rGrp.add(ruArm);
+// elbow piston
+var pist=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.20,10),boltMat);
+pist.position.set(-0.34,0.48,0.04);pist.rotation.x=0.3;pist.castShadow=true;rGrp.add(pist);
+// forearm down
+var rfArm=new THREE.Mesh(roundedBox(0.13,0.26,0.14,0.035),darkMat);
+rfArm.position.set(-0.36,0.34,0.06);rfArm.castShadow=true;rGrp.add(rfArm);
+// ram head (blocky mace)
+var ram=new THREE.Mesh(roundedBox(0.20,0.18,0.22,0.03),plateMat);
+ram.position.set(-0.36,0.18,0.10);ram.castShadow=true;rGrp.add(ram);
+// ram studs
+for(var sx2=-1;sx2<=1;sx2+=2){for(var sy=-1;sy<=1;sy+=2){
+  var stud=new THREE.Mesh(new THREE.ConeGeometry(0.035,0.07,6),boltMat);
+  stud.position.set(-0.36+sx2*0.07,0.18+sy*0.06,0.22);stud.rotation.x=Math.PI/2;stud.castShadow=true;rGrp.add(stud);
+}}
+// front center stud glow accent
+var rg=new THREE.Mesh(new THREE.SphereGeometry(0.028,10,10),redDim);
+rg.position.set(-0.36,0.18,0.225);rg.castShadow=true;rGrp.add(rg);
+g.add(rGrp);
+
+// ---- extra greebles: hip ammo/cabling pods ----
+for(var hp=-1;hp<=1;hp+=2){
+  var pod=mk(new THREE.CylinderGeometry(0.05,0.05,0.14,8),darkMat,hp*0.20,0.48,-0.16);
+  pod.rotation.x=Math.PI/2;
+}
+// neck cable
+mk(new THREE.CylinderGeometry(0.025,0.025,0.16,6),boltMat,0.10,0.88,-0.10);
+mk(new THREE.CylinderGeometry(0.025,0.025,0.16,6),boltMat,-0.10,0.88,-0.10);
+
+return g;
+
+}
+function buildESerpent(def){
+var g=new THREE.Group();
+
+var STEEL = 0x222a22;
+var matBody = steel(STEEL);
+var matDark = pbr(shade(STEEL,-0.45), {metalness:0.95, roughness:0.55});
+var matPlate = pbr(shade(STEEL,0.12), {metalness:0.92, roughness:0.4, clearcoat:0.3, ccr:0.6});
+var matGreeble = pbr(shade(STEEL,-0.2), {metalness:0.9, roughness:0.6});
+var matLeg = pbr(shade(STEEL,-0.3), {metalness:0.95, roughness:0.5});
+var matEye = emis(0xff2a2a, 2.6);
+var matSensor = emis(0xff2a2a, 1.8);
+var matGlow = emis(0xff2a2a, 1.3);
+
+function mesh(geo, mat){ var m=new THREE.Mesh(geo, mat); m.castShadow=true; return m; }
+
+// ---- spine path: undulating sinusoid along -z .. +z ----
+var nSeg = 7;
+var totalLen = 1.25;
+var step = totalLen / (nSeg-1);
+var amp = 0.16;       // lateral wave amplitude
+var freq = 2.1;       // wave cycles
+var baseY = 0.18;     // body ride height
+function spinePos(i){
+  var t = i/(nSeg-1);
+  var z = -totalLen/2 + i*step;
+  var x = Math.sin(t*Math.PI*freq) * amp;
+  var y = baseY + Math.sin(t*Math.PI*freq*0.5)*0.025;
+  return new THREE.Vector3(x,y,z);
+}
+
+// ---- build a body segment ----
+function buildSegment(idx){
+  var seg = new THREE.Group();
+  var t = idx/(nSeg-1);
+  // taper: thicker mid, slimmer toward tail
+  var w = 0.30 - 0.06*Math.abs(t-0.35);
+  var h = 0.19 - 0.03*t;
+  var d = step*0.92;
+
+  // main chassis
+  var chassis = mesh(roundedBox(w, h, d, 0.04), matBody);
+  seg.add(chassis);
+
+  // dorsal armor plate (overlapping shell)
+  var plate = mesh(roundedBox(w*0.82, h*0.34, d*0.78, 0.03), matPlate);
+  plate.position.y = h*0.52;
+  seg.add(plate);
+
+  // dorsal ridge spines (greebles)
+  for(var s=0;s<2;s++){
+    var spike = mesh(new THREE.ConeGeometry(0.022, 0.09, 6), matGreeble);
+    spike.position.set(0, h*0.62, (s-0.5)*d*0.35);
+    seg.add(spike);
+  }
+  // side bolts / rivets
+  for(var sb=-1; sb<=1; sb+=2){
+    var bolt = mesh(new THREE.CylinderGeometry(0.018,0.022,0.04,6), matDark);
+    bolt.rotation.z = Math.PI/2;
+    bolt.position.set(sb*w*0.5, 0.0, 0);
+    seg.add(bolt);
+  }
+
+  // ventral red glow strip
+  var glow = mesh(roundedBox(w*0.5, 0.025, d*0.6, 0.01), matGlow);
+  glow.position.y = -h*0.5;
+  seg.add(glow);
+
+  // dark panel seams front/back
+  var seam = mesh(new THREE.BoxGeometry(w*1.01, h*0.5, 0.018), matDark);
+  seam.position.z = d*0.5;
+  seg.add(seam);
+
+  // ---- legs: 2 per side ----
+  var legPhase = idx*1.05;
+  for(var side=-1; side<=1; side+=2){
+    for(var li=0; li<2; li++){
+      var leg = new THREE.Group();
+      var lz = (li-0.5)*d*0.5;
+      // hip anchor on side of body
+      leg.position.set(side*w*0.5, -h*0.15, lz);
+      // outward + downward splay, animate-ish offset via static phase
+      var phase = legPhase + li*1.6 + (side>0?0.8:0);
+      var lift = Math.sin(phase)*0.10;
+      // thigh (cone) pointing outward-down
+      var thigh = mesh(new THREE.ConeGeometry(0.035, 0.20, 6), matLeg);
+      thigh.rotation.z = side*( -Math.PI/2 + 0.5 + lift );
+      thigh.position.set(side*0.10, -0.02, 0);
+      leg.add(thigh);
+      // knee joint
+      var knee = new THREE.Group();
+      knee.position.set(side*0.19, -0.05 - Math.abs(lift)*0.3, 0);
+      var shin = mesh(new THREE.CylinderGeometry(0.018,0.012,0.18,6), matLeg);
+      shin.rotation.z = side*0.35;
+      shin.position.set(side*0.03, -0.09, 0);
+      knee.add(shin);
+      // foot / claw
+      var foot = mesh(new THREE.ConeGeometry(0.022,0.06,5), matDark);
+      foot.rotation.x = Math.PI;
+      foot.position.set(side*0.06, -0.18, 0);
+      knee.add(foot);
+      leg.add(knee);
+      seg.add(leg);
+    }
+  }
+  return { group: seg, w:w, h:h, d:d };
+}
+
+// ---- assemble segments oriented along spine ----
+var prev=null;
+var bodyMesh=null;
+var up = new THREE.Vector3(0,1,0);
+for(var i=0;i<nSeg;i++){
+  var pos = spinePos(i);
+  var nextPos = spinePos(Math.min(i+1,nSeg-1));
+  var prevPos = spinePos(Math.max(i-1,0));
+  var dir = nextPos.clone().sub(prevPos);
+  if(dir.length()<1e-4) dir.set(0,0,1);
+  dir.normalize();
+
+  var built = buildSegment(i);
+  var sg = built.group;
+  // orient local +z to dir
+  var q = new THREE.Quaternion();
+  q.setFromUnitVectors(new THREE.Vector3(0,0,1), dir);
+  sg.quaternion.copy(q);
+  sg.position.copy(pos);
+  g.add(sg);
+
+  // inter-segment connector joint (ball)
+  if(prev){
+    var mid = pos.clone().add(prev).multiplyScalar(0.5);
+    var ball = mesh(new THREE.SphereGeometry(0.06,10,8), matGreeble);
+    ball.position.copy(mid);
+    g.add(ball);
+  }
+  prev = pos.clone();
+
+  // central segment = body
+  if(i===Math.floor(nSeg/2)) bodyMesh = sg.children[0];
+}
+
+// ---------- HEAD (front = +z end) ----------
+var headDir = spinePos(nSeg-1).clone().sub(spinePos(nSeg-2)).normalize();
+var headPos = spinePos(nSeg-1).clone().add(headDir.clone().multiplyScalar(step*0.7));
+var head = new THREE.Group();
+var hq = new THREE.Quaternion();
+hq.setFromUnitVectors(new THREE.Vector3(0,0,1), headDir);
+head.quaternion.copy(hq);
+head.position.copy(headPos);
+
+// skull: tapered armored block
+var skull = mesh(roundedBox(0.30, 0.22, 0.30, 0.05), matBody);
+head.add(skull);
+// upper armor crest
+var crest = mesh(roundedBox(0.24, 0.08, 0.26, 0.03), matPlate);
+crest.position.y = 0.13;
+head.add(crest);
+// crest spikes
+for(var cs=-1; cs<=1; cs++){
+  var csp = mesh(new THREE.ConeGeometry(0.026,0.10,6), matGreeble);
+  csp.position.set(cs*0.07, 0.19, -0.02);
+  head.add(csp);
+}
+// face plate (front, +z)
+var face = mesh(roundedBox(0.22, 0.16, 0.06, 0.03), matDark);
+face.position.set(0, -0.01, 0.16);
+head.add(face);
+
+// ---- single big red cyclops eye ----
+var eyeSocket = mesh(new THREE.CylinderGeometry(0.075,0.085,0.05,16), matDark);
+eyeSocket.rotation.x = Math.PI/2;
+eyeSocket.position.set(0, 0.02, 0.19);
+head.add(eyeSocket);
+var eye = mesh(new THREE.SphereGeometry(0.06,16,14), matEye);
+eye.position.set(0, 0.02, 0.205);
+head.add(eye);
+var eyeLens = mesh(new THREE.CylinderGeometry(0.062,0.062,0.012,16), emis(0xff5a3a,2.0));
+eyeLens.rotation.x = Math.PI/2;
+eyeLens.position.set(0, 0.02, 0.225);
+head.add(eyeLens);
+
+// ---- side sensors ----
+for(var ss=-1; ss<=1; ss+=2){
+  var sens = mesh(new THREE.SphereGeometry(0.028,10,8), matSensor);
+  sens.position.set(ss*0.13, 0.06, 0.10);
+  head.add(sens);
+}
+
+// ---- antennae ----
+for(var an=-1; an<=1; an+=2){
+  var ant = mesh(new THREE.CylinderGeometry(0.008,0.014,0.20,6), matGreeble);
+  ant.position.set(an*0.08, 0.16, 0.12);
+  ant.rotation.set(-0.5, 0, an*0.35);
+  head.add(ant);
+  var tip = mesh(new THREE.SphereGeometry(0.018,8,6), matSensor);
+  tip.position.set(an*0.13, 0.25, 0.18);
+  head.add(tip);
+}
+
+// ---- mandible jaws (two curved blades opening sideways) ----
+for(var jw=-1; jw<=1; jw+=2){
+  var jaw = new THREE.Group();
+  jaw.position.set(jw*0.09, -0.10, 0.18);
+  var mand = mesh(new THREE.ConeGeometry(0.035, 0.20, 6), matDark);
+  mand.rotation.x = Math.PI/2 + 0.4;
+  mand.rotation.z = jw*0.5;
+  mand.position.set(jw*0.04, 0, 0.06);
+  jaw.add(mand);
+  // jaw fang tip
+  var fang = mesh(new THREE.ConeGeometry(0.018,0.08,5), matGreeble);
+  fang.rotation.x = Math.PI/2 + 0.3;
+  fang.position.set(jw*0.07, -0.02, 0.16);
+  jaw.add(fang);
+  head.add(jaw);
+}
+// lower mouth glow
+var mouthGlow = mesh(roundedBox(0.10,0.03,0.04,0.01), matGlow);
+mouthGlow.position.set(0,-0.08,0.18);
+head.add(mouthGlow);
+
+g.add(head);
+
+// ---------- TAIL (back = -z end) ----------
+var tailDir = spinePos(0).clone().sub(spinePos(1)).normalize();
+var tailPos = spinePos(0).clone().add(tailDir.clone().multiplyScalar(step*0.5));
+var tail = new THREE.Group();
+var tq = new THREE.Quaternion();
+tq.setFromUnitVectors(new THREE.Vector3(0,0,1), tailDir);
+tail.quaternion.copy(tq);
+tail.position.copy(tailPos);
+var tailCap = mesh(new THREE.ConeGeometry(0.10, 0.22, 8), matBody);
+tailCap.rotation.x = -Math.PI/2;
+tailCap.position.z = 0.08;
+tail.add(tailCap);
+// curved stinger
+var sting = mesh(new THREE.ConeGeometry(0.03,0.18,6), matGreeble);
+sting.rotation.x = -1.1;
+sting.position.set(0,0.10,0.16);
+tail.add(sting);
+var stingGlow = mesh(new THREE.SphereGeometry(0.022,8,6), matSensor);
+stingGlow.position.set(0,0.17,0.22);
+tail.add(stingGlow);
+g.add(tail);
+
+// fallback body assignment
+if(!bodyMesh) bodyMesh = g.children[0];
+g.userData.body = bodyMesh;
+
+return g;
+}
+const ENEMY_BUILDERS={drone:buildEDrone,gunship:buildEGunship,walker:buildEWalker,crawler:buildECrawler,wartank:buildEWartank,brute:buildEBrute,spider:buildESpider,hovertank:buildEHovertank,swarmling:buildESwarmling,siege:buildESiege,shielded:buildEShielded,serpent:buildESerpent};
 function genericEnemyBody(def){
   const g=new THREE.Group();
   const arm=(c)=>pbr(c,{metalness:0.3,roughness:0.85,grunge:true});   // 汚れた装甲
@@ -5852,17 +6950,16 @@ function makeEnemyMesh(def){
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
   const q=[]; const count=Math.round(5+n*1.0+Math.max(0,n-6)*0.6);
-  const hpMul=1+(n-1)*0.10+Math.pow(n/12,2)*0.4;
-  const E={crawler:ENEMIES[0],walker:ENEMIES[1],wartank:ENEMIES[2],drone:ENEMIES[3],gunship:ENEMIES[4],brute:ENEMIES[5]};
+  const hpMul=1+(n-1)*0.05+Math.pow(n/15,2)*0.3;
+  const NB=ENEMIES.filter(e=>!e.boss);
+  const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
+  const lo=Math.max(0,center-7), hi=Math.min(NB.length-1,center+2);
   for(let i=0;i<count;i++){
-    let def=E.crawler; const rr=Math.random();
-    if(n>=4 && rr<0.16) def=E.drone;            // 飛行(小)
-    else if(n>=6 && rr<0.26) def=E.gunship;     // 飛行(中)
-    else if(n>=3 && rr<0.46) def=E.wartank;     // 重戦車
-    else if(rr<0.7) def=E.walker;               // 二脚
-    q.push({def, hp:def.hp*hpMul, gap:0.6+Math.random()*0.3});
+    let def=NB[lo+Math.floor(Math.random()*(hi-lo+1))];
+    if(def.flying && n<4){ def=NB[lo]; }
+    q.push({def, hp:def.hp*hpMul, gap:0.55+Math.random()*0.3});
   }
-  if(n%10===0){ const bm=1+Math.floor((n-1)/10)*0.6; q.push({def:E.brute, hp:E.brute.hp*hpMul*bm, gap:0.25}); }   // ボスは毎W10（10,20,30…）強化
+  if(n%10===0){ const B=ENEMIES.filter(e=>e.boss); const bd=B[Math.min(B.length-1,Math.floor((n-1)/10))]||B[0]||ENEMIES[ENEMIES.length-1]; const bm=1+Math.floor((n-1)/10)*0.5; q.push({def:bd, hp:bd.hp*hpMul*bm, gap:0.3}); }
   return q;
 }
 function startWave(early){
