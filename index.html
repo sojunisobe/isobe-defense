@@ -7,10 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b0e14">
 <title>HUMANITY DEFENSE 205X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
   html,body{width:100%;height:100%;background:#05070c;overflow:hidden;position:fixed;
-    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;touch-action:none;color:#eef;}
+    font-family:"Rajdhani","Chakra Petch","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;touch-action:none;color:#eef;}
   #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#05070c;
     padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
     box-sizing:border-box;}
@@ -42,6 +43,16 @@
 
 <script>
 "use strict";
+/* ── UIデザイン言語（サイバー・ガラスコンソール／囲み無し）─ チーム統合確定 ── */
+const F_DISP='"Chakra Petch","Rajdhani",system-ui,sans-serif';   // タイトル/見出し
+const F_UI  ='"Rajdhani","Chakra Petch",system-ui,sans-serif';   // ボタン/UI文字
+const F_NUM ='"JetBrains Mono","Chakra Petch",ui-monospace,monospace'; // HUD数値(等幅)
+const C_HDF='#33e0ff', C_AMBER='#ffb22e', C_GREEN='#46f08a', C_ZERO='#ff3b54';
+const C_TEXT='#eaf7ff', C_DIM='rgba(180,205,230,0.55)';
+// Webフォントを先読み（canvasが初回からWebフォントで描けるよう）
+if(typeof document!=='undefined' && document.fonts && document.fonts.load){
+  try{ ['600 20px "Chakra Petch"','700 20px "Rajdhani"','700 20px "JetBrains Mono"'].forEach(f=>document.fonts.load(f)); }catch(e){}
+}
 /* ============================================================================
    磯部防衛戦線 — ISOBE DEFENSE
    横画面タワーディフェンス / 1ファイル完結 / WebAudio生成サウンド
@@ -1216,25 +1227,31 @@ function drawUI(t){
   uctx.fillStyle='#1a2030'; uctx.fillRect(0,HUD_H-2,W,2);
   // 基地HP（バー内に数値・滑らかに減る）
   const hpr=G.baseHP/G.baseMax, hprD=Math.max(0,(G.hpDisp||G.baseHP)/G.baseMax);
-  uctx.fillStyle='#222'; uctx.fillRect(10,12,150,24);
-  uctx.fillStyle='rgba(255,80,80,0.5)'; uctx.fillRect(10,12,150*hprD,24);   // 遅れて削れる赤
-  uctx.fillStyle=hpr>0.5?'#1f9a45':hpr>0.25?'#b8851a':'#c0303a'; uctx.fillRect(10,12,150*hpr,24);
-  uctx.strokeStyle='#556'; uctx.lineWidth=1; uctx.strokeRect(10,12,150,24);
-  { const hptxt=Math.ceil(G.hpDisp)+'/'+G.baseMax; uctx.font='bold 14px system-ui'; uctx.textAlign='center';
-    uctx.lineWidth=3; uctx.strokeStyle='rgba(0,0,0,0.75)'; uctx.strokeText(hptxt,85,29);
-    uctx.fillStyle='#fff'; uctx.fillText(hptxt,85,29); }
-  // 部品（マークのみ）
-  uctx.textAlign='left'; uctx.font='bold 22px system-ui'; uctx.fillStyle='#ffd23f'; uctx.fillText('⚙'+Math.round(G.partsDisp),176,32);
-  // ウェーブ・スコア（数値のみ・日本語ラベルなし）
-  uctx.font='bold 20px system-ui'; uctx.fillStyle='#fff'; uctx.fillText('W'+G.wave,300,32);
-  uctx.font='bold 18px system-ui'; uctx.fillStyle='#9fe0ff'; uctx.fillText('★'+Math.round(G.scoreDisp).toLocaleString(),392,32);
-  // 高野DRC軍 紋章
-  uctx.save(); uctx.translate(478,24); drcEmblem(uctx,13,'#cc4040',t); uctx.restore();
-  // 右クラスタ：つぎへ／速度／一時停止／ミュート（描画は h30、当たり判定は padでh46≥44px）
-  drawBtn('btnNext',  W-444, 8, 100, 30, G.waveActive?('残り '+(G.enemies.length+G.spawnQueue.length)):'つぎへ ▶', G.waveActive?'#222a33':'#2a6a3a', G.waveActive, 4, 8);
-  drawBtn('btnSpeed', W-336, 8, 92,  30, '⏩ x'+G.speed, '#2a3a5a', false, 0, 8);
-  drawBtn('btnPause', W-236, 8, 52,  30, G.paused?'▶':'⏸', '#333', false, 4, 8);
-  drawBtn('btnMute',  W-176, 8, 60,  30, G.muted?'🔇':'🔊', '#333', false, 4, 8);
+  // 基地HPバー（細・ガラス調）
+  uctx.fillStyle='rgba(255,255,255,0.06)'; rr(uctx,10,13,150,22,4);
+  uctx.fillStyle='rgba(255,80,80,0.45)'; uctx.fillRect(12,15,146*hprD,18);   // 遅れて削れる赤
+  uctx.fillStyle=hpr>0.5?'#2fd06a':hpr>0.25?C_AMBER:C_ZERO; uctx.fillRect(12,15,146*hpr,18);
+  uctx.strokeStyle='rgba(120,160,200,0.30)'; uctx.lineWidth=1; rr2(uctx,10,13,150,22,4);
+  { const hptxt=Math.ceil(G.hpDisp); uctx.font='700 14px '+F_NUM; uctx.textAlign='left'; uctx.textBaseline='middle';
+    uctx.lineWidth=3; uctx.strokeStyle='rgba(0,0,0,0.7)'; uctx.strokeText(hptxt+'/'+G.baseMax,18,24);
+    uctx.fillStyle=C_TEXT; uctx.fillText(hptxt+'/'+G.baseMax,18,24); uctx.textBaseline='alphabetic'; }
+  // 部品（⚙＋等幅数値）
+  uctx.textAlign='left'; uctx.textBaseline='middle';
+  uctx.font='600 18px '+F_DISP; uctx.fillStyle=C_AMBER; uctx.fillText('⚙',176,24);
+  uctx.font='700 19px '+F_NUM; uctx.fillStyle=C_AMBER; uctx.fillText(Math.round(G.partsDisp),196,25);
+  // WAVE
+  uctx.font='600 10px '+F_UI; uctx.fillStyle=C_DIM; uctx.fillText('WAVE',286,18);
+  uctx.font='700 20px '+F_NUM; uctx.fillStyle=C_TEXT; uctx.fillText(G.wave,286,30);
+  // SCORE
+  uctx.font='600 10px '+F_UI; uctx.fillStyle=C_DIM; uctx.fillText('SCORE',360,18);
+  uctx.font='700 18px '+F_NUM; uctx.fillStyle=C_HDF; uctx.fillText(Math.round(G.scoreDisp).toLocaleString(),360,30);
+  uctx.textBaseline='alphabetic';
+  // 右クラスタ：つぎへ／速度／一時停止／ミュート（無枠アイコン）
+  drawIcon('btnNext',  W-150, 23, 13, 'next',  C_GREEN, {disabled:G.waveActive});
+  if(G.waveActive){ uctx.font='700 12px '+F_NUM; uctx.fillStyle=C_DIM; uctx.textAlign='right'; uctx.textBaseline='middle'; uctx.fillText(G.enemies.length+G.spawnQueue.length, W-170, 23); uctx.textBaseline='alphabetic'; }
+  drawIcon('btnSpeed', W-108, 23, 13, 'ffwd',  C_HDF, {tag:'x'+G.speed});
+  drawIcon('btnPause', W-66,  23, 13, G.paused?'play':'pause', G.paused?C_GREEN:C_AMBER);
+  drawIcon('btnMute',  W-26,  23, 13, G.muted?'mute':'vol', C_HDF);
 
   // 高野DRC軍 ボスHPゲージ
   const bossE=G.enemies.find(e=>e.boss&&!e.dead);
@@ -1247,10 +1264,10 @@ function drawUI(t){
   // ボス出現 WARNING
   if(G.bossWarnT>0){ G.bossWarnT-=0.016; const a=0.5+0.5*Math.sin(t*12);
     uctx.fillStyle='rgba(170,18,18,'+(0.12*a)+')'; uctx.fillRect(0,HUD_H,FIELD.w,FIELD.h);
-    uctx.fillStyle='rgba(255,45,45,'+a+')'; uctx.font='bold 42px system-ui'; uctx.textAlign='center'; uctx.fillText('⚠ WARNING ⚠',FIELD.x+FIELD.w/2,H/2); }
+    uctx.fillStyle='rgba(255,45,45,'+a+')'; uctx.font='700 42px '+F_DISP; uctx.textAlign='center'; if('letterSpacing' in uctx){try{uctx.letterSpacing='4px';}catch(e){}} uctx.fillText('⚠ WARNING ⚠',FIELD.x+FIELD.w/2,H/2); if('letterSpacing' in uctx){try{uctx.letterSpacing='0px';}catch(e){}} }
   // コンボ表示（縁取り＋連撃で赤熱）
   if(G.combo>=2){ const a=Math.min(1,G.comboT/2.2+0.3), cx=FIELD.x+FIELD.w/2, cyy=HUD_H+(bossE?52:34);
-    uctx.globalAlpha=a; uctx.font='bold '+(20+Math.min(20,G.combo))+'px system-ui'; uctx.textAlign='center';
+    uctx.globalAlpha=a; uctx.font='700 '+(20+Math.min(20,G.combo))+'px '+F_NUM; uctx.textAlign='center';
     const heat=Math.min(1,(G.combo-2)/18); const col=heat<0.5?'#ffd23f':'#ff7a3f';
     uctx.lineWidth=4; uctx.strokeStyle='rgba(0,0,0,0.8)'; uctx.strokeText('×'+G.combo+' COMBO',cx,cyy);
     uctx.fillStyle=col; uctx.fillText('×'+G.combo+' COMBO',cx,cyy); uctx.globalAlpha=1; }
@@ -1272,10 +1289,10 @@ function drawUI(t){
     uctx.fillStyle='rgba(6,9,14,'+(0.74*G.barAnim)+')'; uctx.fillRect(0,HUD_H,W,H-HUD_H);   // 暗幕（フェード）
     drawBottomBar(t);
     const cy=(H-BAR_H)+(1-G.barAnim)*BAR_H;
-    drawBtn('btnBarClose', W-104, cy-34, 96, 28, '✕', '#6a2a2a');
+    drawIcon('btnBarClose', W-32, cy-20, 15, 'close', C_ZERO);
   }
   // 下部に残すのは ☰兵器 のみ（下辺中央やや左＝セーフエリア内・マップ非干渉）。つぎへは上HUDへ移設済み
-  if(G.barAnim<0.5) drawBtn('btnBar', 8, H-52, 88, 44, '☰', '#2a7a3a');
+  if(G.barAnim<0.5) drawIcon('btnBar', 34, H-32, 21, 'menu', C_HDF);
 
   // 選択タワー情報パネル
   if(G.selectedTower) drawTowerPanel(G.selectedTower);
@@ -1298,25 +1315,78 @@ function drawUI(t){
   }
 
   if(G.paused && G.scene==='playing'){ uctx.fillStyle='rgba(0,0,0,0.66)'; uctx.fillRect(0,HUD_H,W,H-HUD_H);
-    uctx.fillStyle='#fff'; uctx.font='bold 38px system-ui'; uctx.textAlign='center'; uctx.fillText('❚❚',W/2,H/2-44);
-    // リセット（最初から）／リタイア（OPへ）
-    drawBtn('btnReset',  W/2-150, H/2-16, 140, 50, '⟲ RESET',  '#7a5a2a', false, 6, 6);
-    drawBtn('btnRetire', W/2+10,  H/2-16, 140, 50, '⌂ RETIRE', '#6a2a3a', false, 6, 6);
-    uctx.fillStyle='#9aa6b2'; uctx.font='12px system-ui'; uctx.textAlign='center';
-    uctx.fillText('❚❚  =  RESUME', W/2, H/2+58); }
+    uctx.fillStyle=C_AMBER; uctx.font='700 34px '+F_DISP; uctx.textAlign='center'; uctx.save(); uctx.shadowColor=C_AMBER; uctx.shadowBlur=12; uctx.fillText('❚❚',W/2,H/2-44); uctx.restore();
+    uctx.fillStyle=C_DIM; uctx.font='600 11px '+F_UI; uctx.fillText('PAUSED',W/2,H/2-18);
+    drawBtn('btnReset',  W/2-148, H/2+6, 138, 48, 'RESET',  C_AMBER, false, 6, 6);
+    drawBtn('btnRetire', W/2+10,  H/2+6, 138, 48, 'RETIRE', C_ZERO,  false, 6, 6);
+    uctx.fillStyle=C_DIM; uctx.font='600 12px '+F_UI; uctx.textAlign='center';
+    uctx.fillText('❚❚  =  RESUME', W/2, H/2+78); }
 
   if(G.scene==='gameover') drawGameOver();
 }
 const btnRects={};
-function drawBtn(id,x,y,w,h,label,color,disabled,padX,padY){
-  btnRects[id]={x:x-(padX||0),y:y-(padY||0),w:w+2*(padX||0),h:h+2*(padY||0)};  // 当たり判定だけ拡張（見た目は不変）
-  uctx.fillStyle=disabled?'#1a1f28':color; uctx.fillRect(x,y,w,h);
-  uctx.strokeStyle='rgba(255,255,255,0.15)'; uctx.lineWidth=1; uctx.strokeRect(x,y,w,h);
-  uctx.fillStyle=disabled?'#667':'#fff'; uctx.font='bold 15px system-ui'; uctx.textAlign='center'; uctx.textBaseline='middle';
-  const lines=String(label).split('\n'), lh=16, y0=y+h/2-(lines.length-1)*lh/2;
-  for(let i=0;i<lines.length;i++) uctx.fillText(lines[i], x+w/2, y0+i*lh+1);
-  uctx.textBaseline='alphabetic';
+// 押下中グリフ判定（軽い押し込み演出）
+let _pressedId=null;
+// ── 無枠ラベルボタン：角丸ガラスピル＋底1本のセマンティック発光下線（囲み無し）──
+function drawBtn(id,x,y,w,h,label,sc,disabled,padX,padY){
+  btnRects[id]={x:x-(padX||0),y:y-(padY||0),w:w+2*(padX||0),h:h+2*(padY||0)};
+  sc=sc||C_HDF; const u=uctx; const R=Math.min(h/2, 16); const cx=x+w/2, cy=y+h/2;
+  const pressed=(_pressedId===id);
+  function pill(){ u.beginPath(); u.moveTo(x+R,y); u.arcTo(x+w,y,x+w,y+h,R); u.arcTo(x+w,y+h,x,y+h,R); u.arcTo(x,y+h,x,y,R); u.arcTo(x,y,x+w,y,R); u.closePath(); }
+  u.save();
+  if(disabled) u.globalAlpha=0.32;
+  if(pressed) u.translate(0,1);
+  // 内側ガラス
+  const lg=u.createLinearGradient(0,y,0,y+h); lg.addColorStop(0,'rgba(46,66,90,0.50)'); lg.addColorStop(0.5,'rgba(20,30,46,0.42)'); lg.addColorStop(1,'rgba(10,16,26,0.55)');
+  pill(); u.fillStyle=lg; u.fill();
+  // 上面ハイライト
+  u.save(); pill(); u.clip(); const sg=u.createLinearGradient(0,y,0,y+h*0.45); sg.addColorStop(0,'rgba(255,255,255,'+(pressed?0.08:0.16)+')'); sg.addColorStop(1,'rgba(255,255,255,0)'); u.fillStyle=sg; u.fillRect(x,y,w,h*0.45); u.restore();
+  // ヘアライン縁
+  u.lineWidth=1.25; u.globalAlpha=(disabled?0.25:0.5)*(u.globalAlpha); u.strokeStyle=sc; pill(); u.stroke(); u.globalAlpha=disabled?0.32:1;
+  // セマンティック発光下線（本体塗りの代替）
+  if(!disabled){ u.save(); pill(); u.clip(); u.shadowColor=sc; u.shadowBlur=pressed?4:10; u.fillStyle=sc; u.fillRect(x+R, y+h-3, w-2*R, 2); u.restore(); }
+  // ラベル
+  u.font='700 15px '+F_UI; if('letterSpacing' in u){ try{u.letterSpacing='1px';}catch(e){} }
+  u.fillStyle=disabled?C_DIM:C_TEXT; u.textAlign='center'; u.textBaseline='middle';
+  const lines=String(label).split('\n'), lh=16, y0=cy-(lines.length-1)*lh/2;
+  for(let i=0;i<lines.length;i++) u.fillText(lines[i], cx, y0+i*lh+1);
+  if('letterSpacing' in u){ try{u.letterSpacing='0px';}catch(e){} }
+  u.textBaseline='alphabetic'; u.restore();
 }
+// ── 無枠アイコンボタン：ガラスディスク＋ヘアライン円弧＋自前グリフ（四角は描かない）──
+function drawIcon(id,cx,cy,r,key,col,opts){
+  opts=opts||{}; const u=uctx; const disabled=!!opts.disabled; const pressed=(_pressedId===id);
+  const hit=Math.max(44, r*2+10);
+  btnRects[id]={x:cx-hit/2, y:cy-hit/2, w:hit, h:hit};
+  col=col||C_HDF;
+  u.save();
+  if(disabled) u.globalAlpha=0.35;
+  // ガラスディスク
+  const g=u.createRadialGradient(cx,cy-r*0.3,1,cx,cy,r); g.addColorStop(0,'rgba(40,60,82,0.55)'); g.addColorStop(1,'rgba(10,16,26,0.25)');
+  u.fillStyle=g; u.beginPath(); u.arc(cx,cy,r,0,6.2832); u.fill();
+  // ヘアライン円弧
+  u.lineWidth=1.25; u.strokeStyle=disabled?'rgba(120,160,200,0.15)':'rgba(120,160,200,0.30)'; u.beginPath(); u.arc(cx,cy,r-0.75,0,6.2832); u.stroke();
+  u.strokeStyle='rgba(255,255,255,0.22)'; u.beginPath(); u.arc(cx,cy,r-0.75,-2.55,-0.6); u.stroke();
+  // グリフ（自前path）
+  u.save(); u.translate(cx,cy); if(pressed) u.scale(0.92,0.92);
+  const core='#eaf7ff';
+  function glow(drawFn,c){ u.shadowColor=c; u.shadowBlur=disabled?0:(pressed?6:10); drawFn(); u.shadowBlur=0; drawFn(); }
+  if(key==='play'){ glow(()=>{ u.fillStyle=core; u.beginPath(); u.moveTo(-5,-8); u.lineTo(-5,8); u.lineTo(9,0); u.closePath(); u.fill(); }, col); }
+  else if(key==='pause'){ glow(()=>{ u.fillStyle=core; rr(u,-6,-8,4,16,1.5); rr(u,2,-8,4,16,1.5); }, col); }
+  else if(key==='ffwd'){ glow(()=>{ u.fillStyle=core; tri(u,-7,0); tri(u,0,0); }, col); if(opts.tag){ u.fillStyle=col; u.font='700 9px '+F_NUM; u.textAlign='left'; u.textBaseline='top'; u.fillText(opts.tag, 7, -11); } }
+  else if(key==='next'){ glow(()=>{ u.fillStyle=core; tri(u,-7,0); tri(u,1,0); }, col); }
+  else if(key==='menu'){ glow(()=>{ u.fillStyle=core; rr(u,-9,-7,18,2.4,1.2); rr(u,-9,-1,18,2.4,1.2); rr(u,-9,5,18,2.4,1.2); }, col); }
+  else if(key==='close'){ glow(()=>{ u.strokeStyle=col; u.lineWidth=2.4; u.lineCap='round'; u.beginPath(); u.moveTo(-7,-7); u.lineTo(7,7); u.moveTo(-7,7); u.lineTo(7,-7); u.stroke(); }, col); }
+  else if(key==='vol'||key==='mute'){ glow(()=>{ u.fillStyle=core; u.beginPath(); u.moveTo(-8,-3); u.lineTo(-3,-3); u.lineTo(2,-8); u.lineTo(2,8); u.lineTo(-3,3); u.lineTo(-8,3); u.closePath(); u.fill();
+      if(key==='vol'){ u.strokeStyle=col; u.lineWidth=1.6; u.beginPath(); u.arc(3,0,4,-0.9,0.9); u.stroke(); u.beginPath(); u.arc(3,0,7,-0.9,0.9); u.stroke(); }
+      else { u.strokeStyle=C_ZERO; u.lineWidth=2; u.lineCap='round'; u.beginPath(); u.moveTo(5,-5); u.lineTo(11,5); u.moveTo(11,-5); u.lineTo(5,5); u.stroke(); } }, key==='mute'?C_ZERO:col); }
+  u.restore();
+  u.restore();
+}
+function rrPath(u,x,y,w,h,r){ u.beginPath(); u.moveTo(x+r,y); u.arcTo(x+w,y,x+w,y+h,r); u.arcTo(x+w,y+h,x,y+h,r); u.arcTo(x,y+h,x,y,r); u.arcTo(x,y,x+w,y,r); u.closePath(); }
+function rr(u,x,y,w,h,r){ rrPath(u,x,y,w,h,r); u.fill(); }
+function rr2(u,x,y,w,h,r){ rrPath(u,x,y,w,h,r); u.stroke(); }
+function tri(u,ox,oy){ u.beginPath(); u.moveTo(ox-2,oy-7); u.lineTo(ox-2,oy+7); u.lineTo(ox+7,oy); u.closePath(); u.fill(); }
 
 let palScroll=0, palMax=0;
 // 下の兵器バー（横スクロール）＋右端に「つぎのウェーブ」
@@ -1345,7 +1415,7 @@ function drawBottomBar(t){
     // 対象タイプは色で表現（陸=琥珀/空=青/両=紫）。文字は出さない＝遊んで覚える
     uctx.fillStyle=targetColor(def.target); uctx.fillRect(x,cardY,CARDW,5);
     uctx.save(); uctx.translate(x+CARDW/2, cardY+cardH*0.42); uctx.scale(1.35,1.35); drawTurretIcon(def); uctx.restore();
-    uctx.textAlign='center'; uctx.font='bold 18px system-ui'; uctx.fillStyle=afford?'#ffd23f':'#a86';
+    uctx.textAlign='center'; uctx.font='700 17px '+F_NUM; uctx.fillStyle=afford?C_AMBER:'rgba(180,150,100,0.7)';
     uctx.fillText('⚙'+def.cost, x+CARDW/2, cardY+cardH-9);
     palBtns.push({x,y:cardY,w:CARDW,h:cardH,key:def.key});
   }
@@ -1397,25 +1467,25 @@ function drawTowerPanel(tw){
   // 対象チップ
   const tgc=targetColor(def.target);
   uctx.fillStyle=tgc; roundChip(px+pw-54,py+10,44,20);
-  uctx.fillStyle='#06121f'; uctx.font='bold 12px system-ui'; uctx.textAlign='center'; uctx.fillText(targetLabel(def.target)+'用',px+pw-32,py+24);
+  uctx.fillStyle='#06121f'; uctx.font='700 11px '+F_UI; uctx.textAlign='center'; uctx.fillText(def.target==='ground'?'GND':def.target==='air'?'AIR':'ALL',px+pw-32,py+24);
   // レベル
   uctx.textAlign='left'; uctx.fillStyle='#ffd23f'; uctx.font='13px system-ui';
   uctx.fillText('Lv'+tw.lv+'  '+'★'.repeat(tw.lv)+'☆'.repeat(5-tw.lv),px+12,py+58);
   // 説明
   uctx.fillStyle='#bcd'; uctx.font='11px system-ui'; wrapText(def.desc,px+12,py+76,pw-24,14);
   // ステータス
-  uctx.fillStyle='#9ab'; uctx.font='11px system-ui';
-  uctx.fillText(def.dmg>0?('射程 '+Math.round(st.range)+'   威力 '+Math.round(st.dmg)+'   間隔 '+st.cd.toFixed(2)+'s'):('射程 '+Math.round(st.range)+'   支援/特殊'),px+12,py+112);
+  uctx.fillStyle=C_DIM; uctx.font='600 11px '+F_NUM;
+  uctx.fillText(def.dmg>0?('RNG '+Math.round(st.range)+'   DMG '+Math.round(st.dmg)+'   ROF '+st.cd.toFixed(2)+'s'):('RNG '+Math.round(st.range)+'   SUPPORT'),px+12,py+112);
   // ボタン（大きくタップしやすく）
   const canTarget = def.dmg>0 && def.atkType!=='barrier' && def.atkType!=='buff';
   let by=py+118;
-  if(canTarget){ const TL={first:'先頭',last:'最後尾',strong:'最強',weak:'瀕死'};
-    drawBtn('btnTarget',px+10,by,pw-20,24,'狙い：'+TL[tw.targetMode||'first']+'  ◀ ▶','#244a5a');
+  if(canTarget){ const TL={first:'FIRST',last:'LAST',strong:'STRONG',weak:'WEAK'};
+    drawBtn('btnTarget',px+10,by,pw-20,24,'TGT ▸ '+TL[tw.targetMode||'first'],C_HDF);
     by+=30; }
   if(tw.lv<5){ const cost=upCost(def,tw.lv); const can=G.parts>=cost;
-    drawBtn('btnUpgrade',px+10,by,pw-20,40,'⬆ 強化  Lv'+(tw.lv+1)+'  ⚙'+cost, can?'#2a7a3a':'#26342a', !can);
-  } else drawBtn('btnUpgrade',px+10,by,pw-20,40,'★ 最大レベル','#3a3a2a',true);
-  drawBtn('btnSell',px+10,by+44,pw-20,28,'売却  ⚙'+sellValue(tw),'#5a3a2a');
+    drawBtn('btnUpgrade',px+10,by,pw-20,40,'UPGRADE  LV'+(tw.lv+1)+'  ⚙'+cost, can?C_AMBER:C_DIM, !can);
+  } else drawBtn('btnUpgrade',px+10,by,pw-20,40,'MAX LEVEL',C_DIM,true);
+  drawBtn('btnSell',px+10,by+44,pw-20,28,'SELL  ⚙'+sellValue(tw),C_ZERO);
 }
 function wrapText(text,x,y,maxw,lh){
   const chars=text.split(''); let line='',yy=y;
@@ -1462,14 +1532,15 @@ function drawOpening(t){
   const isLast=(idx===OPENING_BEATS.length-1);
   const blink=isLast?(0.6+0.4*Math.sin(t*6)):1;
   uctx.globalAlpha=a*blink;
-  uctx.font='bold '+(isLast?34:26)+'px system-ui';
+  uctx.font='700 '+(isLast?34:26)+'px '+F_DISP;
+  uctx.save(); uctx.shadowColor=b.color; uctx.shadowBlur=isLast?18:10;
   uctx.lineWidth=5; uctx.strokeStyle='rgba(0,0,0,0.85)'; uctx.strokeText(b.text,W/2,H/2-6);
-  uctx.fillStyle=b.color; uctx.fillText(b.text,W/2,H/2-6);
-  if(b.sub){ uctx.globalAlpha=a*0.75; uctx.font='14px system-ui'; uctx.fillStyle='#8fa0b4';
+  uctx.fillStyle=b.color; uctx.fillText(b.text,W/2,H/2-6); uctx.restore();
+  if(b.sub){ uctx.globalAlpha=a*0.78; uctx.font='600 14px '+F_UI; uctx.fillStyle='#8fa0b4';
     uctx.fillText(b.sub,W/2,H/2+26); }
   uctx.globalAlpha=1;
   // スキップ案内
-  uctx.fillStyle='rgba(150,170,190,'+(0.35+0.2*Math.sin(t*2))+')'; uctx.font='12px system-ui';
+  uctx.fillStyle='rgba(150,170,190,'+(0.35+0.2*Math.sin(t*2))+')'; uctx.font='600 12px '+F_UI;
   uctx.fillText('TAP ▸',W-44,H-18);
   // 進行バー
   uctx.fillStyle='rgba(255,255,255,0.12)'; uctx.fillRect(0,H-3,W,3);
@@ -1484,40 +1555,42 @@ function drawTitle(t){
   uctx.fillStyle='#1a2230'; uctx.fillRect(0,H-48,W,48);
   uctx.textAlign='center';
   // 205X
-  uctx.fillStyle='rgba(127,208,255,0.65)'; uctx.font='bold 15px system-ui'; uctx.fillText('2 0 5 X',W/2,42);
+  uctx.fillStyle='rgba(127,208,255,0.7)'; uctx.font='700 15px '+F_NUM; if('letterSpacing' in uctx){try{uctx.letterSpacing='6px';}catch(e){}} uctx.fillText('205X',W/2,42); if('letterSpacing' in uctx){try{uctx.letterSpacing='0px';}catch(e){}}
   // ZERO 紋章（赤い単眼AIコア）
   uctx.save(); uctx.translate(W/2, 76); drcEmblem(uctx, 26, '#d11', t); uctx.restore();
   // タイトル
-  uctx.font='bold 40px system-ui'; uctx.textAlign='center';
-  uctx.save(); uctx.shadowColor='rgba(0,0,0,0.6)'; uctx.shadowOffsetY=3; uctx.shadowBlur=6;
-  uctx.lineWidth=5; uctx.strokeStyle='#0a2030'; uctx.strokeText('HUMANITY DEFENSE',W/2,148);
+  uctx.font='700 38px '+F_DISP; uctx.textAlign='center'; if('letterSpacing' in uctx){try{uctx.letterSpacing='2px';}catch(e){}}
+  uctx.save(); uctx.shadowColor='rgba(51,224,255,0.45)'; uctx.shadowBlur=14;
+  uctx.lineWidth=4; uctx.strokeStyle='#0a2030'; uctx.strokeText('HUMANITY DEFENSE',W/2,148);
   const tg=uctx.createLinearGradient(0,122,0,154); tg.addColorStop(0,'#eaf4ff'); tg.addColorStop(0.5,'#bfe0ff'); tg.addColorStop(1,'#5aa0d8');
   uctx.fillStyle=tg; uctx.fillText('HUMANITY DEFENSE',W/2,148); uctx.restore();
+  if('letterSpacing' in uctx){try{uctx.letterSpacing='0px';}catch(e){}}
   // 陣営
-  uctx.fillStyle='#9fe0a8'; uctx.font='bold 14px system-ui'; uctx.fillText('人類防衛軍 HDF',W/2,178);
-  uctx.fillStyle='#7a8694'; uctx.font='12px system-ui'; uctx.fillText('—  vs  —',W/2,196);
-  uctx.fillStyle='#ff8a6a'; uctx.font='bold 14px system-ui'; uctx.fillText('暴走AI「ZERO」軍団',W/2,214);
-  drawBtn('btnStart', W/2-90, 238, 180, 54, '▶', '#2a6a3a');
-  uctx.fillStyle='#789'; uctx.font='13px system-ui';
+  uctx.fillStyle=C_HDF; uctx.font='700 14px '+F_DISP; uctx.fillText('人類防衛軍 HDF',W/2,178);
+  uctx.fillStyle='#7a8694'; uctx.font='600 12px '+F_UI; uctx.fillText('—  VS  —',W/2,196);
+  uctx.fillStyle=C_ZERO; uctx.font='700 14px '+F_DISP; uctx.fillText('暴走AI「ZERO」軍団',W/2,214);
+  drawIcon('btnStart', W/2, 262, 30, 'play', C_GREEN);
+  uctx.fillStyle=C_DIM; uctx.font='600 11px '+F_UI; uctx.textAlign='center'; uctx.fillText('TAP TO DEPLOY', W/2, 308);
+  uctx.fillStyle=C_DIM; uctx.font='700 13px '+F_NUM;
   uctx.fillText('W'+G.best+'   ★'+G.bestScore.toLocaleString(), W/2, 352);
 }
 function drawGameOver(){
   uctx.fillStyle='rgba(0,0,0,0.82)'; uctx.fillRect(0,0,W,H);
   uctx.textAlign='center';
-  uctx.fillStyle='#ff5a5a'; uctx.font='bold 44px system-ui'; uctx.fillText('GAME OVER',W/2,120);
-  uctx.fillStyle='#fff'; uctx.font='bold 24px system-ui'; uctx.fillText('W'+G.wave+'   ★'+G.score.toLocaleString(),W/2,180);
+  uctx.fillStyle=C_ZERO; uctx.font='700 44px '+F_DISP; if('letterSpacing' in uctx){try{uctx.letterSpacing='3px';}catch(e){}} uctx.fillText('GAME OVER',W/2,120); if('letterSpacing' in uctx){try{uctx.letterSpacing='0px';}catch(e){}}
+  uctx.fillStyle=C_TEXT; uctx.font='700 24px '+F_NUM; uctx.fillText('W'+G.wave+'   ★'+G.score.toLocaleString(),W/2,180);
   // 戦績
   const era=['I 整地戦','II 焦土化','III 溶岩侵食','IV 黙示録'][Math.min(3,G.era||0)];
   const mm=Math.floor((G.playT||0)/60), ss=Math.floor((G.playT||0)%60);
-  uctx.fillStyle='#bcd'; uctx.font='14px system-ui';
+  uctx.fillStyle=C_DIM; uctx.font='600 14px '+F_NUM;
   uctx.fillText('☠'+(G.kills||0)+'   ×'+(G.maxCombo||0)+'   '+era.split(' ')[0]+'   '+mm+':'+(ss<10?'0':'')+ss, W/2, 212);
-  // 称号（DRC_RANKSを活用）
+  // 称号
   if(typeof DRC_RANKS!=='undefined'){ const rk=DRC_RANKS[Math.min(DRC_RANKS.length-1,Math.floor(G.wave/4))];
-    uctx.fillStyle='#ffae54'; uctx.font='italic 15px system-ui'; uctx.fillText(rk, W/2, 236); }
+    uctx.fillStyle=C_AMBER; uctx.font='700 16px '+F_DISP; uctx.fillText(rk, W/2, 236); }
   const rec=(G.wave>=G.best)||(G.score>=G.bestScore&&G.score>0);
-  uctx.fillStyle='#ffd23f'; uctx.font='14px system-ui';
+  uctx.fillStyle=C_AMBER; uctx.font='700 14px '+F_NUM;
   uctx.fillText((rec?'★ ':'')+'W'+G.best+' / ★'+G.bestScore.toLocaleString(),W/2,260);
-  drawBtn('btnRetry', W/2-90, 284, 180, 56, '▶', '#2a5a6a');
+  drawIcon('btnRetry', W/2, 300, 28, 'play', C_HDF);
 }
 
 /* ============================================================================
@@ -1529,6 +1602,7 @@ function toLogical(clientX, clientY){
   return { x:(clientX-r.left)*sx, y:(clientY-r.top)*sy };
 }
 function hit(id, x,y){ const b=btnRects[id]; return b && x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h; }
+function pickBtn(x,y){ for(const id in btnRects){ if(hit(id,x,y)) return id; } return null; }
 
 function onTap(x,y){
   initAudio();
@@ -1603,18 +1677,18 @@ function placeLift(p){ return (G.selectedPalette && p.y>=FIELD.y && p.y<BAR_Y) ?
 // ---- マウス：ドラッグで戦場パン／離した時クリック確定／ホイールでスクロール ----
 let mDown=null, mDrag=false, mCam0=0;
 function camCur(){ return G.camTarget==null?G.camX:G.camTarget; }
-ux.addEventListener('mousedown',e=>{ const p=toLogical(e.clientX,e.clientY); mDown=p; mDrag=false; mCam0=camCur(); onMove(p.x,p.y,placeLift(p)); });
+ux.addEventListener('mousedown',e=>{ const p=toLogical(e.clientX,e.clientY); mDown=p; mDrag=false; mCam0=camCur(); _pressedId=pickBtn(p.x,p.y); onMove(p.x,p.y,placeLift(p)); });
 ux.addEventListener('mousemove',e=>{ const p=toLogical(e.clientX,e.clientY);
   if(mDown){ if(Math.abs(p.x-mDown.x)>6||Math.abs(p.y-mDown.y)>6) mDrag=true;
     if(mDrag && !G.selectedPalette && mDown.y>=FIELD.y && mDown.y<BAR_Y){ G.camTarget=clampCam(mCam0-(p.x-mDown.x)); G.camDrag=true; } }
   onMove(p.x,p.y,placeLift(p)); });
-ux.addEventListener('mouseup',e=>{ if(mDown && !mDrag) onTap(mDown.x,mDown.y); mDown=null; mDrag=false; G.camDrag=false; });
+ux.addEventListener('mouseup',e=>{ if(mDown && !mDrag) onTap(mDown.x,mDown.y); mDown=null; mDrag=false; G.camDrag=false; _pressedId=null; });
 ux.addEventListener('wheel',e=>{ const p=toLogical(e.clientX,e.clientY); e.preventDefault();
   if(inBar(p.y)) palScroll+=(e.deltaY+e.deltaX); else G.camTarget=clampCam(camCur()+(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY)); },{passive:false});
 // ---- タッチ：非配置=パン / 配置=リフトオフ＋端でエッジスクロール / バー=横スクロール ----
 let tStart=null, tDragged=false, tScroll0=0, tCam0=0, tPlacing=false, tPanning=false;
 ux.addEventListener('touchstart',e=>{ e.preventDefault(); const c=e.changedTouches[0]; const p=toLogical(c.clientX,c.clientY);
-  tStart=p; tDragged=false; tScroll0=palScroll; tCam0=camCur();
+  tStart=p; tDragged=false; tScroll0=palScroll; tCam0=camCur(); _pressedId=pickBtn(p.x,p.y);
   const onCtrl=['btnBar','btnNext','btnBarClose','btnSpeed','btnPause','btnMute','btnUpgrade','btnSell','btnTarget'].some(id=>hit(id,p.x,p.y));
   tPlacing = !!(G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);   // ボタン上で始まったタップは配置にしない（誤配置防止）
   tPanning = (!G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);
@@ -1630,7 +1704,7 @@ ux.addEventListener('touchend',e=>{ e.preventDefault();
   if(tPlacing){ if(G.hoverCell){ const {gx,gy}=G.hoverCell;
       if(tryPlace(G.selectedPalette,gx,gy)){ if(G.parts<TOWER_BY_KEY[G.selectedPalette].cost) G.selectedPalette=null; } } }
   else if(tStart && !tDragged){ onTap(tStart.x,tStart.y); }
-  tStart=null; tPlacing=false; tPanning=false; G.camDrag=false; G.hoverCell=null; G.placeGhost=null; },{passive:false});
+  tStart=null; tPlacing=false; tPanning=false; G.camDrag=false; G.hoverCell=null; G.placeGhost=null; _pressedId=null; },{passive:false});
 
 function toast(msg){}   // 日本語の説明テキストは非表示（やりこんで理解する方針）。撃破アナウンサー/コンボは別系統で表示
 
