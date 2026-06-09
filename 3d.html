@@ -128,7 +128,7 @@ const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
   {key:'grunt', hp:34,  speed:1.9, reward:7,  scale:0.62, color:0x7a2f3a, dmg:5},
-  {key:'runner',hp:22,  speed:3.0, reward:8,  scale:0.5,  color:0x875024, dmg:4},
+  {key:'runner',hp:22,  speed:3.0, reward:8,  scale:0.5,  color:0x4e3318, dmg:4},
   {key:'tank',  hp:120, speed:1.1, reward:16, scale:0.9,  color:0x55243c, dmg:9},
 ];
 
@@ -189,7 +189,7 @@ function initScene(){
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.ACESFilmicToneMapping;           // 映画的トーンマップ
-  renderer.toneMappingExposure=0.82;                          // 露出を下げて白飛び回避＝色が乗る
+  renderer.toneMappingExposure=0.74;                          // 露出を下げて白飛び回避＝色が乗る
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.Fog(0x05070c, 38, 160);
   camera=new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   raycaster=new THREE.Raycaster();
@@ -198,11 +198,11 @@ function initScene(){
   // ライト（キー＋フィル＋リム、ソフトシャドウ）
   scene.add(new THREE.AmbientLight(0x223044, 0.05));
   scene.add(new THREE.HemisphereLight(0x86a8d0, 0x0a0e16, 0.08));
-  const key=new THREE.DirectionalLight(0xfff2e0, 3.1); key.position.set(-10,18,12); key.castShadow=true;
+  const key=new THREE.DirectionalLight(0xffe7cf, 2.0); key.position.set(-10,18,12); key.castShadow=true;
   key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
-  const rim=new THREE.DirectionalLight(0x4aa0ff, 1.4); rim.position.set(12,8,-14); scene.add(rim);
+  const rim=new THREE.DirectionalLight(0x3a6a9a, 0.8); rim.position.set(12,8,-14); scene.add(rim);
   const fill=new THREE.PointLight(0x7a2f3a, 0.12, 30); fill.position.set(WW/2,6,0); scene.add(fill);   // スポーン側の赤フィル
   // 地面（暗いコンクリ）＋セル境界に正確一致した3Dグリッド線（敵/タワーはマス中央に乗る）
   const _gt=gridTexture(); _gt.encoding=THREE.sRGBEncoding; groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({map:_gt,color:0xffffff,roughness:0.95,metalness:0.0,envMapIntensity:0.12}));
@@ -214,13 +214,13 @@ function initScene(){
   baseMesh=new THREE.Group(); const bw=cellToWorld(GOAL_C,BASE_R);
   const core=new THREE.Mesh(roundedBox(1.0,1.5,1.0,0.22), pbr(0x16323f,{metalness:0.85,roughness:0.32,emissive:0x0a3a4a,ei:0.5,clearcoat:0.6}));
   core.position.y=0.8; core.castShadow=true; baseMesh.add(core);
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.5,24,16,0,Math.PI*2,0,Math.PI/2), pbr(0x1d4a5c,{metalness:0.9,roughness:0.25,emissive:0x33e0ff,ei:0.25,clearcoat:0.8})); dome.position.y=1.55; dome.castShadow=true; baseMesh.add(dome);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.9,0.06,12,40), emis(0x33e0ff,1.4)); ring.position.y=0.95; ring.rotation.x=Math.PI/2; baseMesh.add(ring); baseMesh.userData.ring=ring;
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.5,24,16,0,Math.PI*2,0,Math.PI/2), pbr(0x153a48,{metalness:0.45,roughness:0.5,emissive:0x2fb6dc,ei:0.18,clearcoat:0.1})); dome.position.y=1.55; dome.castShadow=true; baseMesh.add(dome);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.9,0.06,12,40), emis(0x2fb6dc,0.85)); ring.position.y=0.95; ring.rotation.x=Math.PI/2; baseMesh.add(ring); baseMesh.userData.ring=ring;
   baseMesh.position.set(bw.x,0,bw.z); scene.add(baseMesh);
   // スポーン（ZERO・レッド）
   spawnMesh=new THREE.Group(); const sw=cellToWorld(SPAWN_C,SPAWN_R);
   const sr=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.06,12,40), emis(0xff3b54,1.6)); sr.rotation.x=Math.PI/2; sr.position.y=0.45; spawnMesh.add(sr); spawnMesh.userData.ring=sr;
-  const sr2=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.04,10,32), emis(0xff7a8a,1.2)); sr2.rotation.x=Math.PI/2; sr2.position.y=0.45; spawnMesh.add(sr2);
+  const sr2=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.04,10,32), emis(0xb83a4c,1.2)); sr2.rotation.x=Math.PI/2; sr2.position.y=0.45; spawnMesh.add(sr2);
   spawnMesh.position.set(sw.x,0,sw.z); scene.add(spawnMesh);
   // ポストプロセス（ブルーム＝発光の写実）
   try{
@@ -570,7 +570,7 @@ var C_GUN2   = 0x3a3e44; // lighter gunmetal
 var C_RUST   = 0x6b4a2e; // rust / dirt
 var C_TRACK  = 0x202024; // track rubber
 var C_BOLT   = 0x35372b;
-var C_LENS   = 0x9fe0ff; // sensor lens (only emissive)
+var C_LENS   = 0x3a9fd0; // sensor lens (only emissive)
 
 // material helpers
 function matHull(c){ return steel(c); }
@@ -800,9 +800,9 @@ var C_HULL2  = 0x203f74; // darker plate
 var C_TANK   = 0x3f72c0; // dusted steel tank
 var C_DARK   = 0x1d242a; // shadow/recess
 var C_BOLT   = 0x394652;
-var C_ACCENT = 0x9fd8ef; // pale chill glow
+var C_ACCENT = 0x2f7fb8; // pale chill glow
 var C_RUST   = 0x6e5a4a;
-var C_FROST  = 0x7a9aa6; // frosted rime
+var C_FROST  = 0x2b4658; // frosted rime
 
 // materials
 var mHull  = steel(C_HULL);
