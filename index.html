@@ -108,7 +108,7 @@ const flowDX = new Float32Array(WCOLS*ROWS); // 各セル→基地方向(単位)
 const flowDY = new Float32Array(WCOLS*ROWS);
 const GOAL_GX = 0;                           // 基地ゴール列
 const BASE_GY = Math.floor(ROWS/2);          // 基地の行（中央）
-const SPAWN_GX = WCOLS-1;                     // 敵スポーン列(最右)
+const SPAWN_GX = WCOLS-2;                     // 敵スポーンは右から2列目（最右列は押しにくいので使わない）
 const SPAWN_GY = Math.floor(ROWS/2);          // 出現は右中央の1箇所のみ
 const SPAWN_CELLS = [SPAWN_GY];               // （単一スポーン）
 const BASE = cellCenter(GOAL_GX, BASE_GY);    // 基地代表座標(描画/飛行目標/リーク)
@@ -503,8 +503,9 @@ function towerAtCell(gx,gy){ return G.towers.find(t=>t.gx===gx&&t.gy===gy); }
 // 占有のみ（軽い判定）：範囲内・基地列/スポーン列でない・空き
 function cellFree(gx,gy){
   if(!inField(gx,gy)) return false;
-  if(gx===GOAL_GX && gy===BASE_GY) return false;    // 基地マスのみ禁止
-  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マスのみ禁止
+  if(gx>=WCOLS-1) return false;                      // 最右列は使わない（右端は押しにくい）
+  if(gx===GOAL_GX && gy===BASE_GY) return false;    // 基地マス
+  if(gx===SPAWN_GX && gy===SPAWN_GY) return false;  // 出現マス
   if(occ[idxOf(gx,gy)]) return false;
   return true;
 }
@@ -890,14 +891,14 @@ function drawField(t){
     ctx.fillStyle='#ffb0b0'; ctx.font='bold 9px system-ui'; ctx.textAlign='center'; ctx.fillText('敵',0,3);
     ctx.restore(); }
 
-  // 迷路の現在経路を流れ場の矢印で可視化（自作した“道”が見える）
-  ctx.fillStyle='rgba(120,180,255,0.16)';
-  for(let gy=0;gy<ROWS;gy++)for(let gx=1;gx<WCOLS-1;gx++){
-    const i=idxOf(gx,gy); if(distF[i]<0) continue; const fx=flowDX[i], fy=flowDY[i]; if(fx===0&&fy===0) continue;
-    const cx=OX+gx*CELL+CELL/2, cy=OY+gy*CELL+CELL/2;
-    ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.atan2(fy,fx));
-    ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-5,-5); ctx.lineTo(-5,5); ctx.closePath(); ctx.fill(); ctx.restore();
-  }
+  // 迷路の現在経路の矢印は「配置モード時のみ」表示（戦闘中はクリーンに）
+  if(G.selectedPalette){ ctx.fillStyle='rgba(120,180,255,0.22)';
+    for(let gy=0;gy<ROWS;gy++)for(let gx=1;gx<WCOLS-1;gx++){
+      const i=idxOf(gx,gy); if(distF[i]<0) continue; const fx=flowDX[i], fy=flowDY[i]; if(fx===0&&fy===0) continue;
+      const cx=OX+gx*CELL+CELL/2, cy=OY+gy*CELL+CELL/2;
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.atan2(fy,fx));
+      ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-5,-5); ctx.lineTo(-5,5); ctx.closePath(); ctx.fill(); ctx.restore();
+    } }
 
   // 基地（磯部軍）
   drawBase(t);
@@ -1206,15 +1207,12 @@ function drawUI(t){
   uctx.fillStyle='rgba(255,80,80,0.5)'; uctx.fillRect(10,12,150*hprD,24);   // 遅れて削れる赤
   uctx.fillStyle=hpr>0.5?'#3fdf5f':hpr>0.25?'#dfdf3f':'#df3f3f'; uctx.fillRect(10,12,150*hpr,24);
   uctx.strokeStyle='#556'; uctx.lineWidth=1; uctx.strokeRect(10,12,150,24);
-  uctx.fillStyle='#fff'; uctx.font='bold 14px system-ui'; uctx.textAlign='center'; uctx.fillText('基地 '+Math.ceil(G.hpDisp)+'/'+G.baseMax,85,29);
-  // 部品（カウントアップ）
+  uctx.fillStyle='#fff'; uctx.font='bold 14px system-ui'; uctx.textAlign='center'; uctx.fillText(Math.ceil(G.hpDisp)+'/'+G.baseMax,85,29);
+  // 部品（マークのみ）
   uctx.textAlign='left'; uctx.font='bold 22px system-ui'; uctx.fillStyle='#ffd23f'; uctx.fillText('⚙'+Math.round(G.partsDisp),176,32);
-  // ウェーブ
+  // ウェーブ・スコア（数値のみ・日本語ラベルなし）
   uctx.font='bold 20px system-ui'; uctx.fillStyle='#fff'; uctx.fillText('W'+G.wave,300,32);
-  uctx.font='11px system-ui'; uctx.fillStyle='#9ab'; uctx.fillText('最高'+G.best,300,15);
-  // スコア（カウントアップ）
-  uctx.font='bold 18px system-ui'; uctx.fillStyle='#9fe0ff'; uctx.fillText(Math.round(G.scoreDisp).toLocaleString(),392,32);
-  uctx.font='11px system-ui'; uctx.fillStyle='#7ab'; uctx.fillText('スコア',392,15);
+  uctx.font='bold 18px system-ui'; uctx.fillStyle='#9fe0ff'; uctx.fillText('★'+Math.round(G.scoreDisp).toLocaleString(),392,32);
   // 高野DRC軍 紋章
   uctx.save(); uctx.translate(478,24); drcEmblem(uctx,13,'#cc4040',t); uctx.restore();
   // 右クラスタ：つぎへ／速度／一時停止／ミュート（描画は h30、当たり判定は padでh46≥44px）
@@ -1234,14 +1232,13 @@ function drawUI(t){
   // ボス出現 WARNING
   if(G.bossWarnT>0){ G.bossWarnT-=0.016; const a=0.5+0.5*Math.sin(t*12);
     uctx.fillStyle='rgba(170,18,18,'+(0.12*a)+')'; uctx.fillRect(0,HUD_H,FIELD.w,FIELD.h);
-    uctx.fillStyle='rgba(255,45,45,'+a+')'; uctx.font='bold 42px system-ui'; uctx.textAlign='center'; uctx.fillText('⚠ WARNING ⚠',FIELD.x+FIELD.w/2,H/2-20);
-    uctx.fillStyle='#fff'; uctx.font='bold 18px system-ui'; uctx.fillText(G.warnLabel||'高野DRC軍 敵将 接近',FIELD.x+FIELD.w/2,H/2+12); }
+    uctx.fillStyle='rgba(255,45,45,'+a+')'; uctx.font='bold 42px system-ui'; uctx.textAlign='center'; uctx.fillText('⚠ WARNING ⚠',FIELD.x+FIELD.w/2,H/2); }
   // コンボ表示（縁取り＋連撃で赤熱）
   if(G.combo>=2){ const a=Math.min(1,G.comboT/2.2+0.3), cx=FIELD.x+FIELD.w/2, cyy=HUD_H+(bossE?52:34);
     uctx.globalAlpha=a; uctx.font='bold '+(20+Math.min(20,G.combo))+'px system-ui'; uctx.textAlign='center';
     const heat=Math.min(1,(G.combo-2)/18); const col=heat<0.5?'#ffd23f':'#ff7a3f';
-    uctx.lineWidth=4; uctx.strokeStyle='rgba(0,0,0,0.8)'; uctx.strokeText('×'+G.combo+' コンボ',cx,cyy);
-    uctx.fillStyle=col; uctx.fillText('×'+G.combo+' コンボ',cx,cyy); uctx.globalAlpha=1; }
+    uctx.lineWidth=4; uctx.strokeStyle='rgba(0,0,0,0.8)'; uctx.strokeText('×'+G.combo+' COMBO',cx,cyy);
+    uctx.fillStyle=col; uctx.fillText('×'+G.combo+' COMBO',cx,cyy); uctx.globalAlpha=1; }
   // 撃破アナウンサー（金グラデ＋二重縁＋発光）
   if(G.announceT>0 && G.announce){ const k=Math.min(1,G.announceT/0.4); const pop=1+(1-Math.min(1,G.announceT/1.2))*0.35;
     const ax=FIELD.x+FIELD.w/2, ay=H*0.42, sz=Math.round(56*pop);
@@ -1260,11 +1257,10 @@ function drawUI(t){
     uctx.fillStyle='rgba(6,9,14,'+(0.74*G.barAnim)+')'; uctx.fillRect(0,HUD_H,W,H-HUD_H);   // 暗幕（フェード）
     drawBottomBar(t);
     const cy=(H-BAR_H)+(1-G.barAnim)*BAR_H;
-    uctx.fillStyle='#bcd'; uctx.font='12px system-ui'; uctx.textAlign='left'; uctx.fillText('兵器を選ぶと閉じる／暗い所タップでも閉じる', 14, cy-8);
-    drawBtn('btnBarClose', W-104, cy-34, 96, 28, '✕ 閉じる', '#6a2a2a');
+    drawBtn('btnBarClose', W-104, cy-34, 96, 28, '✕', '#6a2a2a');
   }
   // 下部に残すのは ☰兵器 のみ（下辺中央やや左＝セーフエリア内・マップ非干渉）。つぎへは上HUDへ移設済み
-  if(G.barAnim<0.5) drawBtn('btnBar', W/2-150, H-52, 92, 44, '☰ 兵器', '#2a7a3a');
+  if(G.barAnim<0.5) drawBtn('btnBar', 8, H-52, 88, 44, '☰', '#2a7a3a');
 
   // 選択タワー情報パネル
   if(G.selectedTower) drawTowerPanel(G.selectedTower);
@@ -1287,7 +1283,7 @@ function drawUI(t){
   }
 
   if(G.paused && G.scene==='playing'){ uctx.fillStyle='rgba(0,0,0,0.5)'; uctx.fillRect(0,HUD_H,FIELD.w,FIELD.h);
-    uctx.fillStyle='#fff'; uctx.font='bold 40px system-ui'; uctx.textAlign='center'; uctx.fillText('一時停止',FIELD.w/2,H/2); }
+    uctx.fillStyle='#fff'; uctx.font='bold 40px system-ui'; uctx.textAlign='center'; uctx.fillText('❚❚',FIELD.w/2,H/2); }
 
   if(G.scene==='gameover') drawGameOver();
 }
@@ -1326,13 +1322,11 @@ function drawBottomBar(t){
     const sel=G.selectedPalette===def.key, afford=G.parts>=def.cost;
     uctx.fillStyle=sel?'#27506e':'#161c26'; uctx.fillRect(x,cardY,CARDW,cardH);
     uctx.strokeStyle=sel?def.acc:'#2a3340'; uctx.lineWidth=sel?2:1; uctx.strokeRect(x,cardY,CARDW,cardH);
-    uctx.fillStyle=targetColor(def.target); uctx.fillRect(x,cardY,28,17);
-    uctx.fillStyle='#06121f'; uctx.font='bold 12px system-ui'; uctx.textAlign='center'; uctx.fillText(targetLabel(def.target),x+14,cardY+13);
-    uctx.save(); uctx.translate(x+CARDW/2, cardY+31); drawTurretIcon(def); uctx.restore();
-    uctx.textAlign='center'; uctx.font='bold 12px system-ui'; uctx.fillStyle=afford?'#fff':'#7a8190';
-    uctx.fillText(def.name.replace('磯部',''), x+CARDW/2, cardY+55);
-    uctx.font='10px system-ui'; uctx.fillStyle=def.acc; uctx.fillText(def.cat, x+CARDW/2, cardY+69);
-    uctx.font='bold 15px system-ui'; uctx.fillStyle=afford?'#ffd23f':'#a86'; uctx.fillText('⚙'+def.cost, x+CARDW/2, cardY+cardH-6);
+    // 対象タイプは色で表現（陸=琥珀/空=青/両=紫）。文字は出さない＝遊んで覚える
+    uctx.fillStyle=targetColor(def.target); uctx.fillRect(x,cardY,CARDW,5);
+    uctx.save(); uctx.translate(x+CARDW/2, cardY+cardH*0.42); uctx.scale(1.35,1.35); drawTurretIcon(def); uctx.restore();
+    uctx.textAlign='center'; uctx.font='bold 18px system-ui'; uctx.fillStyle=afford?'#ffd23f':'#a86';
+    uctx.fillText('⚙'+def.cost, x+CARDW/2, cardY+cardH-9);
     palBtns.push({x,y:cardY,w:CARDW,h:cardH,key:def.key});
   }
   uctx.restore();
@@ -1423,35 +1417,28 @@ function drawTitle(t){
   uctx.lineWidth=5; uctx.strokeStyle='#3a2a08'; uctx.strokeText('磯部防衛戦線',W/2,148);
   const tg=uctx.createLinearGradient(0,118,0,156); tg.addColorStop(0,'#ffe98a'); tg.addColorStop(0.5,'#ffd23f'); tg.addColorStop(1,'#d89a1a');
   uctx.fillStyle=tg; uctx.fillText('磯部防衛戦線',W/2,148); uctx.restore();
-  uctx.fillStyle='#7fbfff'; uctx.font='bold 16px system-ui'; uctx.fillText('I S O B E   D E F E N S E',W/2,176);
-  uctx.fillStyle='#9ab'; uctx.font='13px system-ui';
-  uctx.fillText('磯部軍を率い、右から侵攻する 高野DRC軍 を食い止めろ。',W/2,206);
-  drawBtn('btnStart', W/2-110, 232, 220, 52, '出撃する', '#2a6a3a');
-  uctx.fillStyle='#c77'; uctx.font='italic 12px system-ui';
-  uctx.fillText('敵勢力「'+DRC_FACTION.fullName.split('（')[0]+'」', W/2, 312);
-  uctx.fillStyle='#a55'; uctx.font='italic 11px system-ui'; uctx.fillText('— '+DRC_FACTION.motto+' —', W/2, 332);
-  uctx.fillStyle='#789'; uctx.font='12px system-ui';
-  uctx.fillText('最高到達ウェーブ '+G.best+'　／　最高スコア '+G.bestScore.toLocaleString(), W/2, 360);
-  uctx.fillText('横画面・音アリ推奨。タップで配置・選択／下のバーで兵器を選ぶ。', W/2, 380);
+  uctx.fillStyle='#7fbfff'; uctx.font='bold 16px system-ui'; uctx.fillText('I S O B E   D E F E N S E',W/2,184);
+  drawBtn('btnStart', W/2-90, 224, 180, 56, '▶', '#2a6a3a');
+  uctx.fillStyle='#789'; uctx.font='13px system-ui';
+  uctx.fillText('W'+G.best+'   ★'+G.bestScore.toLocaleString(), W/2, 348);
 }
 function drawGameOver(){
   uctx.fillStyle='rgba(0,0,0,0.82)'; uctx.fillRect(0,0,W,H);
   uctx.textAlign='center';
-  uctx.fillStyle='#ff5a5a'; uctx.font='bold 44px system-ui'; uctx.fillText('基地 陥落',W/2,120);
-  uctx.fillStyle='#bcd'; uctx.font='13px system-ui'; uctx.fillText('高野DRC軍が磯部の礎を更地に還した…',W/2,148);
-  uctx.fillStyle='#fff'; uctx.font='bold 24px system-ui'; uctx.fillText('到達ウェーブ '+G.wave+'　スコア '+G.score.toLocaleString(),W/2,184);
+  uctx.fillStyle='#ff5a5a'; uctx.font='bold 44px system-ui'; uctx.fillText('GAME OVER',W/2,120);
+  uctx.fillStyle='#fff'; uctx.font='bold 24px system-ui'; uctx.fillText('W'+G.wave+'   ★'+G.score.toLocaleString(),W/2,180);
   // 戦績
   const era=['I 整地戦','II 焦土化','III 溶岩侵食','IV 黙示録'][Math.min(3,G.era||0)];
   const mm=Math.floor((G.playT||0)/60), ss=Math.floor((G.playT||0)%60);
   uctx.fillStyle='#bcd'; uctx.font='14px system-ui';
-  uctx.fillText('撃破 '+(G.kills||0)+'　最大コンボ ×'+(G.maxCombo||0)+'　到達ERA '+era+'　戦闘 '+mm+':'+(ss<10?'0':'')+ss, W/2, 212);
+  uctx.fillText('☠'+(G.kills||0)+'   ×'+(G.maxCombo||0)+'   '+era.split(' ')[0]+'   '+mm+':'+(ss<10?'0':'')+ss, W/2, 212);
   // 称号（DRC_RANKSを活用）
   if(typeof DRC_RANKS!=='undefined'){ const rk=DRC_RANKS[Math.min(DRC_RANKS.length-1,Math.floor(G.wave/4))];
-    uctx.fillStyle='#ffae54'; uctx.font='italic 15px system-ui'; uctx.fillText('討伐評価：'+rk, W/2, 236); }
+    uctx.fillStyle='#ffae54'; uctx.font='italic 15px system-ui'; uctx.fillText(rk, W/2, 236); }
   const rec=(G.wave>=G.best)||(G.score>=G.bestScore&&G.score>0);
   uctx.fillStyle='#ffd23f'; uctx.font='14px system-ui';
-  uctx.fillText((rec?'★ 自己ベスト更新！　':'')+'最高W'+G.best+' / 最高得点 '+G.bestScore.toLocaleString(),W/2,260);
-  drawBtn('btnRetry', W/2-110, 284, 220, 52, 'もう一戦', '#2a5a6a');
+  uctx.fillText((rec?'★ ':'')+'W'+G.best+' / ★'+G.bestScore.toLocaleString(),W/2,260);
+  drawBtn('btnRetry', W/2-90, 284, 180, 56, '▶', '#2a5a6a');
 }
 
 /* ============================================================================
@@ -1541,8 +1528,9 @@ ux.addEventListener('wheel',e=>{ const p=toLogical(e.clientX,e.clientY); e.preve
 let tStart=null, tDragged=false, tScroll0=0, tCam0=0, tPlacing=false, tPanning=false;
 ux.addEventListener('touchstart',e=>{ e.preventDefault(); const c=e.changedTouches[0]; const p=toLogical(c.clientX,c.clientY);
   tStart=p; tDragged=false; tScroll0=palScroll; tCam0=camCur();
-  tPlacing = !!(G.selectedPalette && p.y>=FIELD.y && p.y<BAR_Y);
-  tPanning = (!G.selectedPalette && p.y>=FIELD.y && p.y<BAR_Y);
+  const onCtrl=['btnBar','btnNext','btnBarClose','btnSpeed','btnPause','btnMute','btnUpgrade','btnSell','btnTarget'].some(id=>hit(id,p.x,p.y));
+  tPlacing = !!(G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);   // ボタン上で始まったタップは配置にしない（誤配置防止）
+  tPanning = (!G.selectedPalette && !onCtrl && p.y>=FIELD.y && p.y<BAR_Y);
   onMove(p.x,p.y, tPlacing?LIFT_PX:0); },{passive:false});
 ux.addEventListener('touchmove',e=>{ e.preventDefault(); const c=e.changedTouches[0]; const p=toLogical(c.clientX,c.clientY);
   if(tStart){ const dx=p.x-tStart.x, dy=p.y-tStart.y;
@@ -1557,7 +1545,7 @@ ux.addEventListener('touchend',e=>{ e.preventDefault();
   else if(tStart && !tDragged){ onTap(tStart.x,tStart.y); }
   tStart=null; tPlacing=false; tPanning=false; G.camDrag=false; G.hoverCell=null; G.placeGhost=null; },{passive:false});
 
-function toast(msg){ G.toast=msg; G.toastT=4.2; }   // 実時間で減衰（loop側）。早送りでも読める
+function toast(msg){}   // 日本語の説明テキストは非表示（やりこんで理解する方針）。撃破アナウンサー/コンボは別系統で表示
 
 /* ============================================================================
    ゲーム進行
@@ -1627,31 +1615,35 @@ function drawTitleField(){ ctx.fillStyle='#05070c'; ctx.fillRect(0,0,W,H); }
 /* ============================================================================
    サウンド（WebAudio生成・効果音豊富）
    ============================================================================ */
-let actx=null, master=null;
+let actx=null, master=null, musicGain=null;
 function initAudio(){
   if(actx) return;
   try{ const AC=window.AudioContext||window.webkitAudioContext; actx=new AC();
     master=actx.createGain(); master.gain.value=G.muted?0:0.34;
     const comp=actx.createDynamicsCompressor(); comp.threshold.value=-14; comp.knee.value=8; comp.ratio.value=12; comp.attack.value=0.003; comp.release.value=0.18;
     master.connect(comp); comp.connect(actx.destination);   // 密集時のピーク歪みを抑える
+    musicGain=actx.createGain(); musicGain.gain.value=1; musicGain.connect(master);   // BGM専用バス（ダッキング用）
   }catch(e){ actx=null; }
 }
+// 重撃でBGMを一瞬沈めるサイドチェイン・ダッキング
+function duck(amt){ if(!actx||!musicGain)return; const n=actx.currentTime;
+  try{ musicGain.gain.cancelScheduledValues(n); musicGain.gain.setValueAtTime(amt||0.32,n); musicGain.gain.linearRampToValueAtTime(1,n+0.45); }catch(e){} }
 function toggleMute(){ G.muted=!G.muted; if(master)master.gain.value=G.muted?0:0.34; }
-function tone(freq,start,dur,type,vol,toFreq){
+function tone(freq,start,dur,type,vol,toFreq,dest){
   if(!actx)return; const o=actx.createOscillator(),g=actx.createGain();
   o.type=type||'square'; o.frequency.setValueAtTime(freq,start);
   if(toFreq)o.frequency.exponentialRampToValueAtTime(Math.max(20,toFreq),start+dur);
   g.gain.setValueAtTime(0.0001,start); g.gain.linearRampToValueAtTime(vol,start+0.005);
   g.gain.exponentialRampToValueAtTime(0.0006,start+dur);
-  o.connect(g); g.connect(master); o.start(start); o.stop(start+dur+0.02);
+  o.connect(g); g.connect(dest||master); o.start(start); o.stop(start+dur+0.02);
 }
-function noise(start,dur,vol,filt){
+function noise(start,dur,vol,filt,dest){
   if(!actx)return; const n=actx.createBufferSource();
   const buf=actx.createBuffer(1,actx.sampleRate*dur,actx.sampleRate); const d=buf.getChannelData(0);
   for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1); n.buffer=buf;
   const g=actx.createGain(); g.gain.setValueAtTime(vol,start); g.gain.exponentialRampToValueAtTime(0.001,start+dur);
   const f=actx.createBiquadFilter(); f.type=filt||'lowpass'; f.frequency.value=filt==='highpass'?2000:900;
-  n.connect(f); f.connect(g); g.connect(master); n.start(start); n.stop(start+dur);
+  n.connect(f); f.connect(g); g.connect(dest||master); n.start(start); n.stop(start+dur);
 }
 const _t=()=> actx?actx.currentTime:0;
 let lastSfx={};
@@ -1671,15 +1663,15 @@ const sfx={
   poison(){ tone(160,_t(),0.2,'sine',0.10,80); },
   rail(){ tone(1600,_t(),0.16,'sawtooth',0.18,120); noise(_t(),0.1,0.12); },
   barrier(){ tone(500,_t(),0.2,'sine',0.14,900); },
-  explode(){ tone(90,_t(),0.30,'sawtooth',0.28,38); tone(55,_t(),0.38,'sine',0.40,26); noise(_t(),0.26,0.30); },
+  explode(){ tone(90,_t(),0.30,'sawtooth',0.28,38); tone(55,_t(),0.38,'sine',0.40,26); noise(_t(),0.26,0.30); duck(0.42); },
   die(){ tone(300,_t(),0.12,'square',0.12,80); tone(90,_t(),0.18,'sine',0.22,45); noise(_t(),0.12,0.14); },
-  bossDie(){ for(let i=0;i<5;i++)tone(220-i*32,_t()+i*0.08,0.24,'sawtooth',0.26,45); tone(48,_t(),0.7,'sine',0.42,28); noise(_t(),0.6,0.34); },
+  bossDie(){ for(let i=0;i<5;i++)tone(220-i*32,_t()+i*0.08,0.24,'sawtooth',0.26,45); tone(48,_t(),0.7,'sine',0.42,28); noise(_t(),0.6,0.34); duck(0.22); },
   build(){ tone(400,_t(),0.08,'square',0.16,600); tone(700,_t()+0.07,0.1,'square',0.16,900); },
   upgrade(){ tone(600,_t(),0.08,'square',0.16); tone(800,_t()+0.07,0.08,'square',0.16); tone(1100,_t()+0.14,0.14,'square',0.18); },
   sell(){ tone(700,_t(),0.08,'square',0.14,400); tone(400,_t()+0.07,0.1,'square',0.12,200); },
   error(){ tone(180,_t(),0.12,'square',0.16,120); },
   ui(){ tone(660,_t(),0.04,'square',0.10); },
-  leak(){ tone(150,_t(),0.3,'sawtooth',0.24,60); tone(60,_t(),0.4,'sine',0.40,34); noise(_t(),0.24,0.2); },
+  leak(){ tone(150,_t(),0.3,'sawtooth',0.24,60); tone(60,_t(),0.4,'sine',0.40,34); noise(_t(),0.24,0.2); duck(0.35); },
   waveStart(){ tone(520,_t(),0.1,'square',0.16); tone(660,_t()+0.1,0.1,'square',0.16); tone(784,_t()+0.2,0.16,'square',0.18); },
   waveClear(){ [523,659,784,1046].forEach((f,i)=>tone(f,_t()+i*0.09,0.14,'square',0.16)); },
   bossWarn(){ for(let i=0;i<3;i++){tone(200,_t()+i*0.25,0.18,'sawtooth',0.2);tone(150,_t()+i*0.25+0.09,0.12,'sawtooth',0.16);} },
@@ -1697,13 +1689,13 @@ const NB={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function nf(n){ const m=n.match(/^([A-G])(#?)(\d)$/); if(!m)return 0; const s=NB[m[1]]+(m[2]?1:0)+(+m[3]-4)*12; return 440*Math.pow(2,(s-9)/12); }
 let bgm=null,bgmT=null;
 function trackLen(seq,tempo){ let l=0; for(const[,s]of seq)l+=s*tempo; return l; }
-function kick(at){ if(!actx)return; tone(120,at,0.12,'sine',0.30,40); noise(at,0.04,0.08); }
-function hat(at){ if(!actx)return; noise(at,0.025,0.05,'highpass'); }
-function schedBgm(){ if(!actx||!bgm)return; const tn=TUNES[bgm]; const t0=actx.currentTime+0.06;
-  // リード（厚みのためオクターブ重ね）
-  let t=t0; for(const[n,s]of tn.lead){ const d=s*tn.tempo; if(n){ tone(nf(n),t,d*0.95,'sawtooth',0.055); tone(nf(n)*2,t,d*0.5,'square',0.018);} t+=d; }
+function kick(at){ if(!actx)return; tone(120,at,0.12,'sine',0.30,40,musicGain); noise(at,0.04,0.08,'lowpass',musicGain); }
+function hat(at){ if(!actx)return; noise(at,0.025,0.05,'highpass',musicGain); }
+function schedBgm(){ if(!actx||!bgm)return; const tn=TUNES[bgm]; const t0=actx.currentTime+0.06; const MB=musicGain;
+  // リード（厚みのためオクターブ重ね）※musicGain経由＝重撃でダッキングされる
+  let t=t0; for(const[n,s]of tn.lead){ const d=s*tn.tempo; if(n){ tone(nf(n),t,d*0.95,'sawtooth',0.055,0,MB); tone(nf(n)*2,t,d*0.5,'square',0.018,0,MB);} t+=d; }
   // ベース（サブ重ね）
-  t=t0; for(const[n,s]of tn.bass){ const d=s*tn.tempo; if(n){ tone(nf(n),t,d*0.92,'triangle',0.11); tone(nf(n)/2,t,d*0.9,'sine',0.06);} t+=d; }
+  t=t0; for(const[n,s]of tn.bass){ const d=s*tn.tempo; if(n){ tone(nf(n),t,d*0.92,'triangle',0.11,0,MB); tone(nf(n)/2,t,d*0.9,'sine',0.06,0,MB);} t+=d; }
   // 4つ打ちキック＋裏ハイハット
   const total=trackLen(tn.lead,tn.tempo), beat=tn.tempo*2; let b=0;
   for(let bt=0; bt<total-0.001; bt+=beat){ kick(t0+bt); if(b%2===1) hat(t0+bt+beat/2); b++; }
