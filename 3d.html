@@ -71,7 +71,7 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
-  <div id="badge">3D MVP · build 12（兵器7種＋リアル効果音）</div>
+  <div id="badge">3D MVP · build 13（兵器15種・DoT/貫通/支援）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -127,6 +127,14 @@ const TOWERS=[
   {key:'mortar',name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
   {key:'laser', name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
   {key:'tesla', name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
+  {key:'mg',     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
+  {key:'flame',  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0}},
+  {key:'poison', name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5}},
+  {key:'rail',   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
+  {key:'aa',     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
+  {key:'gatling_air', name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
+  {key:'barrier',name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
+  {key:'booster',name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -2198,7 +2206,2364 @@ for(var k=0;k<6;k++){
 return g;
 
 }
-const _BUILDERS={gun:buildGun,cannon:buildCannon,frost:buildFrost,sniper:buildSniper,mortar:buildMortar,laser:buildLaser,tesla:buildTesla};
+function buildMg(def){
+
+var g = new THREE.Group();
+
+// ---- shared mats ----
+var matSteel   = steel(0x40454c);
+var matDark    = pbr(0x23262b, {metalness:0.9, roughness:0.55, grunge:true});
+var matIron    = pbr(0x2c2f34, {metalness:0.95, roughness:0.4, grunge:true});
+var matGun     = pbr(0x1c1e22, {metalness:0.95, roughness:0.35, grunge:true});
+var matBrass   = pbr(0x6e5a2a, {metalness:1.0, roughness:0.45, grunge:true});
+var matRubber  = pbr(0x141518, {metalness:0.2, roughness:0.95});
+var matBolt    = pbr(0x55585e, {metalness:1.0, roughness:0.5});
+var matHot     = pbr(0x2a1410, {metalness:0.8, roughness:0.6, grunge:true});
+var lensRed    = emis(0xff5a2a, 2.2);
+var lensAmber  = emis(0xffb030, 1.6);
+
+function bolt(x,y,z,r){
+  var b = new THREE.Mesh(new THREE.CylinderGeometry(r||0.018, r||0.018, 0.02, 6), matBolt);
+  b.position.set(x,y,z); b.castShadow = true; return b;
+}
+function boltRing(parent, cx, cy, cz, rad, count, axis){
+  for(var i=0;i<count;i++){
+    var a = i/count*Math.PI*2;
+    var b = bolt(0,0,0,0.016);
+    if(axis==='y'){ b.position.set(cx+Math.cos(a)*rad, cy, cz+Math.sin(a)*rad); }
+    else { b.position.set(cx+Math.cos(a)*rad, cy+Math.sin(a)*rad, cz); b.rotation.x = Math.PI/2; }
+    parent.add(b);
+  }
+}
+
+// =========================================================
+// BASE — low, wide, sloped armored plinth
+// =========================================================
+var base = new THREE.Mesh(roundedBox(1.02, 0.16, 0.92, 0.05), matSteel);
+base.position.y = 0.08; base.castShadow = true; g.add(base);
+
+// sloped skirts (angled armor) around base
+function skirt(x,z,ry,w){
+  var s = new THREE.Mesh(roundedBox(w, 0.14, 0.1, 0.02), matSteel);
+  s.position.set(x, 0.085, z); s.rotation.y = ry; s.rotation.x = 0.38;
+  s.castShadow = true; g.add(s);
+}
+skirt(0, 0.46, 0, 0.96);
+skirt(0, -0.46, Math.PI, 0.96);
+skirt(0.51, 0, Math.PI/2, 0.84);
+skirt(-0.51, 0, -Math.PI/2, 0.84);
+
+// corner anchor feet + bolts
+var feetPos = [[0.44,0.4],[-0.44,0.4],[0.44,-0.4],[-0.44,-0.4]];
+for(var fi=0;fi<feetPos.length;fi++){
+  var fx=feetPos[fi][0], fz=feetPos[fi][1];
+  var foot = new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.09,0.05,8), matIron);
+  foot.position.set(fx, 0.025, fz); foot.castShadow=true; g.add(foot);
+  var pin = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.07,6), matBolt);
+  pin.position.set(fx, 0.05, fz); pin.castShadow=true; g.add(pin);
+  boltRing(g, fx, 0.052, fz, 0.05, 4, 'y');
+}
+
+// panel-line strips on base top
+for(var pl=-1;pl<=1;pl++){
+  var strip = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.012, 0.02), matDark);
+  strip.position.set(0, 0.162, pl*0.28); strip.castShadow=true; g.add(strip);
+}
+
+// rear ammo hopper / power box with hatch + vents
+var hopper = new THREE.Mesh(roundedBox(0.5, 0.28, 0.34, 0.04), matSteel);
+hopper.position.set(0, 0.24, -0.34); hopper.castShadow=true; g.add(hopper);
+var hatch = new THREE.Mesh(roundedBox(0.22, 0.2, 0.02, 0.03), matDark);
+hatch.position.set(0, 0.27, -0.515); hatch.castShadow=true; g.add(hatch);
+boltRing(g, 0, 0.27, -0.515, 0.1, 6);
+var handle = new THREE.Mesh(new THREE.TorusGeometry(0.04,0.01,6,12), matBolt);
+handle.position.set(0, 0.27, -0.525); handle.castShadow=true; g.add(handle);
+// cooling fins on hopper sides
+for(var vf=0;vf<5;vf++){
+  var fin = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.18, 0.3), matIron);
+  fin.position.set(-0.255, 0.24, -0.34 + (vf-2)*0.035); fin.castShadow=true; g.add(fin);
+  var fin2 = fin.clone(); fin2.position.x = 0.255; g.add(fin2);
+}
+// status lens on hopper
+var hopLens = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.015,12), lensAmber);
+hopLens.rotation.x = Math.PI/2; hopLens.position.set(0.14, 0.33, -0.175); g.add(hopLens);
+
+// side cable conduits from hopper to ring
+function cable(p0,p1){
+  var d = p1.clone().sub(p0); var len=d.length();
+  var c = new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,len,6), matRubber);
+  c.position.copy(p0).add(p1).multiplyScalar(0.5);
+  c.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), d.clone().normalize());
+  c.castShadow=true; g.add(c);
+}
+cable(new THREE.Vector3(0.18,0.18,-0.2), new THREE.Vector3(0.12,0.2,0.04));
+cable(new THREE.Vector3(-0.18,0.18,-0.2), new THREE.Vector3(-0.12,0.2,0.04));
+
+// =========================================================
+// TURRET RING
+// =========================================================
+var ring = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.34,0.07,24), matIron);
+ring.position.y = 0.195; ring.castShadow=true; g.add(ring);
+boltRing(g, 0, 0.235, 0, 0.28, 16, 'y');
+
+// =========================================================
+// TURRET (rotating)
+// =========================================================
+var turret = new THREE.Group();
+turret.position.y = 0.23;
+g.add(turret);
+g.userData.turret = turret;
+
+// rotating collar
+var collar = new THREE.Mesh(new THREE.CylinderGeometry(0.27,0.29,0.06,24), matDark);
+collar.position.y = 0.02; collar.castShadow=true; turret.add(collar);
+
+// main cradle body — sloped front, boxy
+var cradle = new THREE.Mesh(roundedBox(0.42, 0.24, 0.46, 0.05), matSteel);
+cradle.position.set(0, 0.17, -0.02); cradle.castShadow=true; turret.add(cradle);
+
+// angled front glacis plate of cradle
+var glacis = new THREE.Mesh(roundedBox(0.4, 0.22, 0.06, 0.02), matSteel);
+glacis.position.set(0, 0.18, 0.21); glacis.rotation.x = -0.5; glacis.castShadow=true; turret.add(glacis);
+boltRing(turret, 0, 0.18, 0.205, 0.12, 8);
+
+// panel lines on cradle sides
+for(var cp=0;cp<2;cp++){
+  var pside = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.18, 0.4), matDark);
+  pside.position.set(cp?0.211:-0.211, 0.17, -0.02); pside.castShadow=true; turret.add(pside);
+  boltRing(turret, cp?0.215:-0.215, 0.17, -0.02, 0.13, 6);
+}
+
+// rear counterweight / receiver block
+var receiver = new THREE.Mesh(roundedBox(0.34, 0.2, 0.18, 0.03), matIron);
+receiver.position.set(0, 0.18, -0.26); receiver.castShadow=true; turret.add(receiver);
+// exhaust ports on receiver
+for(var ex=-1;ex<=1;ex++){
+  var port = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.05,8), matHot);
+  port.rotation.x = Math.PI/2; port.position.set(ex*0.1, 0.21, -0.355); port.castShadow=true; turret.add(port);
+}
+
+// ammo feed belt — brass-link curve from hopper side into receiver
+var beltCount = 12;
+for(var bl=0;bl<beltCount;bl++){
+  var t = bl/(beltCount-1);
+  var bx = 0.18 - t*0.12;
+  var by = 0.03 + t*0.13;
+  var bz = -0.18 - Math.sin(t*Math.PI)*0.08;
+  var link = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.035,0.05), (bl%2?matBrass:matIron));
+  link.position.set(bx,by,bz); link.rotation.z = t*0.5; link.castShadow=true; turret.add(link);
+  // bullet tip peeking
+  if(bl%2===0){
+    var bullet = new THREE.Mesh(new THREE.CylinderGeometry(0.009,0.012,0.04,8), matBrass);
+    bullet.rotation.x = Math.PI/2; bullet.position.set(bx, by+0.03, bz); bullet.castShadow=true; turret.add(bullet);
+  }
+}
+// feed cover plate
+var feedCover = new THREE.Mesh(roundedBox(0.1, 0.12, 0.16, 0.02), matDark);
+feedCover.position.set(0.15, 0.13, -0.16); feedCover.rotation.z=0.3; feedCover.castShadow=true; turret.add(feedCover);
+
+// =========================================================
+// GUN MANTLET + BARREL ASSEMBLY (pitched down/low)
+// =========================================================
+var gun = new THREE.Group();
+gun.position.set(0, 0.2, 0.12);
+gun.rotation.x = 0.08; // slight low set
+turret.add(gun);
+
+// trunnion side plates
+for(var tr=0;tr<2;tr++){
+  var trun = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.04,12), matIron);
+  trun.rotation.z = Math.PI/2; trun.position.set(tr?0.18:-0.18, 0, -0.02); trun.castShadow=true; gun.add(trun);
+  boltRing(gun, tr?0.2:-0.2, 0, -0.02, 0.035, 5);
+}
+
+// mantlet block holding barrels
+var mantlet = new THREE.Mesh(roundedBox(0.3, 0.2, 0.14, 0.04), matSteel);
+mantlet.position.set(0,0,0); mantlet.castShadow=true; gun.add(mantlet);
+boltRing(gun, 0, 0, 0.07, 0.1, 8);
+
+// ---- bundled thin barrels (the multi-barrel rapid-fire) ----
+var barrelLen = 0.5;
+var bundle = [
+  [0.0,   0.045], [0.052, 0.022], [0.052,-0.022],
+  [0.0,  -0.045], [-0.052,-0.022], [-0.052,0.022],
+  [0.0, 0.0]
+];
+for(var bi=0;bi<bundle.length;bi++){
+  var bxp = bundle[bi][0], byp = bundle[bi][1];
+  var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.018,barrelLen,12), matGun);
+  bar.rotation.x = Math.PI/2; bar.position.set(bxp, byp, 0.07 + barrelLen/2);
+  bar.castShadow=true; gun.add(bar);
+  // muzzle ring
+  var muz = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.03,10), matIron);
+  muz.rotation.x = Math.PI/2; muz.position.set(bxp, byp, 0.07 + barrelLen - 0.01);
+  muz.castShadow=true; gun.add(muz);
+  // bore lens
+  var bore = new THREE.Mesh(new THREE.CylinderGeometry(0.009,0.009,0.005,8), lensRed);
+  bore.rotation.x = Math.PI/2; bore.position.set(bxp, byp, 0.07 + barrelLen + 0.006);
+  gun.add(bore);
+}
+
+// ---- perforated heat-dissipation jacket around bundle ----
+var jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.34,16,1,true), matSteel);
+jacket.rotation.x = Math.PI/2; jacket.position.set(0,0,0.07+0.18); jacket.castShadow=true; gun.add(jacket);
+// jacket cooling holes (rings of small dark cylinders)
+for(var jr=0;jr<4;jr++){
+  for(var jh=0;jh<10;jh++){
+    var ang = jh/10*Math.PI*2;
+    var hole = new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.02,6), matDark);
+    hole.position.set(Math.cos(ang)*0.085, Math.sin(ang)*0.085, 0.07 + 0.05 + jr*0.08);
+    hole.lookAt(Math.cos(ang)*0.2, Math.sin(ang)*0.2, 0.07 + 0.05 + jr*0.08);
+    gun.add(hole);
+  }
+}
+// jacket reinforcement bands
+for(var jb=0;jb<3;jb++){
+  var band = new THREE.Mesh(new THREE.TorusGeometry(0.087,0.012,8,20), matIron);
+  band.position.set(0,0,0.07 + 0.04 + jb*0.13); band.castShadow=true; gun.add(band);
+}
+// muzzle clamp / flash shroud at front of jacket
+var shroud = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.09,0.06,16), matIron);
+shroud.rotation.x = Math.PI/2; shroud.position.set(0,0,0.07+0.34); shroud.castShadow=true; gun.add(shroud);
+boltRing(gun, 0,0,0.07+0.34, 0.075, 8);
+
+// =========================================================
+// FIRE-CONTROL SENSOR POD (left of cradle)
+// =========================================================
+var pod = new THREE.Mesh(roundedBox(0.1, 0.1, 0.16, 0.03), matDark);
+pod.position.set(-0.24, 0.26, 0.04); pod.castShadow=true; turret.add(pod);
+var podLens = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.02,16), lensRed);
+podLens.rotation.x = Math.PI/2; podLens.position.set(-0.24, 0.26, 0.125); turret.add(podLens);
+var podHood = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.03,16,1,true), matIron);
+podHood.rotation.x = Math.PI/2; podHood.position.set(-0.24, 0.26, 0.13); turret.add(podHood);
+
+// =========================================================
+// ANTENNA (right rear)
+// =========================================================
+var antBase = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.03,0.04,8), matIron);
+antBase.position.set(0.15, 0.29, -0.24); antBase.castShadow=true; turret.add(antBase);
+var antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.012,0.34,6), matBolt);
+antenna.position.set(0.15, 0.47, -0.24); antenna.rotation.z = 0.12; antenna.castShadow=true; turret.add(antenna);
+var antTip = new THREE.Mesh(new THREE.SphereGeometry(0.014,8,8), lensRed);
+antTip.position.set(0.17, 0.63, -0.24); turret.add(antTip);
+
+// =========================================================
+// AMMO CAN strapped to right cradle side
+// =========================================================
+var can = new THREE.Mesh(roundedBox(0.12, 0.14, 0.2, 0.02), matDark);
+can.position.set(0.26, 0.14, -0.06); can.castShadow=true; turret.add(can);
+for(var st=0;st<2;st++){
+  var strap = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.02, 0.025), matRubber);
+  strap.position.set(0.26, 0.14, -0.06 + (st?0.06:-0.06)); strap.castShadow=true; turret.add(strap);
+}
+boltRing(turret, 0.32, 0.14, -0.06, 0.05, 4);
+
+return g;
+
+}
+function buildFlame(def){
+var g=new THREE.Group();
+
+var STEEL=0x5a3320;
+var arm=steel(STEEL);
+var armDark=pbr(0x3d2316,{metalness:0.85,roughness:0.65,grunge:true});
+var armPlate=pbr(0x6b3e26,{metalness:0.8,roughness:0.55,grunge:true});
+var rubber=pbr(0x14110d,{metalness:0.2,roughness:0.95});
+var brass=pbr(0x7a5a2a,{metalness:0.95,roughness:0.35,grunge:true});
+var copper=pbr(0x6e3a1c,{metalness:0.95,roughness:0.4,grunge:true});
+var fuelMet=pbr(0x4a3a22,{metalness:0.9,roughness:0.45,grunge:true});
+var heatShield=pbr(0x4d2c18,{metalness:0.7,roughness:0.6,clearcoat:0.3,ccr:0.4,grunge:true});
+var hot=pbr(0x2a1208,{metalness:0.6,roughness:0.5});
+var pilotGlow=emis(0xff6a18,2.4);
+var pilotCore=emis(0xffae3a,3.2);
+var lensRed=emis(0xff2a14,1.8);
+var lensAmber=emis(0xff8a1a,1.6);
+
+function bolt(x,y,z,r,h,rot){
+  var b=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h||0.02,6),brass);
+  b.position.set(x,y,z);
+  if(rot==='x')b.rotation.x=Math.PI/2;
+  if(rot==='z')b.rotation.z=Math.PI/2;
+  b.castShadow=true;return b;
+}
+function boltRing(parent,cx,cy,cz,radius,count,axis,r){
+  for(var i=0;i<count;i++){
+    var a=i/count*Math.PI*2;
+    var b=new THREE.Mesh(new THREE.CylinderGeometry(r||0.014,r||0.014,0.03,6),brass);
+    if(axis==='z'){b.position.set(cx+Math.cos(a)*radius,cy+Math.sin(a)*radius,cz);b.rotation.x=Math.PI/2;}
+    else if(axis==='x'){b.position.set(cx,cy+Math.sin(a)*radius,cz+Math.cos(a)*radius);b.rotation.z=Math.PI/2;}
+    else {b.position.set(cx+Math.cos(a)*radius,cy,cz+Math.sin(a)*radius);}
+    b.castShadow=true;parent.add(b);
+  }
+}
+
+/* ===== ベース：傾斜装甲の台座 ===== */
+var base=new THREE.Mesh(roundedBox(0.86,0.18,0.78,0.05),arm);
+base.position.y=0.09;base.castShadow=true;g.add(base);
+
+// 傾斜したスカート装甲（前後）
+var skirtF=new THREE.Mesh(roundedBox(0.82,0.16,0.1,0.02),armPlate);
+skirtF.position.set(0,0.12,0.4);skirtF.rotation.x=-0.5;skirtF.castShadow=true;g.add(skirtF);
+var skirtB=new THREE.Mesh(roundedBox(0.82,0.16,0.1,0.02),armPlate);
+skirtB.position.set(0,0.12,-0.4);skirtB.rotation.x=0.5;skirtB.castShadow=true;g.add(skirtB);
+boltRing(g,0,0.12,0.42,0,0,'z');
+for(var bi=-3;bi<=3;bi++){g.add(bolt(bi*0.12,0.155,0.42,0.014));g.add(bolt(bi*0.12,0.155,-0.42,0.014));}
+
+// ベースのパネルライン板
+var topPlate=new THREE.Mesh(roundedBox(0.7,0.04,0.62,0.03),armDark);
+topPlate.position.y=0.2;topPlate.castShadow=true;g.add(topPlate);
+boltRing(g,0,0.22,0,0.3,8,'y',0.015);
+
+// 足回りのトレッド/支柱
+for(var fx=-1;fx<=1;fx+=2){for(var fz=-1;fz<=1;fz+=2){
+  var foot=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.1,8),rubber);
+  foot.position.set(fx*0.34,0.05,fz*0.3);foot.castShadow=true;g.add(foot);
+  var hub=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.12,6),armDark);
+  hub.position.set(fx*0.34,0.07,fz*0.3);hub.castShadow=true;g.add(hub);
+}}
+
+// 燃料配管（ベース上を這うケーブル）
+var pipeBase=new THREE.Mesh(new THREE.TorusGeometry(0.18,0.022,6,16,Math.PI),copper);
+pipeBase.position.set(-0.12,0.22,0.05);pipeBase.rotation.x=Math.PI/2;pipeBase.castShadow=true;g.add(pipeBase);
+
+/* ===== 旋回部 ===== */
+var turret=new THREE.Group();turret.position.y=0.24;g.add(turret);g.userData.turret=turret;
+
+// 旋回リング座
+var ring=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.3,0.06,16),brass);
+ring.position.y=0.0;ring.castShadow=true;turret.add(ring);
+boltRing(turret,0,0.02,0,0.27,12,'y',0.016);
+
+/* --- 中央装甲ボディ（傾斜装甲ハウジング） --- */
+var body=new THREE.Mesh(roundedBox(0.46,0.3,0.5,0.05),arm);
+body.position.set(0,0.18,-0.02);body.castShadow=true;turret.add(body);
+
+// 前面傾斜グレイシス装甲
+var glacis=new THREE.Mesh(roundedBox(0.44,0.26,0.06,0.02),armPlate);
+glacis.position.set(0,0.2,0.23);glacis.rotation.x=-0.35;glacis.castShadow=true;turret.add(glacis);
+for(var gx=-1;gx<=1;gx++){turret.add(bolt(gx*0.16,0.31,0.27,0.015));turret.add(bolt(gx*0.16,0.1,0.255,0.015));}
+
+// サイドパネルライン板
+for(var sd=-1;sd<=1;sd+=2){
+  var sp=new THREE.Mesh(roundedBox(0.04,0.22,0.4,0.015),armDark);
+  sp.position.set(sd*0.24,0.18,-0.04);sp.castShadow=true;turret.add(sp);
+  boltRing(turret,sd*0.26,0.18,-0.04,0,0,'x');
+  for(var sb=-1;sb<=1;sb++){
+    var b=new THREE.Mesh(new THREE.CylinderGeometry(0.013,0.013,0.03,6),brass);
+    b.position.set(sd*0.265,0.18+sb*0.07,-0.04+sb*0.0);b.rotation.z=Math.PI/2;b.castShadow=true;turret.add(b);
+  }
+}
+
+// 上部ハッチ
+var hatch=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.04,10),armDark);
+hatch.position.set(-0.05,0.34,-0.08);hatch.castShadow=true;turret.add(hatch);
+var hatchKnob=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.012,6,12),brass);
+hatchKnob.position.set(-0.05,0.36,-0.08);hatchKnob.rotation.x=Math.PI/2;hatchKnob.castShadow=true;turret.add(hatchKnob);
+boltRing(turret,-0.05,0.345,-0.08,0.09,6,'y',0.013);
+
+// 警告レンズ（アンバー）
+var warn=new THREE.Mesh(new THREE.SphereGeometry(0.025,10,10),lensAmber);
+warn.position.set(0.12,0.34,-0.06);turret.add(warn);
+
+// アンテナ
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.01,0.32,6),armDark);
+ant.position.set(0.18,0.42,-0.18);ant.rotation.z=0.18;ant.castShadow=true;turret.add(ant);
+var antTip=new THREE.Mesh(new THREE.SphereGeometry(0.018,8,8),lensRed);
+antTip.position.set(0.21,0.58,-0.18);turret.add(antTip);
+
+/* ===== 燃料タンク2本（背面） ===== */
+function fuelTank(side){
+  var grp=new THREE.Group();
+  var tank=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.46,14),fuelMet);
+  tank.castShadow=true;grp.add(tank);
+  // 端キャップ
+  var capT=new THREE.Mesh(new THREE.SphereGeometry(0.1,12,8,0,Math.PI*2,0,Math.PI/2),fuelMet);
+  capT.position.y=0.23;capT.castShadow=true;grp.add(capT);
+  var capB=new THREE.Mesh(new THREE.SphereGeometry(0.1,12,8,0,Math.PI*2,0,Math.PI/2),fuelMet);
+  capB.position.y=-0.23;capB.rotation.x=Math.PI;capB.castShadow=true;grp.add(capB);
+  // 補強バンド
+  for(var bd=-1;bd<=1;bd++){
+    var band=new THREE.Mesh(new THREE.TorusGeometry(0.102,0.014,6,16),brass);
+    band.position.y=bd*0.13;band.rotation.x=Math.PI/2;band.castShadow=true;grp.add(band);
+  }
+  // 上部バルブ
+  var valve=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.06,8),copper);
+  valve.position.y=0.27;valve.castShadow=true;grp.add(valve);
+  var valveCap=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.01,6,10),brass);
+  valveCap.position.y=0.3;valveCap.rotation.x=Math.PI/2;grp.add(valveCap);
+  // 圧力ゲージレンズ
+  var gauge=new THREE.Mesh(new THREE.SphereGeometry(0.018,8,8),lensAmber);
+  gauge.position.set(0,0.05,0.1);grp.add(gauge);
+  grp.rotation.x=0.12;
+  grp.position.set(side*0.16,0.22,-0.26);
+  return grp;
+}
+turret.add(fuelTank(-1));
+turret.add(fuelTank(1));
+
+// タンク間の連結配管
+var link=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.3,8),copper);
+link.position.set(0,0.1,-0.26);link.rotation.z=Math.PI/2;link.castShadow=true;turret.add(link);
+// タンク→ボディの燃料ホース（曲げチューブ）
+var hose=new THREE.Mesh(new THREE.TorusGeometry(0.1,0.018,6,16,Math.PI*0.9),rubber);
+hose.position.set(0.05,0.16,0.02);hose.rotation.set(Math.PI/2,0,-0.6);hose.castShadow=true;turret.add(hose);
+var hose2=new THREE.Mesh(new THREE.TorusGeometry(0.09,0.016,6,16,Math.PI*0.8),copper);
+hose2.position.set(-0.06,0.14,0.04);hose2.rotation.set(Math.PI/2,0,0.7);hose2.castShadow=true;turret.add(hose2);
+
+/* ===== 火炎放射器バレル組（前方・耐熱シールド付き） ===== */
+var barrel=new THREE.Group();
+barrel.position.set(0,0.2,0.24);
+turret.add(barrel);
+
+// 太いノズル本体（メインバレル）
+var nozzleBody=new THREE.Mesh(new THREE.CylinderGeometry(0.072,0.082,0.34,16),arm);
+nozzleBody.rotation.x=Math.PI/2;nozzleBody.position.z=0.17;nozzleBody.castShadow=true;barrel.add(nozzleBody);
+// バレル補強リング
+for(var nr=0;nr<3;nr++){
+  var nring=new THREE.Mesh(new THREE.TorusGeometry(0.078,0.012,6,16),brass);
+  nring.position.z=0.06+nr*0.1;nring.castShadow=true;barrel.add(nring);
+}
+// 太い先端マズル（広がるノズル）
+var muzzle=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.075,0.13,16,1,true),hot);
+muzzle.rotation.x=Math.PI/2;muzzle.position.z=0.4;muzzle.castShadow=true;barrel.add(muzzle);
+// マズル先端リング
+var muzzleRim=new THREE.Mesh(new THREE.TorusGeometry(0.105,0.016,8,18),hot);
+muzzleRim.position.z=0.46;muzzleRim.castShadow=true;barrel.add(muzzleRim);
+// 内部の灼熱グロー（奥）
+var bore=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.04,16),pilotCore);
+bore.rotation.x=Math.PI/2;bore.position.z=0.45;barrel.add(bore);
+
+// 耐熱シールド（半円ヒートシールド、ノズル上を覆う傾斜板）
+var shield=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.26,16,1,true,-Math.PI*0.65,Math.PI*1.3),heatShield);
+shield.rotation.x=Math.PI/2;shield.position.set(0,0.02,0.14);shield.castShadow=true;barrel.add(shield);
+// シールド前縁フランジ
+var shieldRim=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.014,6,18,Math.PI*1.3),brass);
+shieldRim.position.set(0,0.02,0.27);shieldRim.rotation.z=-Math.PI*0.65+Math.PI/2;shieldRim.castShadow=true;barrel.add(shieldRim);
+// シールドにボルト列
+for(var shb=0;shb<5;shb++){
+  var a=-Math.PI*0.5+shb*Math.PI*0.25;
+  var b=new THREE.Mesh(new THREE.CylinderGeometry(0.013,0.013,0.03,6),brass);
+  b.position.set(Math.cos(a)*0.14,0.02+Math.sin(a)*0.14,0.2);b.rotation.x=Math.PI/2;b.castShadow=true;barrel.add(b);
+}
+
+// 点火パイロット（オレンジ発光）— マズル横の小バーナー
+var pilotMount=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.03,0.12,8),copper);
+pilotMount.rotation.x=Math.PI/2;pilotMount.position.set(0.085,-0.02,0.38);pilotMount.castShadow=true;barrel.add(pilotMount);
+var pilotCup=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.025,0.05,10,1,true),hot);
+pilotCup.rotation.x=Math.PI/2;pilotCup.position.set(0.085,-0.02,0.45);pilotCup.castShadow=true;barrel.add(pilotCup);
+// パイロット炎コア（発光）
+var flame=new THREE.Mesh(new THREE.ConeGeometry(0.03,0.09,8),pilotGlow);
+flame.position.set(0.085,-0.02,0.5);flame.rotation.x=-Math.PI/2;barrel.add(flame);
+var flameCore=new THREE.Mesh(new THREE.ConeGeometry(0.015,0.06,6),pilotCore);
+flameCore.position.set(0.085,-0.02,0.49);flameCore.rotation.x=-Math.PI/2;barrel.add(flameCore);
+// パイロット燃料ライン
+var pilotLine=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.2,6),copper);
+pilotLine.rotation.x=Math.PI/2;pilotLine.position.set(0.085,-0.02,0.28);pilotLine.castShadow=true;barrel.add(pilotLine);
+
+// バレル基部の点火制御ボックス
+var ignBox=new THREE.Mesh(roundedBox(0.14,0.1,0.1,0.02),armDark);
+ignBox.position.set(0,-0.01,0.0);ignBox.castShadow=true;barrel.add(ignBox);
+var ignLens=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,8),lensRed);
+ignLens.position.set(0.05,0.02,0.05);barrel.add(ignLens);
+var ignLens2=new THREE.Mesh(new THREE.SphereGeometry(0.014,8,8),lensAmber);
+ignLens2.position.set(-0.05,0.02,0.05);barrel.add(ignLens2);
+boltRing(barrel,0,-0.01,0.05,0.05,4,'z',0.012);
+
+// バレル基部からボディへの太い燃料供給管
+var feed=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.18,10),copper);
+feed.rotation.x=Math.PI/2;feed.position.set(0,-0.06,-0.06);feed.castShadow=true;barrel.add(feed);
+var feedValve=new THREE.Mesh(new THREE.TorusGeometry(0.035,0.014,6,12),brass);
+feedValve.position.set(0,-0.06,-0.02);feedValve.rotation.x=Math.PI/2;barrel.add(feedValve);
+
+/* ===== 排気（ボディ後上部） ===== */
+for(var ex=-1;ex<=1;ex+=2){
+  var pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.026,0.14,8),hot);
+  pipe.position.set(ex*0.13,0.36,-0.12);pipe.rotation.x=-0.3;pipe.castShadow=true;turret.add(pipe);
+  var pcap=new THREE.Mesh(new THREE.TorusGeometry(0.026,0.008,6,10),armDark);
+  pcap.position.set(ex*0.135,0.42,-0.14);pcap.rotation.x=Math.PI/2-0.3;turret.add(pcap);
+}
+
+return g;
+}
+function buildPoison(def){
+var g = new THREE.Group();
+
+var ARM = 0x55592a;       // dusty toxic olive (装甲メイン)
+var DARK = 0x2a2c16;      // darker olive shadow
+var METAL = 0x3a3d24;     // grimy gunmetal
+var BRASS = 0x4a4226;     // corroded brass valve
+var TOX = 0x6cff1e;       // toxic green glow
+var HOSE = 0x1c1d12;      // dark rubber hose
+
+var armMat = steel(ARM);
+var darkMat = steel(DARK);
+var metalMat = pbr(METAL, {metalness:0.85, roughness:0.55, grunge:true});
+var brassMat = pbr(BRASS, {metalness:0.9, roughness:0.4, grunge:true});
+var hoseMat = pbr(HOSE, {metalness:0.2, roughness:0.85, grunge:true});
+var glowMat = emis(TOX, 1.6);
+var tankMat = pbr(0x4e5226, {metalness:0.6, roughness:0.5, clearcoat:0.3, ccr:0.4, grunge:true});
+
+function bolt(x, y, z, r) {
+  r = r || 0.018;
+  var b = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.02, 6), metalMat);
+  b.position.set(x, y, z);
+  b.castShadow = true;
+  return b;
+}
+function boltRing(parent, cx, cy, cz, radius, count, axis) {
+  for (var i = 0; i < count; i++) {
+    var a = (i / count) * Math.PI * 2;
+    var b;
+    if (axis === 'y') {
+      b = bolt(cx + Math.cos(a)*radius, cy, cz + Math.sin(a)*radius);
+    } else {
+      b = bolt(cx + Math.cos(a)*radius, cy + Math.sin(a)*radius, cz);
+      b.rotation.x = Math.PI/2;
+    }
+    parent.add(b);
+  }
+}
+
+// ---------- LOWER HULL / CHASSIS ----------
+var hull = new THREE.Mesh(roundedBox(0.86, 0.26, 0.78, 0.05), armMat);
+hull.position.y = 0.20;
+hull.castShadow = true;
+g.add(hull);
+
+// sloped front glacis
+var glacis = new THREE.Mesh(roundedBox(0.80, 0.22, 0.30, 0.04), armMat);
+glacis.position.set(0, 0.255, 0.34);
+glacis.rotation.x = -0.55;
+glacis.castShadow = true;
+g.add(glacis);
+
+// rear skid plate
+var rear = new THREE.Mesh(roundedBox(0.78, 0.20, 0.16, 0.03), darkMat);
+rear.position.set(0, 0.20, -0.40);
+rear.castShadow = true;
+g.add(rear);
+
+// side skirt panels with bolts
+for (var s = -1; s <= 1; s += 2) {
+  var skirt = new THREE.Mesh(roundedBox(0.04, 0.20, 0.66, 0.02), darkMat);
+  skirt.position.set(s * 0.45, 0.17, 0);
+  skirt.castShadow = true;
+  g.add(skirt);
+  for (var k = -2; k <= 2; k++) {
+    var sb = bolt(s * 0.47, 0.17, k * 0.13, 0.016);
+    sb.rotation.z = Math.PI/2;
+    g.add(sb);
+  }
+}
+
+// ---------- TRACK / WHEEL UNITS ----------
+for (var ts = -1; ts <= 1; ts += 2) {
+  var track = new THREE.Mesh(roundedBox(0.16, 0.22, 0.74, 0.06), metalMat);
+  track.position.set(ts * 0.40, 0.13, 0);
+  track.castShadow = true;
+  g.add(track);
+  // road wheels
+  for (var w = -2; w <= 2; w++) {
+    var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.10, 14), darkMat);
+    wheel.rotation.z = Math.PI/2;
+    wheel.position.set(ts * 0.40, 0.10, w * 0.155);
+    wheel.castShadow = true;
+    g.add(wheel);
+    var hub = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 8), metalMat);
+    hub.rotation.z = Math.PI/2;
+    hub.position.set(ts * 0.40, 0.10, w * 0.155);
+    hub.castShadow = true;
+    g.add(hub);
+  }
+  // track tread bumps
+  for (var tb = 0; tb < 14; tb++) {
+    var a = (tb/14)*Math.PI*2;
+    var bump = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.025, 0.05), darkMat);
+    bump.position.set(ts*0.40, 0.10 + Math.cos(a)*0.115, Math.sin(a)*0.115);
+    bump.rotation.x = a;
+    bump.castShadow = true;
+    g.add(bump);
+  }
+}
+
+// ---------- TURRET ----------
+var turret = new THREE.Group();
+g.add(turret);
+g.userData.turret = turret;
+turret.position.y = 0.33;
+
+// turret ring base
+var ring = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.34, 0.07, 20), metalMat);
+ring.position.y = 0.02;
+ring.castShadow = true;
+turret.add(ring);
+boltRing(turret, 0, 0.055, 0, 0.30, 16, 'y');
+
+// main turret body (faceted toxic olive)
+var body = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.32, 0.22, 8), armMat);
+body.position.y = 0.16;
+body.castShadow = true;
+turret.add(body);
+
+// top armor plate (octagon)
+var topPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.30, 0.05, 8), darkMat);
+topPlate.position.y = 0.29;
+topPlate.castShadow = true;
+turret.add(topPlate);
+boltRing(turret, 0, 0.315, 0, 0.24, 8, 'y');
+
+// front sloped armor panel
+var frontPanel = new THREE.Mesh(roundedBox(0.36, 0.20, 0.06, 0.02), armMat);
+frontPanel.position.set(0, 0.17, 0.29);
+frontPanel.rotation.x = 0.25;
+frontPanel.castShadow = true;
+turret.add(frontPanel);
+boltRing(turret, 0, 0.17, 0.31, 0.13, 8, 'z');
+
+// ---------- TWIN CHEMICAL TANKS (rear) ----------
+function chemTank(side) {
+  var grp = new THREE.Group();
+  // main cylinder tank
+  var t = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.34, 16), tankMat);
+  t.castShadow = true;
+  grp.add(t);
+  // domed end caps
+  var capT = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 8, 0, Math.PI*2, 0, Math.PI/2), tankMat);
+  capT.position.y = 0.17;
+  capT.castShadow = true;
+  grp.add(capT);
+  var capB = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 8, 0, Math.PI*2, 0, Math.PI/2), tankMat);
+  capB.position.y = -0.17;
+  capB.rotation.x = Math.PI;
+  capB.castShadow = true;
+  grp.add(capB);
+  // reinforcement bands
+  for (var bd = -1; bd <= 1; bd++) {
+    var band = new THREE.Mesh(new THREE.TorusGeometry(0.107, 0.012, 6, 16), metalMat);
+    band.rotation.x = Math.PI/2;
+    band.position.y = bd * 0.09;
+    band.castShadow = true;
+    grp.add(band);
+  }
+  // toxic level window (glowing slit)
+  var win = new THREE.Mesh(roundedBox(0.04, 0.20, 0.012, 0.005), glowMat);
+  win.position.set(0, 0, 0.105);
+  grp.add(win);
+  // hazard collar
+  var collar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.05, 10), brassMat);
+  collar.position.y = 0.19;
+  collar.castShadow = true;
+  grp.add(collar);
+  // small glow cap
+  var gcap = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glowMat);
+  gcap.position.y = 0.215;
+  grp.add(gcap);
+  grp.rotation.x = 0.06;
+  grp.position.set(side * 0.155, 0.30, -0.16);
+  return grp;
+}
+turret.add(chemTank(1));
+turret.add(chemTank(-1));
+
+// cross manifold connecting tanks
+var manifold = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 8), metalMat);
+manifold.rotation.z = Math.PI/2;
+manifold.position.set(0, 0.12, -0.16);
+manifold.castShadow = true;
+turret.add(manifold);
+
+// ---------- BARREL / SPRAY CANNON ----------
+var barrelGrp = new THREE.Group();
+barrelGrp.position.set(0, 0.18, 0.20);
+turret.add(barrelGrp);
+
+// barrel mantlet
+var mantlet = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.11, 0.12, 12), metalMat);
+mantlet.rotation.x = Math.PI/2;
+mantlet.position.z = 0.04;
+mantlet.castShadow = true;
+barrelGrp.add(mantlet);
+
+// main barrel (broad sprayer tube)
+var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.07, 0.46, 16), armMat);
+barrel.rotation.x = Math.PI/2;
+barrel.position.z = 0.30;
+barrel.castShadow = true;
+barrelGrp.add(barrel);
+
+// barrel reinforcement rings
+for (var r = 0; r < 3; r++) {
+  var bring = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.012, 6, 14), metalMat);
+  bring.rotation.x = Math.PI/2;
+  bring.position.z = 0.16 + r * 0.13;
+  bring.castShadow = true;
+  barrelGrp.add(bring);
+}
+
+// ---------- SPRAY NOZZLE ASSEMBLY (muzzle) ----------
+var nozzleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 0.10, 14), metalMat);
+nozzleBase.rotation.x = Math.PI/2;
+nozzleBase.position.z = 0.56;
+nozzleBase.castShadow = true;
+barrelGrp.add(nozzleBase);
+
+// flared atomizer cone
+var cone = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.16, 16, 1, true), darkMat);
+cone.rotation.x = -Math.PI/2;
+cone.position.z = 0.66;
+cone.castShadow = true;
+barrelGrp.add(cone);
+
+// inner glowing nozzle throat
+var throat = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, 0.14, 14), glowMat);
+throat.rotation.x = Math.PI/2;
+throat.position.z = 0.65;
+barrelGrp.add(throat);
+
+// ring of spray jet nozzles around the cone mouth
+for (var n = 0; n < 8; n++) {
+  var a = (n/8)*Math.PI*2;
+  var jet = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.02, 0.06, 6), brassMat);
+  jet.position.set(Math.cos(a)*0.11, Math.sin(a)*0.11, 0.70);
+  jet.rotation.x = Math.PI/2;
+  jet.castShadow = true;
+  barrelGrp.add(jet);
+  var jglow = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), glowMat);
+  jglow.position.set(Math.cos(a)*0.11, Math.sin(a)*0.11, 0.735);
+  barrelGrp.add(jglow);
+}
+
+// ---------- VALVES & PIPING ----------
+// main pressure valve on top
+var valveBody = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 10), brassMat);
+valveBody.position.set(0, 0.34, 0.05);
+valveBody.castShadow = true;
+turret.add(valveBody);
+// valve wheel
+var vwheel = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.012, 6, 14), metalMat);
+vwheel.position.set(0, 0.38, 0.05);
+vwheel.castShadow = true;
+turret.add(vwheel);
+for (var sp = 0; sp < 4; sp++) {
+  var spoke = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.01, 0.01), metalMat);
+  spoke.position.set(0, 0.38, 0.05);
+  spoke.rotation.y = (sp/4)*Math.PI;
+  spoke.castShadow = true;
+  turret.add(spoke);
+}
+
+// secondary valves
+for (var sv = -1; sv <= 1; sv += 2) {
+  var sval = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.05, 8), brassMat);
+  sval.position.set(sv * 0.20, 0.30, 0.10);
+  sval.castShadow = true;
+  turret.add(sval);
+  var svw = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.008, 6, 12), metalMat);
+  svw.rotation.x = Math.PI/2;
+  svw.position.set(sv * 0.20, 0.33, 0.10);
+  svw.castShadow = true;
+  turret.add(svw);
+}
+
+// curved feed hoses: tanks -> barrel breech
+function hose(side) {
+  var pts = [
+    new THREE.Vector3(side * 0.155, 0.40, -0.16),
+    new THREE.Vector3(side * 0.16, 0.32, -0.02),
+    new THREE.Vector3(side * 0.12, 0.24, 0.10),
+    new THREE.Vector3(side * 0.07, 0.20, 0.18),
+    new THREE.Vector3(side * 0.04, 0.18, 0.22)
+  ];
+  var curve = new THREE.CatmullRomCurve3(pts);
+  var tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.022, 8, false), hoseMat);
+  tube.castShadow = true;
+  return tube;
+}
+turret.add(hose(1));
+turret.add(hose(-1));
+
+// hose couplings
+for (var hc = -1; hc <= 1; hc += 2) {
+  var coup = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 8), brassMat);
+  coup.position.set(hc * 0.155, 0.40, -0.16);
+  coup.castShadow = true;
+  turret.add(coup);
+}
+
+// ---------- GREEBLES ----------
+// commander hatch
+var hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 10), darkMat);
+hatch.position.set(-0.10, 0.33, -0.02);
+hatch.castShadow = true;
+turret.add(hatch);
+var hatchHinge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.02), metalMat);
+hatchHinge.position.set(-0.10, 0.345, 0.05);
+turret.add(hatchHinge);
+boltRing(turret, -0.10, 0.345, -0.02, 0.055, 6, 'y');
+
+// targeting optic with green lens
+var optic = new THREE.Mesh(roundedBox(0.07, 0.05, 0.06, 0.015), metalMat);
+optic.position.set(0.13, 0.30, 0.18);
+optic.castShadow = true;
+turret.add(optic);
+var lens = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.01, 12), glowMat);
+lens.rotation.x = Math.PI/2;
+lens.position.set(0.13, 0.30, 0.215);
+turret.add(lens);
+
+// antenna
+var ant = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.008, 0.32, 6), metalMat);
+ant.position.set(0.22, 0.42, -0.10);
+ant.rotation.z = 0.12;
+ant.castShadow = true;
+turret.add(ant);
+var antTip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), glowMat);
+antTip.position.set(0.235, 0.58, -0.10);
+turret.add(antTip);
+
+// exhaust stack (rear)
+var exh = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.12, 8), metalMat);
+exh.position.set(-0.22, 0.40, -0.28);
+exh.rotation.x = -0.2;
+exh.castShadow = true;
+turret.add(exh);
+var exhCap = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.01, 6, 10), darkMat);
+exhCap.rotation.x = Math.PI/2;
+exhCap.position.set(-0.215, 0.46, -0.285);
+turret.add(exhCap);
+
+// hull exhaust pipes
+for (var ep = -1; ep <= 1; ep += 2) {
+  var pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.14, 8), metalMat);
+  pipe.position.set(ep * 0.30, 0.30, -0.42);
+  pipe.rotation.x = Math.PI/2;
+  pipe.castShadow = true;
+  g.add(pipe);
+}
+
+// front headlight guards / sensors
+for (var hl = -1; hl <= 1; hl += 2) {
+  var lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.03, 10), metalMat);
+  lamp.rotation.x = Math.PI/2;
+  lamp.position.set(hl * 0.28, 0.30, 0.42);
+  lamp.castShadow = true;
+  g.add(lamp);
+  var lglow = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 8), glowMat);
+  lglow.position.set(hl * 0.28, 0.30, 0.435);
+  g.add(lglow);
+}
+
+// tow hooks
+for (var th = -1; th <= 1; th += 2) {
+  var hook = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.008, 6, 10), metalMat);
+  hook.position.set(th * 0.20, 0.16, 0.46);
+  hook.castShadow = true;
+  g.add(hook);
+}
+
+// panel line detail strips on hull top
+for (var pl = -1; pl <= 1; pl += 2) {
+  var strip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.01, 0.5), darkMat);
+  strip.position.set(pl * 0.18, 0.335, -0.05);
+  g.add(strip);
+}
+
+// stowage box on rear hull
+var stow = new THREE.Mesh(roundedBox(0.30, 0.10, 0.10, 0.02), darkMat);
+stow.position.set(0, 0.30, -0.42);
+stow.castShadow = true;
+g.add(stow);
+boltRing(g, 0, 0.30, -0.37, 0.10, 6, 'z');
+
+return g;
+}
+function buildRail(def){
+var g = new THREE.Group();
+
+// ---- material palette ----
+var MAIN   = 0x33414f;                 // dark steel-blue armor (steel())
+var DARK   = 0x232d36;                 // recessed panels
+var MID     = 0x44505d;                // lighter trim
+var RAIL_M = pbr(0x6b7682, {metalness:0.95, roughness:0.32, clearcoat:0.5, ccr:0.25, envI:1.0});
+var COPPER = pbr(0x7a5a3a, {metalness:0.9, roughness:0.45, envI:0.8, grunge:true});
+var FIN_M  = pbr(0x3c4750, {metalness:0.85, roughness:0.55, envI:0.7, grunge:true});
+var CABLE  = pbr(0x14181c, {metalness:0.4, roughness:0.85});
+var BOLT   = pbr(0x2a3138, {metalness:0.9, roughness:0.5});
+var GLASS  = pbr(0x18242e, {metalness:0.2, roughness:0.2, clearcoat:1.0, ccr:0.05});
+var ELEC   = emis(0x4fa8ff, 1.6);      // electrode glow (cool, restrained)
+var CORE   = emis(0x5fb0ff, 2.2);
+
+function bolt(x,y,z,r){
+  var b=new THREE.Mesh(new THREE.CylinderGeometry(r||0.012,r||0.012,0.014,6), BOLT);
+  b.position.set(x,y,z); b.castShadow=true; return b;
+}
+function boltRing(parent, cx,cy,cz, R, n, axis){
+  for(var i=0;i<n;i++){
+    var a=i/n*Math.PI*2;
+    var b=bolt(0,0,0,0.011);
+    if(axis==='z'){ b.position.set(cx+Math.cos(a)*R, cy+Math.sin(a)*R, cz); b.rotation.x=Math.PI/2; }
+    else { b.position.set(cx+Math.cos(a)*R, cy, cz+Math.sin(a)*R); }
+    parent.add(b);
+  }
+}
+
+// =====================================================================
+//  BASE / TRACK CHASSIS  (footprint r~0.55)
+// =====================================================================
+var base = new THREE.Group(); g.add(base);
+
+// lower hull tub (sloped sides)
+var tub = new THREE.Mesh(roundedBox(0.98,0.20,0.74,0.05), steel(MAIN));
+tub.position.y=0.13; tub.castShadow=true; base.add(tub);
+
+// glacis-style sloped front plate
+var glacis = new THREE.Mesh(roundedBox(0.86,0.16,0.30,0.03), steel(MAIN));
+glacis.position.set(0,0.16,0.30); glacis.rotation.x=-0.5; glacis.castShadow=true; base.add(glacis);
+
+// side skirt panels (paneled)
+[-1,1].forEach(function(s){
+  var skirt=new THREE.Mesh(roundedBox(0.92,0.16,0.05,0.02), pbr(DARK,{metalness:0.85,roughness:0.6,grunge:true}));
+  skirt.position.set(0,0.12,s*0.40); skirt.castShadow=true; base.add(skirt);
+  // panel-line ribs on skirt
+  for(var i=-2;i<=2;i++){
+    var rib=new THREE.Mesh(roundedBox(0.04,0.13,0.055,0.01), steel(MID));
+    rib.position.set(i*0.18,0.12,s*0.405); rib.castShadow=true; base.add(rib);
+  }
+  // road wheels
+  for(var w=-2;w<=2;w++){
+    var wh=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.06,16), pbr(0x1a1f24,{metalness:0.6,roughness:0.7,grunge:true}));
+    wh.rotation.x=Math.PI/2; wh.position.set(w*0.20,0.075,s*0.41); wh.castShadow=true; base.add(wh);
+    var hub=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.07,8), BOLT);
+    hub.rotation.x=Math.PI/2; hub.position.set(w*0.20,0.075,s*0.42); hub.castShadow=true; base.add(hub);
+  }
+  // drive sprocket front
+  var spr=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.07,10), pbr(0x222a30,{metalness:0.8,roughness:0.6}));
+  spr.rotation.x=Math.PI/2; spr.position.set(0.50,0.085,s*0.41); spr.castShadow=true; base.add(spr);
+});
+
+// rear deck / engine block with exhaust + grille
+var deck=new THREE.Mesh(roundedBox(0.50,0.14,0.66,0.03), steel(MID));
+deck.position.set(-0.36,0.27,0); deck.castShadow=true; base.add(deck);
+// louvered grille
+for(var i=0;i<6;i++){
+  var lv=new THREE.Mesh(roundedBox(0.40,0.012,0.10,0.005), pbr(0x12161a,{metalness:0.7,roughness:0.7}));
+  lv.position.set(-0.36,0.34, -0.22+i*0.045); lv.rotation.z=0.0; lv.castShadow=true; base.add(lv);
+}
+// twin exhaust stacks
+[-0.18,0.18].forEach(function(zz){
+  var ex=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.05,0.16,12), pbr(0x1c2024,{metalness:0.8,roughness:0.8,grunge:true}));
+  ex.position.set(-0.56,0.33,zz); ex.castShadow=true; base.add(ex);
+  var cap=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.02,12), pbr(0x0e1114,{metalness:0.6,roughness:0.9}));
+  cap.position.set(-0.56,0.42,zz); cap.castShadow=true; base.add(cap);
+});
+
+// turret ring
+var ring=new THREE.Mesh(new THREE.CylinderGeometry(0.30,0.33,0.06,24), pbr(0x1d242a,{metalness:0.9,roughness:0.5}));
+ring.position.y=0.31; ring.castShadow=true; base.add(ring);
+boltRing(base,0,0.34,0,0.27,16,'y');
+
+// front tow hooks
+[-0.18,0.18].forEach(function(zz){
+  var hk=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.012,6,10), BOLT);
+  hk.position.set(0.49,0.10,zz); hk.rotation.y=Math.PI/2; hk.castShadow=true; base.add(hk);
+});
+
+// =====================================================================
+//  TURRET (rotating)
+// =====================================================================
+var turret=new THREE.Group(); turret.position.y=0.34; g.add(turret); g.userData.turret=turret;
+
+// --- main turret body: faceted, sloped armor ---
+var body=new THREE.Mesh(roundedBox(0.62,0.30,0.56,0.05), steel(MAIN));
+body.position.set(-0.02,0.18,0); body.castShadow=true; turret.add(body);
+
+// sloped cheek armor (angled side plates)
+[-1,1].forEach(function(s){
+  var cheek=new THREE.Mesh(roundedBox(0.46,0.24,0.06,0.02), steel(MAIN));
+  cheek.position.set(0.02,0.18,s*0.30); cheek.rotation.y=s*0.18; cheek.castShadow=true; turret.add(cheek);
+  // bolted panel
+  var pn=new THREE.Mesh(roundedBox(0.20,0.14,0.02,0.01), pbr(DARK,{metalness:0.85,roughness:0.6,grunge:true}));
+  pn.position.set(-0.05,0.18,s*0.335); pn.rotation.y=s*0.18; pn.castShadow=true; turret.add(pn);
+  boltRing(turret,-0.05,0.18,s*0.345,0.07,6,'z');
+});
+
+// rear bustle (electronics/ammo) with stowage
+var bustle=new THREE.Mesh(roundedBox(0.34,0.26,0.50,0.04), steel(MID));
+bustle.position.set(-0.34,0.17,0); bustle.castShadow=true; turret.add(bustle);
+// stowage bin grid
+for(var iy=0;iy<2;iy++) for(var iz=-1;iz<=1;iz++){
+  var bin=new THREE.Mesh(roundedBox(0.04,0.10,0.13,0.01), pbr(DARK,{metalness:0.7,roughness:0.7,grunge:true}));
+  bin.position.set(-0.52,0.10+iy*0.13,iz*0.15); bin.castShadow=true; turret.add(bin);
+}
+// antenna mast
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.01,0.34,6), BOLT);
+ant.position.set(-0.42,0.46,0.18); ant.castShadow=true; turret.add(ant);
+var antTip=new THREE.Mesh(new THREE.SphereGeometry(0.014,8,8), emis(0x4fa8ff,0.9));
+antTip.position.set(-0.42,0.63,0.18); turret.add(antTip);
+// commander hatch
+var hatch=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,16), steel(MID));
+hatch.position.set(-0.12,0.33,0.12); hatch.castShadow=true; turret.add(hatch);
+var hatchLid=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.025,16), pbr(DARK,{metalness:0.85,roughness:0.55}));
+hatchLid.position.set(-0.12,0.36,0.12); hatchLid.castShadow=true; turret.add(hatchLid);
+boltRing(turret,-0.12,0.35,0.12,0.082,10,'y');
+// periscope/optics block
+var optBlk=new THREE.Mesh(roundedBox(0.10,0.06,0.14,0.02), steel(MID));
+optBlk.position.set(0.10,0.34,-0.14); optBlk.castShadow=true; turret.add(optBlk);
+var lens=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.02,12), GLASS);
+lens.rotation.x=Math.PI/2; lens.position.set(0.10,0.34,-0.07); lens.castShadow=true; turret.add(lens);
+var lensG=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.005,12), emis(0x4fa8ff,1.2));
+lensG.rotation.x=Math.PI/2; lensG.position.set(0.10,0.34,-0.062); turret.add(lensG);
+
+// =====================================================================
+//  CAPACITOR BANK  (large cylinders flanking the mantlet)
+// =====================================================================
+function capacitor(x,y,z){
+  var grp=new THREE.Group(); grp.position.set(x,y,z);
+  var can=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.40,18), pbr(MID,{metalness:0.9,roughness:0.45,grunge:true}));
+  can.rotation.z=Math.PI/2; can.castShadow=true; grp.add(can);
+  // ribbed bands
+  for(var i=-1;i<=1;i++){
+    var band=new THREE.Mesh(new THREE.CylinderGeometry(0.092,0.092,0.03,18), pbr(0x2a333b,{metalness:0.85,roughness:0.5}));
+    band.rotation.z=Math.PI/2; band.position.x=i*0.13; band.castShadow=true; grp.add(band);
+  }
+  // end caps with terminal
+  [-0.2,0.2].forEach(function(ex){
+    var cap=new THREE.Mesh(new THREE.CylinderGeometry(0.088,0.088,0.02,18), pbr(0x1b2228,{metalness:0.8,roughness:0.5}));
+    cap.rotation.z=Math.PI/2; cap.position.x=ex; cap.castShadow=true; grp.add(cap);
+    var term=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.05,8), COPPER);
+    term.rotation.z=Math.PI/2; term.position.x=ex*1.12; term.castShadow=true; grp.add(term);
+  });
+  // status LED
+  var led=new THREE.Mesh(new THREE.SphereGeometry(0.012,8,8), emis(0x5fb0ff,1.4));
+  led.position.set(0,0.088,0); grp.add(led);
+  return grp;
+}
+turret.add(capacitor(-0.05,0.30,0.21));
+turret.add(capacitor(-0.05,0.30,-0.21));
+// upper smaller cap bridging
+var capTop=capacitor(0.02,0.40,0); capTop.scale.set(0.8,0.8,0.8); turret.add(capTop);
+
+// =====================================================================
+//  MANTLET / GUN CRADLE  — pivots up slightly (fixed elevation)
+// =====================================================================
+var cradle=new THREE.Group(); cradle.position.set(0.10,0.30,0); turret.add(cradle);
+
+var mantlet=new THREE.Mesh(roundedBox(0.22,0.30,0.40,0.04), steel(MAIN));
+mantlet.position.set(0.02,0,0); mantlet.castShadow=true; cradle.add(mantlet);
+boltRing(cradle,0.10,0,0,0.16,12,'z');
+
+// trunnion blocks
+[-1,1].forEach(function(s){
+  var tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.06,12), pbr(0x222a30,{metalness:0.9,roughness:0.5}));
+  tr.rotation.x=Math.PI/2; tr.position.set(0.02,0,s*0.22); tr.castShadow=true; cradle.add(tr);
+});
+
+// recoil/breech housing
+var breech=new THREE.Mesh(roundedBox(0.26,0.22,0.30,0.03), steel(MID));
+breech.position.set(0.18,0,0); breech.castShadow=true; cradle.add(breech);
+// breech core glow (between the rails, the armature accelerator)
+var coreGlow=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.05,0.10), CORE);
+coreGlow.position.set(0.30,0,0); cradle.add(coreGlow);
+
+// =====================================================================
+//  TWIN RAILS  — long parallel rails + insulators
+// =====================================================================
+var RAIL_LEN=0.70;
+var RAIL_START=0.32;
+var railSep=0.07; // vertical separation between the two rails
+
+[1,-1].forEach(function(side){
+  var yo=side*railSep;
+  // main rail bar (long, square-ish profile)
+  var rail=new THREE.Mesh(roundedBox(RAIL_LEN,0.05,0.07,0.012), RAIL_M);
+  rail.position.set(RAIL_START+RAIL_LEN/2, yo, 0); rail.castShadow=true; cradle.add(rail);
+  // copper conductor strip on inner face
+  var cond=new THREE.Mesh(new THREE.BoxGeometry(RAIL_LEN,0.018,0.05), COPPER);
+  cond.position.set(RAIL_START+RAIL_LEN/2, yo - side*0.026, 0); cond.castShadow=true; cradle.add(cond);
+  // rail tip electrode (muzzle) — restrained blue glow
+  var tip=new THREE.Mesh(roundedBox(0.05,0.055,0.075,0.012), pbr(0x4a5560,{metalness:0.95,roughness:0.3}));
+  tip.position.set(RAIL_START+RAIL_LEN+0.02, yo, 0); tip.castShadow=true; cradle.add(tip);
+});
+// inner electrode glow at muzzle gap (single small lens, controlled)
+var muzGlow=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.05,0.04), ELEC);
+muzGlow.position.set(RAIL_START+RAIL_LEN+0.04,0,0); cradle.add(muzGlow);
+var muzRing=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.012,8,16), pbr(0x3a444e,{metalness:0.95,roughness:0.3}));
+muzRing.rotation.y=Math.PI/2; muzRing.position.set(RAIL_START+RAIL_LEN+0.04,0,0); muzRing.castShadow=true; cradle.add(muzRing);
+
+// ceramic insulator spacers between rails (periodic)
+for(var i=0;i<6;i++){
+  var x=RAIL_START+0.06+i*0.12;
+  var ins=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.10,10), pbr(DARK,{metalness:0.3,roughness:0.8}));
+  ins.position.set(x,0,0.022); ins.castShadow=true; cradle.add(ins);
+  var ins2=ins.clone(); ins2.position.z=-0.022; cradle.add(ins2);
+  // small coil ring marker (restrained glow only on a couple)
+  if(i===1||i===4){
+    var coil=new THREE.Mesh(new THREE.TorusGeometry(0.052,0.008,6,16), emis(0x4fa8ff,0.9));
+    coil.rotation.y=Math.PI/2; coil.position.set(x,0,0); cradle.add(coil);
+  }
+}
+
+// =====================================================================
+//  COOLING FINS  — heatsink stacks along the rail base
+// =====================================================================
+function finStack(x){
+  var grp=new THREE.Group(); grp.position.set(x,0,0);
+  for(var i=0;i<9;i++){
+    var fin=new THREE.Mesh(roundedBox(0.012,0.16,0.22,0.006), FIN_M);
+    fin.position.set(-0.06+i*0.014,0.0,0); fin.castShadow=true; grp.add(fin);
+  }
+  // base block
+  var bb=new THREE.Mesh(roundedBox(0.14,0.05,0.20,0.01), steel(MID));
+  bb.position.set(0,-0.10,0); bb.castShadow=true; grp.add(bb);
+  return grp;
+}
+cradle.add(finStack(0.42));
+cradle.add(finStack(0.62));
+cradle.add(finStack(0.82));
+
+// top spine cooling fins (transverse)
+for(var i=0;i<12;i++){
+  var sf=new THREE.Mesh(roundedBox(0.18,0.04,0.010,0.004), FIN_M);
+  sf.position.set(0.42+i*0.05, 0.10, 0); sf.castShadow=true; cradle.add(sf);
+}
+
+// =====================================================================
+//  POWER CABLES  — thick conduits from capacitors to breech
+// =====================================================================
+function cable(p0,p1,r){
+  var dir=new THREE.Vector3(p1.x-p0.x,p1.y-p0.y,p1.z-p0.z);
+  var len=dir.length();
+  var cyl=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,8), CABLE);
+  cyl.position.set((p0.x+p1.x)/2,(p0.y+p1.y)/2,(p0.z+p1.z)/2);
+  var up=new THREE.Vector3(0,1,0);
+  cyl.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+  cyl.castShadow=true; return cyl;
+}
+// caps sit at turret-space (-0.05,0.30,±0.21); breech at cradle ~ (0.28,0.30,0)
+turret.add(cable(new THREE.Vector3(0.10,0.30,0.21), new THREE.Vector3(0.22,0.28,0.10),0.018));
+turret.add(cable(new THREE.Vector3(0.10,0.30,-0.21), new THREE.Vector3(0.22,0.28,-0.10),0.018));
+turret.add(cable(new THREE.Vector3(0.02,0.46,0), new THREE.Vector3(0.20,0.34,0),0.016));
+// cable clamps
+[0.21,-0.21].forEach(function(zz){
+  var cl=new THREE.Mesh(new THREE.TorusGeometry(0.02,0.006,6,10), BOLT);
+  cl.position.set(0.16,0.29,zz*0.6); cl.rotation.y=Math.PI/2; cl.castShadow=true; turret.add(cl);
+});
+
+return g;
+}
+function buildAa(def){
+var g = new THREE.Group();
+
+// ---- materials ----
+var ARMOR = steel(0x3a4a40);                 // main dark grey-green armor
+var DARK  = pbr(0x232a26, {metalness:0.85, roughness:0.55, grunge:true});
+var STEELP= pbr(0x4a5650, {metalness:0.9,  roughness:0.45, grunge:true});
+var RUBBER= pbr(0x141816, {metalness:0.2,  roughness:0.95});
+var WARN  = pbr(0x6a5a1a, {metalness:0.6,  roughness:0.5, grunge:true});
+var COPPER= pbr(0x5a4632, {metalness:0.95, roughness:0.4, grunge:true});
+var GLASS = pbr(0x101814, {metalness:0.4,  roughness:0.25, clearcoat:1, ccr:0.05});
+var MISSILE = pbr(0x444c46, {metalness:0.7, roughness:0.5, grunge:true});
+var TIP   = pbr(0x2a2420, {metalness:0.5, roughness:0.7, grunge:true});
+var LENS_R= emis(0xff3322, 1.6);
+var LENS_G= emis(0x33ff66, 1.4);
+var LENS_A= emis(0xffaa22, 1.3);
+
+function M(geo, mat){ var m=new THREE.Mesh(geo, mat); m.castShadow=true; return m; }
+function bolt(x,y,z,r){ var b=M(new THREE.CylinderGeometry(r||0.018, r||0.018, 0.02, 6), DARK); b.position.set(x,y,z); return b; }
+function ringBolts(parent, count, rad, y, r, axis){
+  for(var i=0;i<count;i++){ var a=i/count*Math.PI*2;
+    var b=M(new THREE.CylinderGeometry(r,r,0.022,6), DARK);
+    if(axis==='z'){ b.rotation.x=Math.PI/2; b.position.set(Math.cos(a)*rad, y, Math.sin(a)*rad); }
+    else { b.position.set(Math.cos(a)*rad, y, Math.sin(a)*rad); }
+    parent.add(b);
+  }
+}
+
+// =================================================================
+// BASE — wide traversing plate with sloped skirt
+// =================================================================
+var base = M(new THREE.CylinderGeometry(0.52, 0.55, 0.10, 12), ARMOR);
+base.position.y = 0.05; g.add(base);
+
+// sloped armor skirt (faceted ring of trapezoid plates)
+for(var i=0;i<12;i++){
+  var a = i/12*Math.PI*2;
+  var pl = M(roundedBox(0.20, 0.13, 0.05, 0.01), ARMOR);
+  pl.position.set(Math.cos(a)*0.50, 0.065, Math.sin(a)*0.50);
+  pl.rotation.y = -a;
+  pl.rotation.x = 0.28;
+  g.add(pl);
+}
+ringBolts(g, 12, 0.45, 0.105, 0.02);
+
+// outrigger feet (4 stabilizer pads)
+for(var i=0;i<4;i++){
+  var a = Math.PI/4 + i/4*Math.PI*2;
+  var arm = M(roundedBox(0.22, 0.05, 0.10, 0.02), STEELP);
+  arm.position.set(Math.cos(a)*0.52, 0.03, Math.sin(a)*0.52);
+  arm.rotation.y = -a; g.add(arm);
+  var pad = M(new THREE.CylinderGeometry(0.09, 0.10, 0.04, 8), RUBBER);
+  pad.position.set(Math.cos(a)*0.60, 0.02, Math.sin(a)*0.60); g.add(pad);
+  var pin = M(new THREE.CylinderGeometry(0.022,0.022,0.06,6), STEELP);
+  pin.position.set(Math.cos(a)*0.60, 0.055, Math.sin(a)*0.60); g.add(pin);
+}
+
+// cable conduits along base
+for(var i=0;i<3;i++){
+  var a = -0.4 + i*0.4;
+  var cab = M(new THREE.CylinderGeometry(0.014,0.014,0.16,6), RUBBER);
+  cab.rotation.z = Math.PI/2;
+  cab.position.set(Math.cos(a)*0.45, 0.04, Math.sin(a)*0.45);
+  cab.rotation.y = -a; g.add(cab);
+}
+
+// turret bearing ring
+var bearing = M(new THREE.CylinderGeometry(0.30, 0.32, 0.06, 16), DARK);
+bearing.position.y = 0.12; g.add(bearing);
+var bearTop = M(new THREE.TorusGeometry(0.29, 0.025, 8, 20), STEELP);
+bearTop.rotation.x = Math.PI/2; bearTop.position.y=0.145; g.add(bearTop);
+
+// =================================================================
+// TURRET (rotating)
+// =================================================================
+var turret = new THREE.Group();
+turret.position.y = 0.16;
+g.add(turret);
+g.userData.turret = turret;
+
+// turret main body — sloped armored housing
+var body = M(roundedBox(0.50, 0.22, 0.42, 0.04), ARMOR);
+body.position.y = 0.14; turret.add(body);
+
+// front sloped glacis
+var glacis = M(roundedBox(0.46, 0.18, 0.10, 0.02), ARMOR);
+glacis.position.set(0, 0.13, 0.23);
+glacis.rotation.x = -0.5; turret.add(glacis);
+
+// panel lines / ribs on body sides
+for(var s=-1;s<=1;s+=2){
+  for(var i=0;i<3;i++){
+    var rib = M(new THREE.BoxGeometry(0.40, 0.012, 0.018), STEELP);
+    rib.position.set(0, 0.05+i*0.07, s*0.215); turret.add(rib);
+  }
+  // bolts row
+  ringBolts; for(var i=0;i<4;i++){ var b=bolt(-0.18+i*0.12, 0.21, s*0.21, 0.015); turret.add(b); }
+}
+
+// rear avionics box with hatch
+var rear = M(roundedBox(0.46, 0.16, 0.14, 0.03), DARK);
+rear.position.set(0, 0.12, -0.22); turret.add(rear);
+var hatch = M(new THREE.CylinderGeometry(0.06,0.06,0.02,8), STEELP);
+hatch.rotation.x=Math.PI/2; hatch.position.set(0.12,0.16,-0.22); turret.add(hatch);
+var hatchH = M(new THREE.TorusGeometry(0.055,0.01,6,10), STEELP);
+hatchH.rotation.x=Math.PI/2; hatchH.position.set(0.12,0.17,-0.22); turret.add(hatchH);
+
+// exhaust louvers on rear
+for(var i=0;i<4;i++){
+  var lv = M(new THREE.BoxGeometry(0.10,0.012,0.04), RUBBER);
+  lv.position.set(-0.14, 0.08+i*0.025, -0.29);
+  lv.rotation.x=0.4; turret.add(lv);
+}
+// exhaust pipe
+var exh = M(new THREE.CylinderGeometry(0.03,0.035,0.10,8), DARK);
+exh.rotation.z=Math.PI/2; exh.position.set(-0.27,0.18,-0.18); turret.add(exh);
+var exhTip = M(new THREE.CylinderGeometry(0.035,0.035,0.02,8), RUBBER);
+exhTip.rotation.z=Math.PI/2; exhTip.position.set(-0.32,0.18,-0.18); turret.add(exhTip);
+
+// ---- RADAR mast + dish (left rear) ----
+var radarBase = M(new THREE.CylinderGeometry(0.04,0.05,0.12,8), DARK);
+radarBase.position.set(-0.16,0.27,-0.16); turret.add(radarBase);
+var radarPivot = new THREE.Group();
+radarPivot.position.set(-0.16,0.34,-0.16); turret.add(radarPivot);
+var dishMount = M(new THREE.CylinderGeometry(0.018,0.018,0.10,6), STEELP);
+dishMount.rotation.z=0.5; dishMount.position.set(0.04,0.03,0); radarPivot.add(dishMount);
+// parabolic dish (cone shell)
+var dish = M(new THREE.ConeGeometry(0.13, 0.07, 18, 1, true), STEELP);
+dish.position.set(0.10,0.06,0); dish.rotation.z=-Math.PI/2; radarPivot.add(dish);
+var dishRim = M(new THREE.TorusGeometry(0.125,0.012,6,18), DARK);
+dishRim.position.set(0.135,0.06,0); dishRim.rotation.y=Math.PI/2; radarPivot.add(dishRim);
+// feed horn
+var horn = M(new THREE.ConeGeometry(0.02,0.06,8), DARK);
+horn.position.set(0.07,0.06,0); horn.rotation.z=Math.PI/2; radarPivot.add(horn);
+var hornDot = M(new THREE.SphereGeometry(0.012,8,8), LENS_G);
+hornDot.position.set(0.045,0.06,0); radarPivot.add(hornDot);
+
+// ---- EO/IR sensor pod (front, between rails) ----
+var sensor = M(roundedBox(0.10,0.10,0.10,0.02), DARK);
+sensor.position.set(0,0.21,0.20); turret.add(sensor);
+var sLens = M(new THREE.CylinderGeometry(0.035,0.035,0.02,12), GLASS);
+sLens.rotation.x=Math.PI/2; sLens.position.set(0,0.21,0.255); turret.add(sLens);
+var sGlow = M(new THREE.SphereGeometry(0.022,10,10), LENS_R);
+sGlow.position.set(0,0.21,0.26); turret.add(sGlow);
+var sLens2 = M(new THREE.CylinderGeometry(0.018,0.018,0.02,10), GLASS);
+sLens2.rotation.x=Math.PI/2; sLens2.position.set(0.035,0.235,0.255); turret.add(sLens2);
+
+// status lamps strip
+for(var i=0;i<3;i++){
+  var lamp = M(new THREE.SphereGeometry(0.01,8,8), i===0?LENS_G:(i===1?LENS_A:LENS_R));
+  lamp.position.set(-0.10+i*0.045, 0.235, -0.145); turret.add(lamp);
+}
+
+// =================================================================
+// ELEVATING MISSILE ASSEMBLY — angled up-and-forward
+// =================================================================
+var elev = new THREE.Group();
+elev.position.set(0, 0.20, 0.0);
+elev.rotation.x = -0.62;   // tilt pods up
+turret.add(elev);
+
+// trunnion arms holding the pod
+for(var s=-1;s<=1;s+=2){
+  var trun = M(roundedBox(0.05,0.18,0.06,0.015), STEELP);
+  trun.position.set(s*0.20, 0.02, 0.02); elev.add(trun);
+  var trPin = M(new THREE.CylinderGeometry(0.03,0.03,0.06,10), DARK);
+  trPin.rotation.z=Math.PI/2; trPin.position.set(s*0.21,0,0); elev.add(trPin);
+  var trHub = M(new THREE.CylinderGeometry(0.04,0.04,0.02,10), STEELP);
+  trHub.rotation.z=Math.PI/2; trHub.position.set(s*0.235,0,0); elev.add(trHub);
+}
+
+// hydraulic elevation actuator (rear)
+var actCyl = M(new THREE.CylinderGeometry(0.025,0.025,0.16,8), DARK);
+actCyl.position.set(0.0,-0.10,-0.06); actCyl.rotation.x=0.4; elev.add(actCyl);
+var actRod = M(new THREE.CylinderGeometry(0.012,0.012,0.10,6), STEELP);
+actRod.position.set(0.0,-0.02,-0.02); actRod.rotation.x=0.4; elev.add(actRod);
+
+// central pod frame
+var podFrame = M(roundedBox(0.34, 0.16, 0.24, 0.03), ARMOR);
+podFrame.position.set(0, 0.10, 0.02); elev.add(podFrame);
+// frame panel lines
+for(var i=0;i<2;i++){
+  var fl=M(new THREE.BoxGeometry(0.34,0.01,0.012), STEELP);
+  fl.position.set(0,0.06+i*0.08,0.14); elev.add(fl);
+}
+ringBolts(elev, 0, 0, 0, 0); // noop guard
+for(var i=0;i<4;i++){ var b=bolt(-0.13+i*0.087, 0.18, 0.10, 0.014); elev.add(b); }
+
+// ---- 6 missile tubes (2 cols x 3 rows) with missiles ----
+function missileTube(px, py){
+  var grp = new THREE.Group();
+  grp.position.set(px, py, 0);
+  // launch tube
+  var tube = M(new THREE.CylinderGeometry(0.052,0.052,0.30,12), DARK);
+  tube.rotation.x = Math.PI/2;
+  tube.position.z = 0.0; grp.add(tube);
+  // tube armor ribs
+  for(var r=0;r<3;r++){
+    var ring = M(new THREE.TorusGeometry(0.054,0.008,6,14), STEELP);
+    ring.position.z = -0.08+r*0.08; grp.add(ring);
+  }
+  // muzzle ring
+  var muz = M(new THREE.TorusGeometry(0.054,0.012,8,14), ARMOR);
+  muz.position.z = 0.15; grp.add(muz);
+
+  // missile body protruding
+  var mb = M(new THREE.CylinderGeometry(0.038,0.038,0.18,12), MISSILE);
+  mb.rotation.x=Math.PI/2; mb.position.z=0.20; grp.add(mb);
+  // nose cone
+  var nose = M(new THREE.ConeGeometry(0.038,0.10,12), TIP);
+  nose.rotation.x=Math.PI/2; nose.position.z=0.34; grp.add(nose);
+  // seeker dome glow
+  var seek = M(new THREE.SphereGeometry(0.016,8,8), LENS_A);
+  seek.position.z=0.40; grp.add(seek);
+  // canards
+  for(var f=0;f<4;f++){
+    var a=f/4*Math.PI*2 + Math.PI/4;
+    var fin=M(new THREE.BoxGeometry(0.05,0.008,0.04), STEELP);
+    fin.position.set(Math.cos(a)*0.05, Math.sin(a)*0.05, 0.26);
+    fin.rotation.z=a; grp.add(fin);
+  }
+  // body band
+  var band=M(new THREE.TorusGeometry(0.039,0.005,6,12), WARN);
+  band.position.z=0.24; grp.add(band);
+  return grp;
+}
+for(var col=0;col<2;col++){
+  for(var row=0;row<3;row++){
+    var px = -0.075 + col*0.15;
+    var py = 0.045 + row*0.055;
+    elev.add(missileTube(px, py));
+  }
+}
+
+// blast deflector plate behind pod
+var defl = M(roundedBox(0.36,0.18,0.02,0.02), DARK);
+defl.position.set(0,0.10,-0.12); elev.add(defl);
+
+// side warning stripe blocks
+for(var s=-1;s<=1;s+=2){
+  var ws=M(new THREE.BoxGeometry(0.02,0.10,0.02), WARN);
+  ws.position.set(s*0.175,0.10,0.10); elev.add(ws);
+}
+
+// ---- whip antenna on turret rear ----
+var antBase=M(new THREE.CylinderGeometry(0.02,0.025,0.04,8), DARK);
+antBase.position.set(0.18,0.20,-0.20); turret.add(antBase);
+var ant=M(new THREE.CylinderGeometry(0.005,0.008,0.30,6), STEELP);
+ant.position.set(0.18,0.36,-0.20); turret.add(ant);
+var antTip=M(new THREE.SphereGeometry(0.012,8,8), LENS_R);
+antTip.position.set(0.18,0.51,-0.20); turret.add(antTip);
+
+// cable from elev to body (visual loop)
+var cab2=M(new THREE.TorusGeometry(0.05,0.01,6,12,Math.PI), RUBBER);
+cab2.position.set(0.16,0.16,-0.05); cab2.rotation.y=Math.PI/2; turret.add(cab2);
+
+// grab handles on body
+for(var s=-1;s<=1;s+=2){
+  var h=M(new THREE.TorusGeometry(0.03,0.008,6,12,Math.PI), STEELP);
+  h.position.set(s*0.10,0.25,-0.05); h.rotation.x=Math.PI/2; turret.add(h);
+}
+
+return g;
+}
+function buildGatAir(def){
+var g = new THREE.Group();
+
+// ===== material palette =====
+var matSteel   = steel(0x3c4450);                         // armor main, used+matte
+var matSteel2  = steel(0x333a44);                         // darker steel
+var matGun     = pbr(0x23282f, {metalness:1.0, roughness:0.42, envI:0.7, grunge:true}); // barrels/breech
+var matDark    = pbr(0x1a1d22, {metalness:0.85, roughness:0.6, grunge:true});
+var matBolt    = pbr(0x55606b, {metalness:1.0, roughness:0.35, envI:0.9});
+var matBrass   = pbr(0x7a6230, {metalness:1.0, roughness:0.4, envI:0.85, grunge:true});
+var matRubber  = pbr(0x141518, {metalness:0.2, roughness:0.95});
+var matCable   = pbr(0x16181c, {metalness:0.3, roughness:0.9});
+var matLensR   = emis(0xff3a22, 1.4);
+var matLensG   = emis(0x35ff7a, 1.3);
+var matSensor  = pbr(0x0a1418, {metalness:0.6, roughness:0.25, emissive:0x0a3340, ei:0.5, clearcoat:1.0, ccr:0.1});
+var matVent    = pbr(0x101216, {metalness:0.7, roughness:0.7});
+
+function mk(geo, mat, x, y, z){
+  var m = new THREE.Mesh(geo, mat);
+  m.position.set(x||0, y||0, z||0);
+  m.castShadow = true;
+  return m;
+}
+function bolt(x, y, z, r){
+  var b = mk(new THREE.CylinderGeometry(r||0.018, r||0.018, 0.02, 6), matBolt, x, y, z);
+  return b;
+}
+// ring of bolts on a flange in XZ plane at height y
+function boltRing(parent, cx, y, cz, radius, count, br){
+  for(var i=0;i<count;i++){
+    var a = (i/count)*Math.PI*2;
+    var b = bolt(cx+Math.cos(a)*radius, y, cz+Math.sin(a)*radius, br||0.016);
+    b.rotation.x = Math.PI/2; // along ? keep upright small cyl
+    b.rotation.x = 0;
+    parent.add(b);
+  }
+}
+
+// =========================================================
+// BASE / PLATFORM  (footprint ~0.55)
+// =========================================================
+var base = new THREE.Group();
+g.add(base);
+
+// ground skirt - sloped armored base
+var skirt = mk(new THREE.CylinderGeometry(0.54, 0.5, 0.12, 8), matSteel2, 0, 0.06, 0);
+base.add(skirt);
+// chamfered panel facets bolts
+for(var i=0;i<8;i++){
+  var a=(i/8)*Math.PI*2;
+  var p = mk(roundedBox(0.14,0.1,0.03,0.015), matSteel, Math.cos(a)*0.5, 0.07, Math.sin(a)*0.5);
+  p.lookAt(0,0.07,0); p.castShadow=true; base.add(p);
+  base.add(bolt(Math.cos(a)*0.46, 0.125, Math.sin(a)*0.46, 0.014));
+}
+
+// outrigger feet (4 stabilizer legs) with hydraulic look
+for(var i=0;i<4;i++){
+  var a = Math.PI/4 + (i/4)*Math.PI*2;
+  var lg = new THREE.Group();
+  var ox=Math.cos(a)*0.46, oz=Math.sin(a)*0.46;
+  // angled strut
+  var strut = mk(new THREE.BoxGeometry(0.07,0.05,0.18), matSteel, ox*1.0, 0.05, oz*1.0);
+  strut.lookAt(ox*2,0.05,oz*2); base.add(strut);
+  // foot pad
+  var pad = mk(new THREE.CylinderGeometry(0.07,0.085,0.04,6), matDark, ox*1.18, 0.02, oz*1.18);
+  base.add(pad);
+  // hydraulic piston
+  var pis = mk(new THREE.CylinderGeometry(0.016,0.016,0.1,8), matBolt, ox*1.1, 0.07, oz*1.1);
+  pis.lookAt(ox*2,0,oz*2); pis.rotateX(Math.PI/2); base.add(pis);
+  base.add(bolt(ox*1.18, 0.045, oz*1.18,0.014));
+}
+
+// turret ring / bearing race
+var race = mk(new THREE.CylinderGeometry(0.3,0.32,0.06,24), matGun, 0,0.15,0);
+base.add(race);
+boltRing(base, 0, 0.185, 0, 0.27, 16, 0.013);
+// inner bearing teeth ring
+var teeth = mk(new THREE.TorusGeometry(0.26,0.022,6,24), matBolt, 0,0.16,0);
+teeth.rotation.x=Math.PI/2; base.add(teeth);
+
+// ammo conduit feed boxes on base
+var fb = mk(roundedBox(0.18,0.14,0.12,0.02), matSteel2, 0.0, 0.13, -0.42);
+base.add(fb);
+base.add(bolt(-0.06,0.18,-0.42,0.014)); base.add(bolt(0.06,0.18,-0.42,0.014));
+// warning light on base
+var wl = mk(new THREE.SphereGeometry(0.022,10,10), matLensR, 0.0,0.21,-0.42);
+base.add(wl);
+
+// =========================================================
+// TURRET (rotating)
+// =========================================================
+var turret = new THREE.Group();
+turret.position.y = 0.21;
+g.add(turret);
+g.userData.turret = turret;
+
+// turret main body - sloped boxy housing
+var hub = mk(new THREE.CylinderGeometry(0.27,0.29,0.1,12), matSteel, 0,0.05,0);
+turret.add(hub);
+var body = mk(roundedBox(0.42,0.2,0.4,0.04), matSteel, 0,0.16,-0.02);
+turret.add(body);
+// sloped front armor plate
+var slope = mk(roundedBox(0.4,0.16,0.06,0.02), matSteel2, 0,0.18,0.2);
+slope.rotation.x = -0.5; turret.add(slope);
+boltRing(turret, 0,0.27,0.18,0.16,8,0.012);
+// panel lines / greeble plates on sides
+for(var s=-1;s<=1;s+=2){
+  var sp = mk(roundedBox(0.04,0.13,0.3,0.015), matSteel2, s*0.2,0.16,-0.02);
+  turret.add(sp);
+  turret.add(bolt(s*0.2,0.24,0.08,0.012));
+  turret.add(bolt(s*0.2,0.24,-0.12,0.012));
+  // side handle bars
+  var hb = mk(new THREE.TorusGeometry(0.04,0.008,6,10,Math.PI), matBolt, s*0.22,0.16,-0.05);
+  hb.rotation.y=Math.PI/2; turret.add(hb);
+}
+// top hatch
+var hatch = mk(new THREE.CylinderGeometry(0.075,0.075,0.025,8), matSteel2, -0.1,0.27,-0.1);
+turret.add(hatch);
+boltRing(turret,-0.1,0.285,-0.1,0.06,6,0.01);
+var hh = mk(new THREE.TorusGeometry(0.025,0.006,6,8), matBolt,-0.1,0.285,-0.1);
+hh.rotation.x=Math.PI/2; turret.add(hh);
+
+// rear counterweight / electronics bustle
+var bustle = mk(roundedBox(0.32,0.18,0.16,0.03), matSteel2, 0,0.17,-0.26);
+turret.add(bustle);
+boltRing(turret,0,0.26,-0.26,0.12,6,0.012);
+// vents on bustle
+for(var v=0;v<4;v++){
+  turret.add(mk(new THREE.BoxGeometry(0.22,0.014,0.01), matVent, 0,0.12+v*0.03,-0.345));
+}
+// exhaust pipe out of bustle
+var exh = mk(new THREE.CylinderGeometry(0.03,0.034,0.12,10), matDark, 0.12,0.2,-0.34);
+exh.rotation.x=Math.PI/2.4; turret.add(exh);
+var exhTip = mk(new THREE.CylinderGeometry(0.036,0.036,0.02,10), matRubber, 0.135,0.235,-0.39);
+exhTip.rotation.x=Math.PI/2.4; turret.add(exhTip);
+
+// ammo drum magazine (big rotary drum on side)
+var drum = new THREE.Group();
+drum.position.set(-0.26,0.16,-0.05);
+turret.add(drum);
+var drumBody = mk(new THREE.CylinderGeometry(0.15,0.15,0.16,20), matGun, 0,0,0);
+drumBody.rotation.z = Math.PI/2; drum.add(drumBody);
+// drum end cap with hub bolts
+var dcap = mk(new THREE.CylinderGeometry(0.155,0.155,0.02,20), matSteel2, -0.085,0,0);
+dcap.rotation.z=Math.PI/2; drum.add(dcap);
+boltRing(drum,0,0,0,0.11,10,0.012); // ring roughly on cap face (approx)
+// drum ribs (helical-ish straight ribs)
+for(var r=0;r<10;r++){
+  var a=(r/10)*Math.PI*2;
+  var rib = mk(new THREE.BoxGeometry(0.16,0.018,0.018), matBolt, 0, Math.sin(a)*0.135, Math.cos(a)*0.135);
+  drum.add(rib);
+}
+// drum center hub
+var dhub = mk(new THREE.CylinderGeometry(0.04,0.04,0.18,10), matDark, 0,0,0);
+dhub.rotation.z=Math.PI/2; drum.add(dhub);
+
+// ammo feed chute drum->breech (flexible belt look)
+for(var c=0;c<7;c++){
+  var t=c/6;
+  var fx = -0.26 + t*0.16;
+  var fy = 0.16 + Math.sin(t*Math.PI)*0.06 + t*0.04;
+  var fz = -0.05 + t*0.16;
+  var link = mk(new THREE.BoxGeometry(0.05,0.03,0.03), (c%2? matBrass: matDark), 0,0,0);
+  link.position.set(fx,fy,fz);
+  link.rotation.z = t*0.6; turret.add(link);
+}
+
+// =========================================================
+// GUN CRADLE (elevation) + ROTARY CANNON pointing UP
+// =========================================================
+var cradle = new THREE.Group();
+cradle.position.set(0,0.2,0.06);
+turret.add(cradle);
+// trunnion arms
+for(var s=-1;s<=1;s+=2){
+  var arm = mk(roundedBox(0.05,0.22,0.1,0.02), matSteel, s*0.16,0.06,0);
+  cradle.add(arm);
+  var trun = mk(new THREE.CylinderGeometry(0.035,0.035,0.06,12), matBolt, s*0.16,0.1,0);
+  trun.rotation.z=Math.PI/2; cradle.add(trun);
+}
+// elevation actuator pistons (rear, angled)
+for(var s=-1;s<=1;s+=2){
+  var act = mk(new THREE.CylinderGeometry(0.02,0.02,0.18,10), matBolt, s*0.1,0.0,-0.1);
+  act.rotation.x=-0.7; cradle.add(act);
+  var actC = mk(new THREE.CylinderGeometry(0.028,0.028,0.08,10), matDark, s*0.1,-0.06,-0.16);
+  actC.rotation.x=-0.7; cradle.add(actC);
+}
+
+// --- the rotary gun assembly, elevated steeply upward ---
+var gun = new THREE.Group();
+gun.position.set(0,0.12,0.02);
+gun.rotation.x = -1.15; // point barrels strongly upward (anti-air)
+cradle.add(gun);
+
+// breech / gearbox housing
+var breech = mk(roundedBox(0.2,0.2,0.22,0.03), matGun, 0,0,-0.02);
+gun.add(breech);
+boltRing(gun,0,0,0.09,0.08,8,0.012);
+// breech side detail panels + bolts
+for(var s=-1;s<=1;s+=2){
+  var bp = mk(roundedBox(0.03,0.14,0.16,0.01), matSteel2, s*0.1,0,-0.02);
+  gun.add(bp);
+}
+// drive motor on breech rear
+var motor = mk(new THREE.CylinderGeometry(0.06,0.06,0.1,12), matDark, 0,-0.02,-0.16);
+motor.rotation.x=Math.PI/2; gun.add(motor);
+var motCap = mk(new THREE.CylinderGeometry(0.065,0.065,0.02,12), matBolt, 0,-0.02,-0.21);
+motCap.rotation.x=Math.PI/2; gun.add(motCap);
+
+// rotary barrel cluster (6 barrels around a hub)
+var barrels = new THREE.Group();
+barrels.position.set(0,0,0.1);
+gun.add(barrels);
+// front barrel-support disk (rotor face)
+var rotorFace = mk(new THREE.CylinderGeometry(0.1,0.1,0.03,18), matBolt, 0,0,0);
+rotorFace.rotation.x=Math.PI/2; barrels.add(rotorFace);
+var rotorHub = mk(new THREE.CylinderGeometry(0.035,0.035,0.5,12), matDark, 0,0,0.25);
+rotorHub.rotation.x=Math.PI/2; barrels.add(rotorHub);
+var nbar=6, br=0.062, bLen=0.46;
+for(var i=0;i<nbar;i++){
+  var a=(i/nbar)*Math.PI*2;
+  var bx=Math.cos(a)*br, by=Math.sin(a)*br;
+  var barrel = mk(new THREE.CylinderGeometry(0.018,0.02,bLen,12), matGun, bx,by,0.02+bLen/2);
+  barrel.rotation.x=Math.PI/2; barrels.add(barrel);
+  // muzzle ring
+  var mz = mk(new THREE.CylinderGeometry(0.024,0.024,0.03,10), matBolt, bx,by,0.02+bLen-0.01);
+  mz.rotation.x=Math.PI/2; barrels.add(mz);
+  // bore
+  var bore = mk(new THREE.CylinderGeometry(0.011,0.011,0.02,8), matRubber, bx,by,0.02+bLen);
+  bore.rotation.x=Math.PI/2; barrels.add(bore);
+}
+// barrel clamp ring midway (holds cluster)
+var clamp = mk(new THREE.CylinderGeometry(0.09,0.09,0.025,18), matSteel2, 0,0,0.26);
+clamp.rotation.x=Math.PI/2; barrels.add(clamp);
+boltRing(gun,0,0,0.1,0.09,6,0.01);
+// muzzle shroud / flash housing at front
+var shroud = mk(new THREE.CylinderGeometry(0.1,0.095,0.07,18), matDark, 0,0,0.48);
+shroud.rotation.x=Math.PI/2; barrels.add(shroud);
+var shroudLip = mk(new THREE.TorusGeometry(0.095,0.012,8,18), matBolt, 0,0,0.515);
+shroudLip.rotation.x=0; barrels.add(shroudLip); // ring facing forward
+shroudLip.rotation.x=Math.PI/2;
+
+// =========================================================
+// TRACKING SENSOR / RADAR ARRAY (on top of turret)
+// =========================================================
+var sensorMast = new THREE.Group();
+sensorMast.position.set(0.12,0.28,-0.16);
+turret.add(sensorMast);
+var mast = mk(new THREE.CylinderGeometry(0.022,0.026,0.16,8), matSteel2, 0,0.08,0);
+sensorMast.add(mast);
+// gimbal head
+var gimbal = mk(roundedBox(0.1,0.08,0.06,0.02), matSteel, 0,0.18,0);
+sensorMast.add(gimbal);
+// EO/IR sensor lens (green) front
+var eo = mk(new THREE.CylinderGeometry(0.03,0.03,0.03,16), matDark, 0,0.18,0.04);
+eo.rotation.x=Math.PI/2; sensorMast.add(eo);
+var eoLens = mk(new THREE.CylinderGeometry(0.022,0.022,0.012,16), matSensor, 0,0.18,0.055);
+eoLens.rotation.x=Math.PI/2; sensorMast.add(eoLens);
+// radar dish small (search)
+var dish = mk(new THREE.SphereGeometry(0.05,14,10,0,Math.PI*2,0,Math.PI/2), matSteel2, 0,0.24,0);
+dish.scale.set(1,0.5,1); sensorMast.add(dish);
+var dishLens = mk(new THREE.SphereGeometry(0.012,8,8), matLensG, 0,0.2,0.0);
+sensorMast.add(dishLens);
+
+// flat-panel AESA radar on rear of bustle, tilted up
+var aesa = new THREE.Group();
+aesa.position.set(-0.13,0.3,-0.24);
+aesa.rotation.x = -0.5;
+turret.add(aesa);
+var aesaPanel = mk(roundedBox(0.13,0.16,0.025,0.01), matDark, 0,0,0);
+aesa.add(aesaPanel);
+var aesaFrame = mk(roundedBox(0.15,0.18,0.015,0.01), matSteel2, 0,0,-0.015);
+aesa.add(aesaFrame);
+// emitter dots grid
+for(var px=-1;px<=1;px++) for(var py=-1;py<=1;py++){
+  aesa.add(mk(new THREE.SphereGeometry(0.008,6,6), matLensG, px*0.035,py*0.045,0.014));
+}
+boltRing(aesa,0,0,-0.01,0.075,4,0.009);
+
+// =========================================================
+// CABLES / ANTENNAS / final greebles
+// =========================================================
+// whip antenna
+var ant = mk(new THREE.CylinderGeometry(0.005,0.008,0.3,6), matDark, -0.2,0.3,-0.28);
+ant.rotation.z=0.15; turret.add(ant);
+var antTip = mk(new THREE.SphereGeometry(0.014,8,8), matLensR, -0.222,0.45,-0.28);
+turret.add(antTip);
+
+// cable bundle from drum to breech area
+for(var c=0;c<5;c++){
+  var seg = mk(new THREE.CylinderGeometry(0.01,0.01,0.08,6), matCable,
+    -0.2+c*0.03, 0.1+Math.sin(c)*0.02, 0.0+c*0.01);
+  seg.rotation.z = 1.0; seg.rotation.x=0.3; turret.add(seg);
+}
+// cable from base to turret (slack loop)
+var cbl = mk(new THREE.TorusGeometry(0.05,0.012,6,12,Math.PI*1.3), matCable, 0.22,0.04,-0.2);
+cbl.rotation.y=0.5; turret.add(cbl);
+
+// front turret data plate + small status lenses
+var plate = mk(roundedBox(0.1,0.05,0.012,0.005), matSteel2, 0.13,0.1,0.21);
+plate.rotation.x=-0.5; turret.add(plate);
+turret.add(mk(new THREE.SphereGeometry(0.012,8,8), matLensG, 0.1,0.27,0.05));
+turret.add(mk(new THREE.SphereGeometry(0.012,8,8), matLensR, -0.13,0.27,0.05));
+
+// grab rails on bustle top
+for(var s=-1;s<=1;s+=2){
+  var rail = mk(new THREE.TorusGeometry(0.03,0.006,6,10,Math.PI), matBolt, s*0.1,0.27,-0.26);
+  rail.rotation.x=Math.PI/2; rail.rotation.z=Math.PI/2; turret.add(rail);
+}
+
+return g;
+}
+function buildBarrier(def){
+var g=new THREE.Group();
+
+var STEEL=0x2f4a55;
+var CYAN=0x35d6e6;
+var DARK=0x1c2c34;
+
+function bolt(r,h,c){
+  var m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,6),pbr(c||0x141d22,{metalness:1,roughness:0.5}));
+  m.castShadow=true; return m;
+}
+function ring(meshList){for(var i=0;i<meshList.length;i++)g.add(meshList[i]);}
+
+/* ---------- ベース傾斜装甲台座 ---------- */
+var baseSk=pbr(DARK,{metalness:1,roughness:0.85,grunge:true});
+var skirt=new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.55,0.14,10),baseSk);
+skirt.position.y=0.07; skirt.castShadow=true; g.add(skirt);
+
+var plate=new THREE.Mesh(new THREE.CylinderGeometry(0.46,0.52,0.10,10),steel(STEEL));
+plate.position.y=0.16; plate.castShadow=true; g.add(plate);
+
+// 台座のパネルライン区切り（10セグの傾斜パネル）
+for(var i=0;i<10;i++){
+  var a=i/10*Math.PI*2;
+  var panel=new THREE.Mesh(roundedBox(0.20,0.085,0.05,0.012),steel(STEEL));
+  panel.position.set(Math.cos(a)*0.50,0.115,Math.sin(a)*0.50);
+  panel.lookAt(0,0.115,0);
+  panel.rotateX(0.28);
+  panel.castShadow=true; g.add(panel);
+  // パネル隅ボルト
+  var bl=bolt(0.012,0.03);
+  bl.position.set(Math.cos(a)*0.50,0.155,Math.sin(a)*0.50);
+  bl.rotation.z=Math.PI/2; bl.lookAt(Math.cos(a),0.155,Math.sin(a));
+  g.add(bl);
+}
+
+// 接地アンカー脚 4本（外側へ張り出し）
+for(var i=0;i<4;i++){
+  var a=Math.PI/4+i/4*Math.PI*2;
+  var foot=new THREE.Mesh(roundedBox(0.13,0.10,0.20,0.03),pbr(DARK,{metalness:1,roughness:0.8,grunge:true}));
+  foot.position.set(Math.cos(a)*0.50,0.045,Math.sin(a)*0.50);
+  foot.lookAt(0,0.045,0); foot.castShadow=true; g.add(foot);
+  var pin=bolt(0.022,0.10,0x0d1418);
+  pin.position.set(Math.cos(a)*0.55,0.07,Math.sin(a)*0.55);
+  g.add(pin);
+  // 油圧ダンパー
+  var damp=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.16,8),pbr(0x60666a,{metalness:1,roughness:0.35}));
+  damp.position.set(Math.cos(a)*0.42,0.13,Math.sin(a)*0.42);
+  damp.lookAt(Math.cos(a)*0.55,0.02,Math.sin(a)*0.55);
+  damp.castShadow=true; g.add(damp);
+}
+
+/* ---------- 中央コア基部ハウジング ---------- */
+var housing=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.32,0.22,8),steel(STEEL));
+housing.position.y=0.30; housing.castShadow=true; g.add(housing);
+
+// ハウジング傾斜装甲帯（8面パネル）
+for(var i=0;i<8;i++){
+  var a=i/8*Math.PI*2;
+  var fp=new THREE.Mesh(roundedBox(0.20,0.18,0.04,0.02),steel(STEEL));
+  fp.position.set(Math.cos(a)*0.28,0.30,Math.sin(a)*0.28);
+  fp.lookAt(0,0.30,0); fp.castShadow=true; g.add(fp);
+  // パネル四隅ボルト
+  for(var c=0;c<2;c++){
+    var bb=bolt(0.011,0.025);
+    bb.position.set(Math.cos(a)*0.30,0.24+c*0.12,Math.sin(a)*0.30);
+    bb.rotation.z=Math.PI/2; bb.lookAt(Math.cos(a),0.24+c*0.12,Math.sin(a));
+    g.add(bb);
+  }
+}
+
+// ハウジング上部 天板リング
+var capTop=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.26,0.05,8),pbr(DARK,{metalness:1,roughness:0.7,grunge:true}));
+capTop.position.y=0.435; capTop.castShadow=true; g.add(capTop);
+
+// メンテナンスハッチ（ヒンジ＋取っ手）
+var hatch=new THREE.Mesh(roundedBox(0.14,0.10,0.025,0.02),pbr(DARK,{metalness:1,roughness:0.75,grunge:true}));
+hatch.position.set(0,0.30,0.305); hatch.castShadow=true; g.add(hatch);
+var handle=new THREE.Mesh(new THREE.TorusGeometry(0.025,0.007,6,10),pbr(0x70767a,{metalness:1,roughness:0.4}));
+handle.position.set(0,0.30,0.325); handle.rotation.x=Math.PI/2; handle.castShadow=true; g.add(handle);
+
+/* ---------- 旋回部（回転リング＋エミッタ柱＋コア） ---------- */
+var turret=new THREE.Group();
+turret.position.y=0.46;
+g.add(turret);
+g.userData.turret=turret;
+
+// 旋回ベースディスク
+var tbase=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.23,0.06,8),steel(STEEL));
+tbase.position.y=0.01; tbase.castShadow=true; turret.add(tbase);
+
+// エミッタ柱 4本（リングを支える発生ピラー）
+var pillarMat=pbr(STEEL,{metalness:1,roughness:0.55,grunge:true});
+for(var i=0;i<4;i++){
+  var a=i/4*Math.PI*2;
+  var px=Math.cos(a)*0.18, pz=Math.sin(a)*0.18;
+  var pillar=new THREE.Mesh(roundedBox(0.06,0.30,0.06,0.018),pillarMat);
+  pillar.position.set(px,0.18,pz); pillar.castShadow=true; turret.add(pillar);
+  // 柱の冷却フィン
+  for(var f=0;f<3;f++){
+    var fin=new THREE.Mesh(new THREE.BoxGeometry(0.085,0.012,0.085),pbr(DARK,{metalness:1,roughness:0.6}));
+    fin.position.set(px,0.10+f*0.07,pz); fin.castShadow=true; turret.add(fin);
+  }
+  // 柱頭エミッタレンズ（控えめシアン）
+  var lens=new THREE.Mesh(new THREE.SphereGeometry(0.028,12,10),emis(CYAN,0.7));
+  lens.position.set(px,0.33,pz); turret.add(lens);
+  var lensRim=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.01,6,12),pbr(0x141d22,{metalness:1,roughness:0.4}));
+  lensRim.position.set(px,0.33,pz); lensRim.rotation.x=Math.PI/2; lensRim.castShadow=true; turret.add(lensRim);
+  // 柱基部ボルト
+  var pb=bolt(0.012,0.03);
+  pb.position.set(px,0.05,pz); turret.add(pb);
+  // 柱間ケーブル
+  var na=((i+1)/4)*Math.PI*2;
+  var nx=Math.cos(na)*0.18, nz=Math.sin(na)*0.18;
+  var cab=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.255,6),pbr(0x10171b,{metalness:0.6,roughness:0.8}));
+  cab.position.set((px+nx)/2,0.07,(pz+nz)/2);
+  cab.lookAt(nx,0.06,nz); cab.castShadow=true; turret.add(cab);
+}
+
+// ---------- 回転リング群（同心3枚） ----------
+var ringMat=pbr(STEEL,{metalness:1,roughness:0.5,grunge:true});
+var ringMatD=pbr(DARK,{metalness:1,roughness:0.65,grunge:true});
+
+// 大外リング（メイン・装甲）
+var rOuter=new THREE.Mesh(new THREE.TorusGeometry(0.30,0.045,10,28),ringMat);
+rOuter.position.y=0.30; rOuter.rotation.x=Math.PI/2; rOuter.castShadow=true; turret.add(rOuter);
+// 外リングのセグメントボルト
+for(var i=0;i<12;i++){
+  var a=i/12*Math.PI*2;
+  var sb=bolt(0.012,0.025);
+  sb.position.set(Math.cos(a)*0.30,0.345,Math.sin(a)*0.30);
+  turret.add(sb);
+}
+// 外リング 放射状リブ（傾斜パネル感）
+for(var i=0;i<6;i++){
+  var a=i/6*Math.PI*2;
+  var rib=new THREE.Mesh(roundedBox(0.05,0.025,0.10,0.01),ringMatD);
+  rib.position.set(Math.cos(a)*0.30,0.30,Math.sin(a)*0.30);
+  rib.lookAt(0,0.30,0); rib.castShadow=true; turret.add(rib);
+}
+
+// 中リング（傾斜・反転発光溝）
+var rMid=new THREE.Mesh(new THREE.TorusGeometry(0.225,0.03,8,24),ringMatD);
+rMid.position.y=0.30; rMid.rotation.x=Math.PI/2.3; rMid.castShadow=true; turret.add(rMid);
+// 中リング内縁の発光溝（細トーラス・控えめ）
+var rMidGlow=new THREE.Mesh(new THREE.TorusGeometry(0.225,0.008,6,24),emis(CYAN,0.5));
+rMidGlow.position.y=0.30; rMidGlow.rotation.x=Math.PI/2.3; turret.add(rMidGlow);
+
+// 内リング（コア周回・薄）
+var rInner=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.022,8,20),ringMat);
+rInner.position.y=0.30; rInner.rotation.x=Math.PI/1.8; rInner.castShadow=true; turret.add(rInner);
+
+/* ---------- 中央エネルギーコア（控えめシアン発光） ---------- */
+// コアケージ（装甲ガード支柱）
+for(var i=0;i<3;i++){
+  var a=i/3*Math.PI*2+0.4;
+  var guard=new THREE.Mesh(roundedBox(0.025,0.18,0.025,0.008),pbr(0x141d22,{metalness:1,roughness:0.5}));
+  guard.position.set(Math.cos(a)*0.085,0.30,Math.sin(a)*0.085);
+  // 上下を絞った弓なり配置の代わりに僅か傾ける
+  guard.rotation.x=Math.cos(a)*0.25; guard.rotation.z=Math.sin(a)*0.25;
+  guard.castShadow=true; turret.add(guard);
+}
+// コア外殻（暗いマット）
+var coreShell=new THREE.Mesh(new THREE.IcosahedronGeometry(0.075,0),pbr(DARK,{metalness:1,roughness:0.6,grunge:true}));
+coreShell.position.y=0.30; coreShell.castShadow=true; turret.add(coreShell);
+// コア発光体（控えめ）
+var core=new THREE.Mesh(new THREE.IcosahedronGeometry(0.055,0),emis(CYAN,0.85));
+core.position.y=0.30; turret.add(core);
+// コア赤道リング
+var coreEq=new THREE.Mesh(new THREE.TorusGeometry(0.078,0.01,6,14),pbr(0x60666a,{metalness:1,roughness:0.35}));
+coreEq.position.y=0.30; coreEq.rotation.x=Math.PI/2; coreEq.castShadow=true; turret.add(coreEq);
+
+/* ---------- 背面グリーブル：排気・アンテナ・センサー ---------- */
+// 排気ダクト（ハウジング側面）
+var exhaust=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,0.10,8),pbr(0x0d1216,{metalness:1,roughness:0.9,grunge:true}));
+exhaust.position.set(-0.26,0.30,-0.18); exhaust.rotation.z=Math.PI/2.2; exhaust.castShadow=true; g.add(exhaust);
+var exGrill=new THREE.Mesh(new THREE.CylinderGeometry(0.038,0.038,0.02,8),pbr(0x4a5054,{metalness:1,roughness:0.5}));
+exGrill.position.set(-0.30,0.31,-0.20); exGrill.rotation.z=Math.PI/2.2; exGrill.castShadow=true; g.add(exGrill);
+
+// アンテナ（細い・先端レンズ）
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.009,0.30,6),pbr(0x4a5054,{metalness:1,roughness:0.4}));
+ant.position.set(0.20,0.44,-0.20); ant.rotation.z=0.18; ant.castShadow=true; g.add(ant);
+var antTip=new THREE.Mesh(new THREE.SphereGeometry(0.014,8,8),emis(CYAN,0.6));
+antTip.position.set(0.235,0.59,-0.20); g.add(antTip);
+
+// センサーポッド（傾斜面付き）
+var pod=new THREE.Mesh(roundedBox(0.09,0.06,0.07,0.02),steel(STEEL));
+pod.position.set(0.24,0.34,0.14); pod.rotation.y=-0.5; pod.castShadow=true; g.add(pod);
+var podLens=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.02,12),emis(CYAN,0.5));
+podLens.position.set(0.285,0.34,0.165); podLens.rotation.z=Math.PI/2; podLens.rotation.y=-0.5; g.add(podLens);
+
+// 外装ケーブル束（ハウジング→台座）
+for(var i=0;i<2;i++){
+  var a=-0.6+i*0.4;
+  var hose=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.20,6),pbr(0x10171b,{metalness:0.5,roughness:0.85}));
+  hose.position.set(Math.cos(a)*0.34,0.24,Math.sin(a)*0.34);
+  hose.lookAt(Math.cos(a)*0.50,0.10,Math.sin(a)*0.50);
+  hose.castShadow=true; g.add(hose);
+}
+
+// 警告ステンシル枠（暗パネル・台座前面）
+var sten=new THREE.Mesh(roundedBox(0.12,0.05,0.012,0.01),pbr(0x12181c,{metalness:1,roughness:0.7,grunge:true}));
+sten.position.set(0,0.13,0.515); sten.rotation.x=-0.28; sten.castShadow=true; g.add(sten);
+
+return g;
+}
+function buildBooster(def){
+
+var g = new THREE.Group();
+
+// ===== material palette =====
+var STEEL = 0x4a4330;
+var bodyMat = steel(STEEL);
+var darkMat = pbr(0x2c281f, { metalness: 0.85, roughness: 0.55, grunge: true });
+var trimMat = pbr(0x6b6048, { metalness: 0.8, roughness: 0.5, grunge: true });
+var boltMat = pbr(0x8a8270, { metalness: 0.95, roughness: 0.4 });
+var rubberMat = pbr(0x14120d, { metalness: 0.2, roughness: 0.9 });
+var cableMat = pbr(0x1a1813, { metalness: 0.3, roughness: 0.85 });
+var amberMat = emis(0xffb347, 0.6);
+var amberCore = emis(0xffc15a, 1.0);
+var lensMat = emis(0x66ddff, 0.9);
+var redLens = emis(0xff4d33, 0.9);
+var glassMat = pbr(0x223033, { metalness: 0.4, roughness: 0.25, emissive: 0x335544, ei: 0.15 });
+
+// helper: bolt ring
+function boltRing(cx, cy, cz, radius, count, br, axis) {
+  for (var i = 0; i < count; i++) {
+    var a = (i / count) * Math.PI * 2;
+    var b = new THREE.Mesh(new THREE.CylinderGeometry(br, br, br * 1.2, 6), boltMat);
+    b.castShadow = true;
+    if (axis === 'y') {
+      b.position.set(cx + Math.cos(a) * radius, cy, cz + Math.sin(a) * radius);
+    } else {
+      b.position.set(cx + Math.cos(a) * radius, cy + Math.sin(a) * radius, cz);
+      b.rotation.x = Math.PI / 2;
+    }
+    g.add(b);
+  }
+}
+
+// helper: panel line plate
+function plate(w, h, d, x, y, z, mat, rot) {
+  var p = new THREE.Mesh(roundedBox(w, h, d, Math.min(w, h, d) * 0.18), mat || trimMat);
+  p.castShadow = true;
+  p.position.set(x, y, z);
+  if (rot) p.rotation.set(rot[0], rot[1], rot[2]);
+  g.add(p);
+  return p;
+}
+
+// ===================================================================
+// LOWER CHASSIS — wide tracked/skid base, sloped armor
+// ===================================================================
+var base = new THREE.Mesh(roundedBox(0.92, 0.18, 0.78, 0.05), bodyMat);
+base.castShadow = true;
+base.position.y = 0.11;
+g.add(base);
+
+// sloped front glacis
+var glacis = new THREE.Mesh(roundedBox(0.86, 0.16, 0.3, 0.04), bodyMat);
+glacis.castShadow = true;
+glacis.position.set(0, 0.13, 0.34);
+glacis.rotation.x = -0.5;
+g.add(glacis);
+
+// skid pads (left/right) instead of treads — support craft
+for (var sx = -1; sx <= 1; sx += 2) {
+  var skid = new THREE.Mesh(roundedBox(0.16, 0.14, 0.86, 0.05), darkMat);
+  skid.castShadow = true;
+  skid.position.set(sx * 0.42, 0.07, 0);
+  g.add(skid);
+  // skid rubber sole
+  var sole = new THREE.Mesh(roundedBox(0.17, 0.04, 0.88, 0.03), rubberMat);
+  sole.castShadow = true;
+  sole.position.set(sx * 0.42, 0.02, 0);
+  g.add(sole);
+  // skid ribs
+  for (var ri = -3; ri <= 3; ri++) {
+    var rib = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 0.04), rubberMat);
+    rib.castShadow = true;
+    rib.position.set(sx * 0.42, 0.05, ri * 0.115);
+    g.add(rib);
+  }
+  // mounting bolts
+  boltRing(sx * 0.42, 0.13, 0.3, 0.05, 4, 0.012, 'z');
+  boltRing(sx * 0.42, 0.13, -0.3, 0.05, 4, 0.012, 'z');
+}
+
+// chassis side armor plates with panel lines
+for (var sx2 = -1; sx2 <= 1; sx2 += 2) {
+  plate(0.04, 0.16, 0.7, sx2 * 0.47, 0.13, 0, trimMat);
+  // bolts along side
+  for (var bz = -2; bz <= 2; bz++) {
+    var sb = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.02, 6), boltMat);
+    sb.castShadow = true;
+    sb.rotation.z = Math.PI / 2;
+    sb.position.set(sx2 * 0.49, 0.13, bz * 0.15);
+    g.add(sb);
+  }
+}
+
+// rear chassis exhaust block
+var exBlock = new THREE.Mesh(roundedBox(0.5, 0.14, 0.1, 0.03), darkMat);
+exBlock.castShadow = true;
+exBlock.position.set(0, 0.14, -0.4);
+g.add(exBlock);
+for (var ex = -1; ex <= 1; ex++) {
+  var pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.12, 10), darkMat);
+  pipe.castShadow = true;
+  pipe.rotation.x = Math.PI / 2;
+  pipe.position.set(ex * 0.16, 0.16, -0.47);
+  g.add(pipe);
+  var pipeIn = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.04, 8), rubberMat);
+  pipeIn.position.set(ex * 0.16, 0.16, -0.5);
+  pipeIn.rotation.x = Math.PI / 2;
+  g.add(pipeIn);
+}
+
+// ===================================================================
+// MAIN HULL — central command body (sloped, paneled)
+// ===================================================================
+var hull = new THREE.Mesh(roundedBox(0.62, 0.26, 0.62, 0.06), bodyMat);
+hull.castShadow = true;
+hull.position.y = 0.32;
+g.add(hull);
+
+// upper sloped deck
+var deck = new THREE.Mesh(roundedBox(0.56, 0.1, 0.56, 0.05), bodyMat);
+deck.castShadow = true;
+deck.position.y = 0.46;
+g.add(deck);
+
+// front armored vision/sensor block
+var sensorBlk = new THREE.Mesh(roundedBox(0.34, 0.16, 0.1, 0.03), darkMat);
+sensorBlk.castShadow = true;
+sensorBlk.position.set(0, 0.36, 0.32);
+sensorBlk.rotation.x = -0.25;
+g.add(sensorBlk);
+// sensor lenses
+for (var sl = -1; sl <= 1; sl++) {
+  var lens = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.03, 12), glassMat);
+  lens.castShadow = true;
+  lens.position.set(sl * 0.11, 0.37, 0.37);
+  lens.rotation.x = Math.PI / 2 - 0.25;
+  g.add(lens);
+  var lensG = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.01, 12), sl === 0 ? redLens : lensMat);
+  lensG.position.set(sl * 0.11, 0.375, 0.385);
+  lensG.rotation.x = Math.PI / 2 - 0.25;
+  g.add(lensG);
+}
+
+// hull panel lines / plates
+plate(0.5, 0.02, 0.04, 0, 0.4, 0.31, trimMat);
+plate(0.04, 0.2, 0.5, 0.31, 0.32, 0, trimMat);
+plate(0.04, 0.2, 0.5, -0.31, 0.32, 0, trimMat);
+plate(0.5, 0.2, 0.04, 0, 0.32, -0.31, trimMat);
+
+// hull bolts (corners)
+boltRing(0, 0.46, 0, 0.24, 8, 0.014, 'y');
+
+// side maintenance hatches with latches
+for (var hx = -1; hx <= 1; hx += 2) {
+  var hatch = new THREE.Mesh(roundedBox(0.04, 0.16, 0.22, 0.02), trimMat);
+  hatch.castShadow = true;
+  hatch.position.set(hx * 0.32, 0.3, 0.05);
+  g.add(hatch);
+  var latch = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.04), boltMat);
+  latch.castShadow = true;
+  latch.position.set(hx * 0.34, 0.3, 0.05);
+  g.add(latch);
+}
+
+// ===================================================================
+// POWER GENERATION UNIT — rear, amber glowing (subtle), grilles
+// ===================================================================
+var genHousing = new THREE.Mesh(roundedBox(0.4, 0.24, 0.2, 0.04), darkMat);
+genHousing.castShadow = true;
+genHousing.position.set(0, 0.36, -0.36);
+g.add(genHousing);
+
+// generator cooling fins
+for (var f = 0; f < 6; f++) {
+  var fin = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.02, 0.18), trimMat);
+  fin.castShadow = true;
+  fin.position.set(0, 0.27 + f * 0.035, -0.36);
+  g.add(fin);
+}
+
+// amber glow strips (controlled) flanking generator
+for (var ax = -1; ax <= 1; ax += 2) {
+  var glowStrip = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.16, 0.025), amberMat);
+  glowStrip.position.set(ax * 0.18, 0.36, -0.27);
+  g.add(glowStrip);
+}
+// central reactor core lens (amber, small)
+var coreHsg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.06, 16), darkMat);
+coreHsg.castShadow = true;
+coreHsg.position.set(0, 0.36, -0.27);
+coreHsg.rotation.x = Math.PI / 2;
+g.add(coreHsg);
+var core = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.04, 16), amberCore);
+core.position.set(0, 0.36, -0.255);
+core.rotation.x = Math.PI / 2;
+g.add(core);
+var coreRing = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.01, 8, 20), boltMat);
+coreRing.position.set(0, 0.36, -0.26);
+g.add(coreRing);
+
+// power cables from generator into hull
+for (var cb = 0; cb < 3; cb++) {
+  var cbx = (cb - 1) * 0.1;
+  var cablePts = [];
+  for (var t = 0; t <= 8; t++) {
+    var tt = t / 8;
+    cablePts.push(new THREE.Vector3(
+      cbx + Math.sin(tt * Math.PI) * 0.02,
+      0.36 + Math.sin(tt * Math.PI) * 0.06,
+      -0.26 + tt * 0.12
+    ));
+  }
+  var cableCurve = new THREE.CatmullRomCurve3(cablePts);
+  var cableGeo = new THREE.TubeGeometry(cableCurve, 8, 0.012, 6, false);
+  var cable = new THREE.Mesh(cableGeo, cableMat);
+  cable.castShadow = true;
+  g.add(cable);
+}
+
+// ===================================================================
+// TURRET / ROTATING SUPPORT MAST ASSEMBLY
+// ===================================================================
+var turret = new THREE.Group();
+g.add(turret);
+g.userData.turret = turret;
+turret.position.y = 0.51;
+
+// turret ring base
+var tRing = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.06, 24), darkMat);
+tRing.castShadow = true;
+turret.add(tRing);
+boltRing(0, 0.51, 0, 0.18, 12, 0.012, 'y');
+
+// turret core hub
+var hub = new THREE.Mesh(roundedBox(0.3, 0.18, 0.3, 0.05), bodyMat);
+hub.castShadow = true;
+hub.position.y = 0.12;
+turret.add(hub);
+// hub panel detail
+var hubPanel = new THREE.Mesh(roundedBox(0.2, 0.1, 0.02, 0.02), trimMat);
+hubPanel.castShadow = true;
+hubPanel.position.set(0, 0.13, 0.16);
+turret.add(hubPanel);
+// hub status lenses
+for (var hl = -1; hl <= 1; hl++) {
+  var hLens = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), hl === 0 ? amberCore : lensMat);
+  hLens.position.set(hl * 0.05, 0.13, 0.18);
+  turret.add(hLens);
+}
+
+// ---- COMMAND ANTENNA (central tall mast) ----
+var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.34, 12), trimMat);
+mast.castShadow = true;
+mast.position.y = 0.36;
+turret.add(mast);
+// mast segment rings
+for (var ms = 0; ms < 3; ms++) {
+  var msr = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.006, 6, 14), boltMat);
+  msr.rotation.x = Math.PI / 2;
+  msr.position.y = 0.26 + ms * 0.07;
+  turret.add(msr);
+}
+// command dish at top
+var dishBase = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.04, 10), darkMat);
+dishBase.castShadow = true;
+dishBase.position.y = 0.55;
+turret.add(dishBase);
+var dish = new THREE.Mesh(new THREE.SphereGeometry(0.09, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.42), trimMat);
+dish.castShadow = true;
+dish.position.y = 0.58;
+dish.rotation.x = Math.PI * 0.18;
+turret.add(dish);
+// dish feed horn
+var feed = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.06, 10), boltMat);
+feed.position.set(0, 0.62, 0.04);
+feed.rotation.x = Math.PI * 0.7;
+turret.add(feed);
+var feedTip = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), amberCore);
+feedTip.position.set(0, 0.645, 0.06);
+turret.add(feedTip);
+// command beacon top light
+var beacon = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), redLens);
+beacon.position.y = 0.72;
+turret.add(beacon);
+var beaconRod = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.1, 6), boltMat);
+beaconRod.position.y = 0.66;
+turret.add(beaconRod);
+
+// ---- ANTENNA GROUP (four whip/blade antennas around hub) ----
+var antDefs = [
+  { x: 0.13, z: 0.13, len: 0.26, tilt: 0.2 },
+  { x: -0.13, z: 0.13, len: 0.22, tilt: 0.2 },
+  { x: 0.13, z: -0.13, len: 0.3, tilt: -0.15 },
+  { x: -0.13, z: -0.13, len: 0.24, tilt: -0.15 }
+];
+for (var ad = 0; ad < antDefs.length; ad++) {
+  var d = antDefs[ad];
+  // antenna base mount
+  var aBase = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.028, 0.04, 8), darkMat);
+  aBase.castShadow = true;
+  aBase.position.set(d.x, 0.04, d.z);
+  turret.add(aBase);
+  // whip antenna
+  var whip = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.012, d.len, 8), trimMat);
+  whip.castShadow = true;
+  var dir = new THREE.Vector3(d.x, 0, d.z).normalize();
+  whip.position.set(
+    d.x + dir.x * d.tilt * 0.3,
+    0.06 + d.len / 2,
+    d.z + dir.z * d.tilt * 0.3
+  );
+  whip.rotation.x = -dir.z * d.tilt;
+  whip.rotation.z = dir.x * d.tilt;
+  turret.add(whip);
+  // antenna tip lens
+  var aTip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 10), ad % 2 ? amberCore : lensMat);
+  aTip.position.set(
+    d.x + dir.x * d.tilt * 0.6,
+    0.06 + d.len,
+    d.z + dir.z * d.tilt * 0.6
+  );
+  turret.add(aTip);
+  // blade element midway
+  var blade = new THREE.Mesh(roundedBox(0.04, 0.07, 0.008, 0.01), darkMat);
+  blade.castShadow = true;
+  blade.position.set(d.x, 0.06 + d.len * 0.45, d.z);
+  blade.lookAt(new THREE.Vector3(d.x * 2, 0.06 + d.len * 0.45, d.z * 2));
+  turret.add(blade);
+}
+
+// ---- AURA EMISSION RINGS (the support enhancement core) ----
+// two horizontal torus rings stacked around the mast, subtle amber + cyan
+var auraStand = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.025, 0.16, 8), darkMat);
+auraStand.castShadow = true;
+auraStand.position.set(0.16, 0.16, 0);
+turret.add(auraStand);
+var auraStand2 = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.025, 0.16, 8), darkMat);
+auraStand2.castShadow = true;
+auraStand2.position.set(-0.16, 0.16, 0);
+turret.add(auraStand2);
+
+// aura ring 1 (larger, cyan-emissive thin)
+var aura1Frame = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.018, 10, 36), trimMat);
+aura1Frame.castShadow = true;
+aura1Frame.rotation.x = Math.PI / 2;
+aura1Frame.position.y = 0.24;
+turret.add(aura1Frame);
+var aura1Glow = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.006, 8, 36), lensMat);
+aura1Glow.rotation.x = Math.PI / 2;
+aura1Glow.position.y = 0.24;
+turret.add(aura1Glow);
+
+// aura ring 2 (smaller, amber subtle)
+var aura2Frame = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.015, 10, 30), trimMat);
+aura2Frame.castShadow = true;
+aura2Frame.rotation.x = Math.PI / 2;
+aura2Frame.position.y = 0.31;
+turret.add(aura2Frame);
+var aura2Glow = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.005, 8, 30), amberMat);
+aura2Glow.rotation.x = Math.PI / 2;
+aura2Glow.position.y = 0.31;
+turret.add(aura2Glow);
+
+// aura emitter nodes around ring 1
+for (var en = 0; en < 6; en++) {
+  var ea = (en / 6) * Math.PI * 2;
+  var emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.04, 8), darkMat);
+  emitter.castShadow = true;
+  emitter.position.set(Math.cos(ea) * 0.2, 0.24, Math.sin(ea) * 0.2);
+  emitter.rotation.z = Math.PI / 2;
+  emitter.lookAt(new THREE.Vector3(0, 0.24, 0));
+  turret.add(emitter);
+  var emCore = new THREE.Mesh(new THREE.SphereGeometry(0.013, 10, 10), en % 2 ? amberCore : lensMat);
+  emCore.position.set(Math.cos(ea) * 0.22, 0.24, Math.sin(ea) * 0.22);
+  turret.add(emCore);
+}
+
+// ring support cables connecting frames
+for (var rc = 0; rc < 4; rc++) {
+  var rca = (rc / 4) * Math.PI * 2 + Math.PI / 4;
+  var rcCable = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.09, 6), cableMat);
+  rcCable.position.set(Math.cos(rca) * 0.17, 0.275, Math.sin(rca) * 0.17);
+  turret.add(rcCable);
+}
+
+// ---- side support pods (signal amplifiers) on hub ----
+for (var px = -1; px <= 1; px += 2) {
+  var pod = new THREE.Mesh(roundedBox(0.1, 0.12, 0.16, 0.03), bodyMat);
+  pod.castShadow = true;
+  pod.position.set(px * 0.2, 0.06, 0);
+  turret.add(pod);
+  // pod vent slits
+  for (var v = -1; v <= 1; v++) {
+    var vent = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.015, 0.12), rubberMat);
+    vent.position.set(px * 0.25, 0.06 + v * 0.03, 0);
+    turret.add(vent);
+  }
+  // pod indicator
+  var podLens = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 10), amberCore);
+  podLens.position.set(px * 0.2, 0.11, 0.08);
+  turret.add(podLens);
+  // small whip on pod
+  var podWhip = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.008, 0.14, 6), trimMat);
+  podWhip.castShadow = true;
+  podWhip.position.set(px * 0.2, 0.2, -0.04);
+  podWhip.rotation.x = -0.2;
+  turret.add(podWhip);
+}
+
+// ---- grab handles / tow points on hull (static) ----
+for (var gh = -1; gh <= 1; gh += 2) {
+  var handle = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 6, 12, Math.PI), boltMat);
+  handle.castShadow = true;
+  handle.position.set(gh * 0.25, 0.44, 0.31);
+  handle.rotation.x = Math.PI / 2;
+  g.add(handle);
+}
+
+// rear tow hook (static)
+var hook = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.01, 6, 14), boltMat);
+hook.castShadow = true;
+hook.position.set(0, 0.2, -0.5);
+hook.rotation.y = Math.PI / 2;
+g.add(hook);
+
+return g;
+
+}
+const _BUILDERS={gun:buildGun,cannon:buildCannon,frost:buildFrost,sniper:buildSniper,mortar:buildMortar,laser:buildLaser,tesla:buildTesla,mg:buildMg,flame:buildFlame,poison:buildPoison,rail:buildRail,aa:buildAa,gatling_air:buildGatAir,barrier:buildBarrier,booster:buildBooster};
 function makeTowerMesh(def){ return (_BUILDERS[def.key]||buildGun)(def); }
 function shade(hex,amt){ let r=(hex>>16)&255,g=(hex>>8)&255,b=hex&255; if(amt<0){const f=1+amt;r*=f;g*=f;b*=f;}else{r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;} return ((r&255)<<16)|((g&255)<<8)|(b&255); }
 function makeEnemyMesh(def){
@@ -2277,6 +4642,7 @@ function spawnRing(x,z,color){
 function updateFx(dt){
   for(let i=G.fx.length-1;i>=0;i--){ const f=G.fx[i]; f.life-=dt;
     if(f.kind==='ring'){ const k=1-f.life/f.max; f.mesh.scale.setScalar(1+k*4); f.mesh.material.opacity=0.9*(f.life/f.max); }
+    else if(f.kind==='beam'){ f.mesh.material.opacity=0.9*(f.life/f.max); }
     if(f.life<=0){ scene.remove(f.mesh); G.fx.splice(i,1); } }
 }
 
@@ -2295,6 +4661,7 @@ function update(dt){
     const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii];
     if(fc===0&&fr===0){ fc=-1; fr=0; }                 // フォールバック＝左へ
     let sp=e.speed*(e.slowT>0?0.5:1); if(e.slowT>0)e.slowT-=dt;
+    if(e.dotT>0){ e.dotT-=dt; e.hp-=(e.dotDps||0)*dt; if(e.hp<=0){ killEnemy(e,true); G.enemies.splice(i,1); continue; } }
     const len=Math.hypot(fc,fr)||1; e.x+=(fc/len)*sp*dt*CELL; e.z+=(fr/len)*sp*dt*CELL;
     e.mesh.position.set(e.x, 0, e.z);
     const heading=Math.atan2(fr,fc); e.mesh.rotation.y=-heading+Math.PI/2;
@@ -2304,7 +4671,13 @@ function update(dt){
     if(e.x < cellToWorld(GOAL_C,BASE_R).x+0.5 && c<=GOAL_C){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
-  for(const tw of G.towers){ const def=tw.def; tw.cd-=dt;
+  for(const tw of G.towers){ const def=tw.def;
+    if(def.support){   // 支援機（非攻撃）
+      if(def.support==='slow'){ const r2=def.range*def.range; for(const e of G.enemies){ if(e.dead)continue; const dx=e.x-tw.x,dz=e.z-tw.z; if(dx*dx+dz*dz<=r2) e.slowT=Math.max(e.slowT||0,0.2); } }
+      const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y+=dt*0.6;   // ゆっくり旋回（稼働感）
+      continue;
+    }
+    tw.cd-=dt;
     let best=null,bestKey=1e9;
     for(const e of G.enemies){ if(e.dead)continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz;
       if(d2<=def.range*def.range){ const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const key=distF[ii]>=0?distF[ii]:9999;
@@ -2330,17 +4703,27 @@ function update(dt){
   if(spawnMesh) spawnMesh.userData.ring.rotation.z-=dt*2.0;
   updateFx(dt);
 }
+function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeometry(len,0.06,0.06), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9}));
+  m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
+function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); }
 function fireShot(tw,target){
-  const def=tw.def; const sz=def.splash>0?0.16:(def.key==='laser'?0.08:0.1);
+  const def=tw.def;
+  let dmg=def.dmg;   // BOOSTER バフ（範囲内に支援機があれば威力UP）
+  for(const o of G.towers){ if(o.def.support==='buff'){ const dx=o.x-tw.x,dz=o.z-tw.z; if(dx*dx+dz*dz<=o.def.range*o.def.range){ dmg*=1.4; break; } } }
+  if(def.pierce){   // RAIL：貫通ヒットスキャン＋ビーム
+    const ang=Math.atan2(target.z-tw.z,target.x-tw.x), ux=Math.cos(ang),uz=Math.sin(ang);
+    for(const e of G.enemies){ if(e.dead)continue; const rx=e.x-tw.x,rz=e.z-tw.z; const proj=rx*ux+rz*uz; if(proj<0||proj>def.range)continue; const perp=Math.abs(rx*uz-rz*ux); if(perp<0.45){ e.hp-=dmg; if(e.hp<=0)killEnemy(e,true); } }
+    beamFx(tw.x,tw.z,ux,uz,def.range,def.color); sfx.fire('rail'); return; }
+  const sz=def.splash>0?0.16:(def.key==='laser'?0.08:0.1);
   const m=new THREE.Mesh(new THREE.SphereGeometry(sz,8,8), new THREE.MeshBasicMaterial({color:def.color}));
   m.position.set(tw.x,0.55,tw.z); scene.add(m);
   const spd=(def.key==='sniper'||def.key==='laser')?26:(def.key==='tesla'?34:14);
-  G.shots.push({mesh:m,target,x:tw.x,z:tw.z,speed:spd,dmg:def.dmg,splash:def.splash,slow:def.slow,chain:def.chain||0,color:def.color});
+  G.shots.push({mesh:m,target,x:tw.x,z:tw.z,speed:spd,dmg:dmg,splash:def.splash,slow:def.slow,chain:def.chain||0,dot:def.dot||null,color:def.color});
   sfx.fire(def.key);
 }
 function hitEnemy(e,dmg,s){
-  if(s&&s.splash>0){ for(const o of G.enemies){ if(o.dead)continue; const dx=o.x-e.x,dz=o.z-e.z; if(dx*dx+dz*dz<=s.splash*s.splash){ o.hp-=dmg*(o===e?1:0.6); if(s.slow>0)o.slowT=1.2; if(o.hp<=0)killEnemy(o,true);} } spawnRing(e.x,e.z,0xffb22e); }
-  else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(e.hp<=0)killEnemy(e,true); }
+  if(s&&s.splash>0){ for(const o of G.enemies){ if(o.dead)continue; const dx=o.x-e.x,dz=o.z-e.z; if(dx*dx+dz*dz<=s.splash*s.splash){ o.hp-=dmg*(o===e?1:0.6); if(s.slow>0)o.slowT=1.2; if(s.dot)applyDot(o,s.dot); if(o.hp<=0)killEnemy(o,true);} } spawnRing(e.x,e.z,0xffb22e); }
+  else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(s&&s.dot)applyDot(e,s.dot); if(e.hp<=0)killEnemy(e,true); }
   if(s&&s.chain){ let hops=s.chain, from=e; const used=new Set([e]); const R2=2.6*2.6;
     while(hops-->0){ let best=null,bd=R2; for(const o of G.enemies){ if(o.dead||used.has(o))continue; const dx=o.x-from.x,dz=o.z-from.z,dd=dx*dx+dz*dz; if(dd<bd){bd=dd;best=o;} }
       if(!best)break; used.add(best); spawnRing(best.x,best.z,s.color||0x18d0ff); best.hp-=dmg*0.6; if(best.hp<=0)killEnemy(best,true); from=best; } }
@@ -2456,6 +4839,10 @@ const sfx={
     else if(key==='laser'){ tone(1500,520,t,0.22,'sawtooth',0.17); tone(2700,950,t,0.18,'sine',0.1); noise(t,0.18,0.14,'bandpass',1900,4); }
     else if(key==='tesla'){ for(let i=0;i<5;i++){ const tt=t+i*0.028; noise(tt,0.045,0.3,'bandpass',2400+Math.random()*2400,7); } tone(80,180,t,0.2,'square',0.1); }
     else if(key==='frost'){ noise(t,0.22,0.22,'highpass',3200,1); tone(700,1600,t,0.22,'sine',0.12); }
+    else if(key==='flame'){ noise(t,0.3,0.32,'lowpass',900,0.7); noise(t,0.3,0.14,'highpass',2000,0.6); tone(120,90,t,0.28,'sawtooth',0.12); }
+    else if(key==='poison'){ noise(t,0.28,0.2,'highpass',4000,2); noise(t,0.28,0.1,'bandpass',1400,2); }
+    else if(key==='rail'){ tone(2200,300,t,0.22,'sawtooth',0.2); noise(t,0.06,0.5,'highpass',2400,1); tone(80,40,t,0.4,'sine',0.4); noise(t,0.3,0.2,'lowpass',700,1); }
+    else if(key==='aa'){ noise(t,0.3,0.3,'lowpass',1200,0.8); tone(300,900,t,0.3,'sawtooth',0.14); tone(160,70,t,0.18,'sine',0.2); }
     else { noise(t,0.05,0.36,'highpass',1500,0.8); tone(520,170,t,0.05,'square',0.12); tone(150,70,t,0.08,'sine',0.18); }
   },
   place(){ if(!AC)return; const t=_now(); noise(t,0.12,0.3,'lowpass',900,1); tone(120,65,t,0.18,'sine',0.3); noise(t+0.05,0.05,0.2,'highpass',3000,1); },
