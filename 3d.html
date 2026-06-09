@@ -70,7 +70,7 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
-  <div id="badge">3D MVP · build 10（脱ACES・色ベタ）</div>
+  <div id="badge">3D MVP · build 11（汚し/戦地/マス1.5倍）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -100,7 +100,7 @@
 const THREEOK = (typeof THREE!=='undefined');
 
 // ---- 盤面定数 ----
-const COLS=16, ROWS=9, CELL=1.4;
+const COLS=24, ROWS=13, CELL=1.4;   // マス1.5倍
 const WW=COLS*CELL, WD=ROWS*CELL;
 const GOAL_C=0, BASE_R=Math.floor(ROWS/2);
 const SPAWN_C=COLS-1, SPAWN_R=Math.floor(ROWS/2);
@@ -170,9 +170,31 @@ function cellFree(c,r){ if(!inGrid(c,r))return false;
 
 /* ====================== Three.js シーン ====================== */
 let renderer,scene,camera,raycaster,groundMesh,baseMesh,spawnMesh,composer,bloomPass,envTex;
-let camR=24, camTheta=0.0, camPhi=0.92; const camTarget={x:0,y:0.6,z:0};
+let camR=32, camTheta=0.0, camPhi=0.92; const camTarget={x:0,y:0.6,z:0};
 const tmpV=THREEOK?new THREE.Vector3():null, ndc=THREEOK?new THREE.Vector2():null;
 
+
+let _grunge=null;
+function grungeTex(){ if(_grunge) return _grunge;
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const g=cv.getContext('2d');
+  g.fillStyle='#c8c8c8'; g.fillRect(0,0,256,256);
+  for(let i=0;i<70;i++){ const x=Math.random()*256,y=Math.random()*256,r=8+Math.random()*44; const v=(60+Math.random()*90)|0; g.fillStyle='rgba('+v+','+v+','+v+',0.32)'; g.beginPath(); g.ellipse(x,y,r,r*(0.55+Math.random()*0.7),Math.random()*6,0,7); g.fill(); }
+  for(let i=0;i<46;i++){ const x=Math.random()*256,y=Math.random()*256; const w=1+Math.random()*3, hh=18+Math.random()*120; const v=(55+Math.random()*55)|0; g.fillStyle='rgba('+v+','+((v*0.82)|0)+','+((v*0.66)|0)+',0.26)'; g.fillRect(x,y,w,hh); }
+  for(let i=0;i<140;i++){ g.fillStyle='rgba(235,235,235,'+(0.08+Math.random()*0.18)+')'; g.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2); }
+  for(let i=0;i<2400;i++){ const v=Math.random()<0.5?40:215; g.fillStyle='rgba('+v+','+v+','+v+',0.05)'; g.fillRect(Math.random()*256,Math.random()*256,1,1); }
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.repeat.set(1.7,1.7); _grunge=tx; return tx;
+}
+function battlefieldTexture(){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=512; const g=cv.getContext('2d');
+  g.fillStyle='#2a261e'; g.fillRect(0,0,512,512);
+  const cols=['#332e23','#221d16','#3a3328','#1d1912','#2e2a20'];
+  for(let i=0;i<240;i++){ const x=Math.random()*512,y=Math.random()*512,r=10+Math.random()*64; g.globalAlpha=0.4; g.fillStyle=cols[i%cols.length]; g.beginPath(); g.ellipse(x,y,r,r*(0.55+Math.random()*0.7),Math.random()*6,0,7); g.fill(); }
+  g.globalAlpha=1;
+  for(let i=0;i<28;i++){ const x=Math.random()*512,y=Math.random()*512,r=16+Math.random()*46; const rg=g.createRadialGradient(x,y,2,x,y,r); rg.addColorStop(0,'rgba(7,6,5,0.82)'); rg.addColorStop(1,'rgba(7,6,5,0)'); g.fillStyle=rg; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  for(let i=0;i<600;i++){ g.globalAlpha=0.5; g.fillStyle=Math.random()<0.5?'#141009':'#4a4233'; g.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*3,1+Math.random()*2); }
+  g.globalAlpha=1;
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.repeat.set(5,5); tx.anisotropy=4; return tx;
+}
 function gridTexture(){
   const cv=document.createElement('canvas'); cv.width=COLS*32; cv.height=ROWS*32; const g=cv.getContext('2d');
   g.fillStyle='#0c1622'; g.fillRect(0,0,cv.width,cv.height);
@@ -205,11 +227,11 @@ function initScene(){
   const rim=new THREE.DirectionalLight(0x3a6a9a, 0.45); rim.position.set(12,8,-14); scene.add(rim);
   const fill=new THREE.PointLight(0x7a2f3a, 0.12, 30); fill.position.set(WW/2,6,0); scene.add(fill);   // スポーン側の赤フィル
   // 地面（暗いコンクリ）＋セル境界に正確一致した3Dグリッド線（敵/タワーはマス中央に乗る）
-  const _gt=gridTexture(); _gt.encoding=THREE.sRGBEncoding; groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({map:_gt,color:0xffffff,roughness:0.95,metalness:0.0,envMapIntensity:0.12}));
+  const _gt=battlefieldTexture(); _gt.encoding=THREE.sRGBEncoding; groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(WW,WD,1,1), new THREE.MeshStandardMaterial({map:_gt,color:0xffffff,roughness:0.98,metalness:0.0,envMapIntensity:0.05}));
   groundMesh.rotation.x=-Math.PI/2; groundMesh.receiveShadow=true; scene.add(groundMesh);
   { const gv=[]; for(let c=0;c<=COLS;c++){ const x=c*CELL-WW/2; gv.push(x,0.02,-WD/2,x,0.02,WD/2);} for(let r=0;r<=ROWS;r++){ const z=r*CELL-WD/2; gv.push(-WW/2,0.02,z,WW/2,0.02,z);}
     const gGeo=new THREE.BufferGeometry(); gGeo.setAttribute('position',new THREE.Float32BufferAttribute(gv,3));
-    scene.add(new THREE.LineSegments(gGeo,new THREE.LineBasicMaterial({color:0x4aa6cc,transparent:true,opacity:0.8}))); }
+    scene.add(new THREE.LineSegments(gGeo,new THREE.LineBasicMaterial({color:0x4a6a5a,transparent:true,opacity:0.28}))); }
   // 基地（HDF・シアン）
   baseMesh=new THREE.Group(); const bw=cellToWorld(GOAL_C,BASE_R);
   const core=new THREE.Mesh(roundedBox(1.0,1.5,1.0,0.22), pbr(0x16323f,{metalness:0.85,roughness:0.32,emissive:0x0a3a4a,ei:0.5,clearcoat:0.6}));
@@ -243,10 +265,10 @@ function resize(){ const w=window.innerWidth,h=window.innerHeight;
 window.addEventListener('resize',()=>{ if(renderer)resize(); });
 
 /* ====================== マテリアル/形状ヘルパー（写実化） ====================== */
-function pbr(color,o){ o=o||{}; return new THREE.MeshPhysicalMaterial({ color:color,
+function pbr(color,o){ o=o||{}; const m=new THREE.MeshPhysicalMaterial({ color:color,
   metalness:(o.metalness==null?0.85:o.metalness), roughness:(o.roughness==null?0.4:o.roughness),
   emissive:(o.emissive||0x000000), emissiveIntensity:(o.ei||0),
-  clearcoat:(o.clearcoat||0), clearcoatRoughness:(o.ccr==null?0.4:o.ccr), envMapIntensity:(o.envI==null?0.18:o.envI) }); }
+  clearcoat:(o.clearcoat||0), clearcoatRoughness:(o.ccr==null?0.4:o.ccr), envMapIntensity:(o.envI==null?0.18:o.envI) }); if(o.grunge) m.map=grungeTex(); return m; }
 function emis(color,intensity){ return new THREE.MeshStandardMaterial({ color:0x05070a, emissive:color, emissiveIntensity:(intensity||1.0), metalness:0.2, roughness:0.5 }); }
 const MAT=(c,e,ei)=>pbr(c,{emissive:e,ei:ei});
 // 角丸ボックス（ExtrudeGeometryのベベルで全エッジを丸める＝箱っぽさ脱却）
@@ -261,7 +283,7 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
 
 /* ====================== タワー/敵 メッシュ（丸み＋陰影＋反射） ====================== */
 // 使い込まれた軍用メタル（マット寄り・反射控えめ）。色がしっかり乗るよう metalness 抑制
-function steel(c){ return pbr(c,{metalness:0.0,roughness:0.95,clearcoat:0.0,ccr:1.0,envI:0.0}); }
+function steel(c){ return pbr(c,{metalness:0.0,roughness:0.95,clearcoat:0.0,ccr:1.0,envI:0.0,grunge:true}); }
 const GUNMETAL=0x4b5158;   // 二次部品の中立グレー
 function buildGun(def){
 
@@ -1033,17 +1055,25 @@ return g;
 
 }
 function makeTowerMesh(def){ return def.key==='cannon'?buildCannon(def):(def.key==='frost'?buildFrost(def):buildGun(def)); }
+function shade(hex,amt){ let r=(hex>>16)&255,g=(hex>>8)&255,b=hex&255; if(amt<0){const f=1+amt;r*=f;g*=f;b*=f;}else{r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;} return ((r&255)<<16)|((g&255)<<8)|(b&255); }
 function makeEnemyMesh(def){
   const g=new THREE.Group();
+  const arm=(c)=>pbr(c,{metalness:0.3,roughness:0.85,grunge:true});   // 汚れた装甲
+  const dk=(c)=>pbr(c,{metalness:0.55,roughness:0.55});
   // 胴（角丸・前傾）
-  const body=new THREE.Mesh(roundedBox(0.66,0.5,0.92,0.16), pbr(def.color,{metalness:0.5,roughness:0.7,clearcoat:0.0,emissive:0x000000,ei:0})); body.position.y=0.42; body.rotation.x=-0.08; body.castShadow=true; g.add(body); g.userData.body=body;
-  // 頭（多面体＝メカ感）＋単眼の発光
-  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(0.26,0), pbr(0x2a2030,{metalness:0.7,roughness:0.4})); head.position.set(-0.34,0.56,0); head.castShadow=true; g.add(head);
-  const eye=new THREE.Mesh(new THREE.SphereGeometry(0.1,16,16), emis(0xff2a2a,2.2)); eye.position.set(-0.5,0.56,0); g.add(eye);
-  // 肩の球関節
-  for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,12), pbr(0x33323a,{metalness:0.8,roughness:0.35})); j.position.set(0.05,0.5,s*0.34); j.castShadow=true; g.add(j); }
-  // 脚（円柱）
-  for(const s of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.42,12), pbr(0x26252c,{metalness:0.6,roughness:0.5})); leg.position.set(0.12,0.2,s*0.22); leg.castShadow=true; g.add(leg); }
+  const body=new THREE.Mesh(roundedBox(0.68,0.5,0.92,0.14), arm(def.color)); body.position.y=0.42; body.rotation.x=-0.06; body.castShadow=true; g.add(body); g.userData.body=body;
+  // 前面の傾斜装甲
+  const glacis=new THREE.Mesh(roundedBox(0.6,0.34,0.16,0.04), arm(shade(def.color,-0.4))); glacis.position.set(-0.34,0.42,0); glacis.rotation.z=0.55; glacis.castShadow=true; g.add(glacis);
+  // 側面増加装甲
+  for(const s of [-1,1]){ const sp=new THREE.Mesh(roundedBox(0.52,0.3,0.06,0.03), arm(shade(def.color,-0.25))); sp.position.set(0.02,0.4,s*0.47); sp.castShadow=true; g.add(sp); }
+  // 頭（多面体）＋大きめ単眼の発光
+  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(0.24,0), dk(0x17141a)); head.position.set(-0.3,0.6,0); head.castShadow=true; g.add(head);
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,16), emis(0xff2a2a,2.6)); eye.position.set(-0.47,0.6,0); g.add(eye);
+  // 背の排気スパイク
+  for(const s of [-1,1]){ const sp=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.28,8), dk(0x121116)); sp.position.set(0.3,0.64,s*0.16); sp.rotation.x=s*0.18; sp.castShadow=true; g.add(sp); }
+  // 肩関節・脚
+  for(const s of [-1,1]){ const j=new THREE.Mesh(new THREE.SphereGeometry(0.12,14,10), dk(0x26242c)); j.position.set(0.06,0.5,s*0.37); j.castShadow=true; g.add(j); }
+  for(const s of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.42,10), dk(0x171519)); leg.position.set(0.12,0.2,s*0.24); leg.castShadow=true; g.add(leg); }
   g.scale.setScalar(def.scale*1.35);
   // HPバー（ビルボード）
   const hp=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.11), new THREE.MeshBasicMaterial({color:0x46f08a})); hp.position.y=1.0; g.add(hp); g.userData.hpbar=hp;
