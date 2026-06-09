@@ -57,6 +57,11 @@
   #badge{position:absolute;right:10px;bottom:64px;font:600 10px "Rajdhani";color:rgba(180,205,230,.4);}
 .tpb{pointer-events:auto;cursor:pointer;font:700 12px 'Rajdhani';letter-spacing:.5px;color:#dff;padding:6px 11px;border-radius:8px;background:rgba(56,84,116,.5);}
   .tpb.off{opacity:.45;}
+#bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
+  #bossbar{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:46%;max-width:560px;display:none;pointer-events:none;text-align:center;}
+  #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
+  #bossfillwrap{height:10px;background:rgba(40,10,16,.7);border:1px solid rgba(255,59,84,.45);border-radius:5px;overflow:hidden;}
+  #bossfill{height:100%;width:100%;background:linear-gradient(90deg,#ff3b54,#ff8a3a);}
 </style>
 </head>
 <body>
@@ -73,7 +78,9 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
-  <div id="badge">3D MVP · build 16（強化/売却/狙い切替・Lv）</div>
+  <div id="bossWarn">⚠ BOSS APPROACHING ⚠</div>
+  <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
+  <div id="badge">3D MVP · build 17（ボス演出＋状態異常＋画面揺れ）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -130,8 +137,8 @@ const TOWERS=[
   {key:'laser', name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
   {key:'tesla', name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
   {key:'mg',     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
-  {key:'flame',  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0}},
-  {key:'poison', name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5}},
+  {key:'flame',  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
+  {key:'poison', name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
   {key:'rail',   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
   {key:'aa',     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
   {key:'gatling_air', name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
@@ -5864,6 +5871,7 @@ function spawnOne(item){
   const fy=def.flying?1.5:0;
   m.position.set(w.x,fy,w.z); scene.add(m);
   G.enemies.push({def, mesh:m, x:w.x, z:w.z, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6});
+  if(def.boss){ G.bossWarnT=2.4; G.shake=Math.max(G.shake||0,0.5); sfx.baseHit(); }
 }
 function placeTower(c,r){
   const def=TOWER_BY_KEY[G.sel]; if(!def) return false;
@@ -5880,9 +5888,9 @@ function placeTower(c,r){
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; scene.remove(e.mesh);
   if(byPlayer){ G.parts+=e.def.reward; G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;
-    spawnRing(e.x,e.z,0x46f08a); spawnBurst(e.x,e.z,(e.def&&e.def.color)||0xff8a3a,(e.def&&e.def.boss)?18:9); sfx.kill(G.combo); }
+    spawnRing(e.x,e.z,0x46f08a); spawnBurst(e.x,e.z,(e.def&&e.def.color)||0xff8a3a,(e.def&&e.def.boss)?18:9); if(e.def&&e.def.boss)G.shake=Math.max(G.shake||0,0.7); sfx.kill(G.combo); }
 }
-function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0;
+function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35);
   sfx.baseHit();
   if(G.hp<=0){ G.hp=0; gameOver(); } }
 
@@ -5893,12 +5901,14 @@ function spawnRing(x,z,color){
 }
 function spawnBurst(x,z,color,n){ n=n||8; for(let k=0;k<n;k++){ const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,0.07), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:1})); m.position.set(x,0.32,z); scene.add(m); const a=Math.random()*6.2832, sp=1.4+Math.random()*2.6; G.fx.push({mesh:m,life:0.6,max:0.6,kind:'particle',vx:Math.cos(a)*sp,vy:2.0+Math.random()*2.6,vz:Math.sin(a)*sp}); } }
 function muzzleFlash(x,z,ang,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,8), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.95})); m.position.set(x+Math.cos(ang)*0.55,0.55,z+Math.sin(ang)*0.55); scene.add(m); G.fx.push({mesh:m,life:0.09,max:0.09,kind:'flash'}); }
+function statusPuff(x,y,z,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.8})); m.position.set(x+(Math.random()-0.5)*0.3,y,z+(Math.random()-0.5)*0.3); scene.add(m); G.fx.push({mesh:m,life:0.5,max:0.5,kind:'puff',vy:0.7+Math.random()*0.4}); }
 function updateFx(dt){
   for(let i=G.fx.length-1;i>=0;i--){ const f=G.fx[i]; f.life-=dt;
     if(f.kind==='ring'){ const k=1-f.life/f.max; f.mesh.scale.setScalar(1+k*4); f.mesh.material.opacity=0.9*(f.life/f.max); }
     else if(f.kind==='beam'){ f.mesh.material.opacity=0.9*(f.life/f.max); }
     else if(f.kind==='particle'){ f.vy-=9*dt; f.mesh.position.x+=f.vx*dt; f.mesh.position.y=Math.max(0.03,f.mesh.position.y+f.vy*dt); f.mesh.position.z+=f.vz*dt; f.mesh.material.opacity=Math.max(0,f.life/f.max); f.mesh.rotation.x+=dt*6; f.mesh.rotation.y+=dt*5; }
     else if(f.kind==='flash'){ const k=1-f.life/f.max; f.mesh.scale.setScalar(1+k*1.6); f.mesh.material.opacity=0.95*(f.life/f.max); }
+    else if(f.kind==='puff'){ f.mesh.position.y+=f.vy*dt; f.mesh.material.opacity=0.8*(f.life/f.max); }
     if(f.life<=0){ scene.remove(f.mesh); G.fx.splice(i,1); } }
 }
 
@@ -5914,7 +5924,7 @@ function update(dt){
   // 敵移動（フローフィールド）
   for(let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if(e.dead){ G.enemies.splice(i,1); continue; }
     let sp=e.speed*(e.slowT>0?0.5:1); if(e.slowT>0)e.slowT-=dt;
-    if(e.dotT>0){ e.dotT-=dt; e.hp-=(e.dotDps||0)*dt; if(e.hp<=0){ killEnemy(e,true); G.enemies.splice(i,1); continue; } }
+    if(e.dotT>0){ e.dotT-=dt; e.hp-=(e.dotDps||0)*dt; if(Math.random()<0.16) statusPuff(e.x,(e.flying?e.y+0.4:0.6),e.z,e.dotType==='poison'?0x7fe030:0xff7a20); if(e.hp<=0){ killEnemy(e,true); G.enemies.splice(i,1); continue; } }
     let dirx,dirz;
     if(e.flying){ const bx=cellToWorld(GOAL_C,BASE_R).x, bz=cellToWorld(GOAL_C,BASE_R).z; dirx=bx-e.x; dirz=bz-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl;
       if(e.mesh.userData.spin){ for(const ro of e.mesh.userData.spin) ro.rotation.y+=dt*34; } if(e.mesh.userData.rotor) e.mesh.userData.rotor.rotation.y+=dt*34;
@@ -5968,7 +5978,7 @@ function update(dt){
 function canHitAir(def){ return def.air || def.key==='laser' || def.key==='tesla' || def.key==='sniper' || def.key==='rail'; }
 function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeometry(len,0.06,0.06), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9}));
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
-function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); }
+function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); e.dotType=dot.type||'burn'; }
 function lvlStat(def,lv){ const k=(lv||1)-1; return { range:def.range*(1+0.07*k), dmg:def.dmg*Math.pow(1.4,k), cd:def.cd*Math.pow(0.93,k) }; }
 function upCost(def,lv){ return Math.round(def.cost*0.6*Math.pow(1.55,(lv||1)-1)); }
 function sellValue(tw){ return Math.round((tw.invested||tw.def.cost)*0.7); }
@@ -6079,6 +6089,9 @@ function syncHUD(){
   document.getElementById('score').textContent=G.score.toLocaleString();
   document.getElementById('bSpeed').textContent='x'+G.speed;
   document.getElementById('bPause').textContent=G.paused?'▶':'❚❚';
+  const boss=G.enemies.find(e=>e.def&&e.def.boss&&!e.dead); const bb=document.getElementById('bossbar');
+  if(boss){ bb.style.display='block'; document.getElementById('bossfill').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%'; document.getElementById('bossname').textContent='☠ ZERO BRUTE'; } else if(bb) bb.style.display='none';
+  const bw=document.getElementById('bossWarn'); if(bw){ if((G.bossWarnT||0)>0){ bw.style.display='block'; bw.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); } else bw.style.display='none'; }
 }
 document.getElementById('bNext').addEventListener('click',()=>{ if(G.scene==='playing'&&!G.waveActive){ startWave(true); } });
 document.getElementById('bSpeed').addEventListener('click',()=>{ G.speed=G.speed>=3?1:G.speed+1; });
@@ -6149,8 +6162,12 @@ let last=0, acc=0; const STEP=1/60;
 function loop(now){
   const t=now/1000; let frame=last?t-last:0; last=t; if(frame>0.25)frame=0.25;
   if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
+  if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
   syncHUD();
+  if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
+  const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
   if(composer) composer.render(); else if(renderer) renderer.render(scene,camera);
+  if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
   requestAnimationFrame(loop);
 }
 
