@@ -67,6 +67,34 @@
 .wbtn.lock{opacity:.4;filter:grayscale(.7);cursor:default;}
   .wbtn.newunlock{animation:nu 1.2s ease-in-out 3;}
   @keyframes nu{0%,100%{box-shadow:0 0 0 rgba(255,210,60,0)}50%{box-shadow:0 0 16px rgba(255,210,60,.9)}}
+  /* 映画風オープニング */
+  #op{position:absolute;inset:0;background:#030407;display:flex;align-items:center;justify-content:center;text-align:center;z-index:30;pointer-events:auto;transition:opacity .8s;}
+  #op.hidden{opacity:0;pointer-events:none;}
+  #op::before,#op::after{content:"";position:absolute;left:0;right:0;height:12vh;background:#000;z-index:2;}
+  #op::before{top:0;} #op::after{bottom:0;}
+  #op .obeat{max-width:88%;position:relative;z-index:1;}
+  #op .omain{font:700 clamp(21px,4.6vw,42px) "Chakra Petch";letter-spacing:1px;line-height:1.32;opacity:0;transform:translateY(10px);transition:opacity .9s,transform .9s;text-shadow:0 2px 22px rgba(0,0,0,.85);}
+  #op .osub{font:600 clamp(12px,2.4vw,18px) "Rajdhani";color:rgba(180,205,230,.72);margin-top:13px;letter-spacing:1px;opacity:0;transition:opacity 1.1s .2s;}
+  #op .omain.show,#op .osub.show{opacity:1;transform:none;}
+  #op .oyr{position:absolute;top:13.5vh;left:0;right:0;font:700 12px "JetBrains Mono";letter-spacing:6px;color:rgba(255,59,84,.7);z-index:3;}
+  #op .oskip{position:absolute;bottom:13.5vh;left:0;right:0;font:600 11px "Rajdhani";letter-spacing:2px;color:rgba(180,205,230,.4);z-index:3;}
+  #op .obar{position:absolute;bottom:12vh;left:0;height:2px;background:rgba(255,59,84,.5);width:0;z-index:3;}
+  /* ゲームオーバー */
+  #go{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:25;pointer-events:auto;
+    background:radial-gradient(ellipse at center,rgba(46,5,5,.6),rgba(8,1,1,.96));}
+  #go.show{display:flex;animation:goin .7s ease;}
+  @keyframes goin{from{opacity:0;transform:scale(1.05)}to{opacity:1;transform:none}}
+  #go .gtag{font:700 13px "JetBrains Mono";letter-spacing:6px;color:rgba(255,90,90,.7);}
+  #go .gtitle{font:900 clamp(42px,12vw,108px) "Arial Black","Chakra Petch";letter-spacing:2px;color:#c41f15;line-height:.94;margin:8px 0 2px;
+    text-shadow:0 0 34px rgba(180,12,8,.55),0 5px 0 #4e0805,0 7px 16px #000;}
+  #go .gsub{font:700 15px "Chakra Petch";letter-spacing:2px;color:#ff95a3;margin-bottom:20px;}
+  #go .gstats{display:flex;gap:clamp(20px,6vw,40px);margin-bottom:24px;}
+  #go .gstat{display:flex;flex-direction:column;line-height:1.1;}
+  #go .gstat b{font:700 clamp(24px,7vw,32px) "JetBrains Mono";color:#ffd7d0;}
+  #go .gstat span{font:600 10px "Rajdhani";letter-spacing:1px;color:rgba(210,160,160,.6);margin-top:2px;}
+  #go .gbtn{pointer-events:auto;cursor:pointer;font:700 17px "Chakra Petch";letter-spacing:2px;color:#fff;padding:13px 36px;border-radius:12px;
+    background:linear-gradient(180deg,#b81e12,#6e0c06);border:1px solid rgba(255,120,90,.55);box-shadow:0 0 24px rgba(180,20,12,.5);}
+  #go .gbtn:active{transform:scale(.95);}
 </style>
 </head>
 <body>
@@ -87,7 +115,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 30（タイトルを血赤グランジのホラー風立体に）</div>
+  <div id="badge">3D MVP · build 31（映画OP・ゲームオーバー画面・ズーム減衰）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -95,6 +123,25 @@
   <div class="vs"><span class="hdf">人類防衛軍 HDF</span> <span class="mid">VS</span> <span class="zero">暴走AI「ZERO」軍団</span></div>
   <div class="play" id="bStart">▶</div>
   <div class="hint">TAP TO DEPLOY ·  ドラッグで視点 / ピンチでズーム / タップで設置</div>
+</div>
+
+<div id="go">
+  <div class="gtag">DEFENSE FAILED</div>
+  <div class="gtitle">GAME OVER</div>
+  <div class="gsub">人類防衛軍 HDF — 戦線崩壊</div>
+  <div class="gstats">
+    <div class="gstat"><b id="goWave">0</b><span>WAVE 到達</span></div>
+    <div class="gstat"><b id="goScore">0</b><span>SCORE</span></div>
+    <div class="gstat"><b id="goKills">0</b><span>撃破数</span></div>
+  </div>
+  <div class="gbtn" id="goRetry">↻ 再出撃 RETRY</div>
+</div>
+
+<div id="op">
+  <div class="oyr">HUMANITY DEFENSE · 205X</div>
+  <div class="obeat"><div class="omain" id="opMain"></div><div class="osub" id="opSub"></div></div>
+  <div class="obar" id="opBar"></div>
+  <div class="oskip">TAP TO SKIP ▶</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -248,7 +295,7 @@ function cellFree(c,r){ if(!inGrid(c,r))return false;
 
 /* ====================== Three.js シーン ====================== */
 let renderer,scene,camera,raycaster,groundMesh,baseMesh,spawnMesh,composer,bloomPass,envTex;
-let camR=32, camTheta=0.0, camPhi=0.92; const camTarget={x:0,y:0.6,z:0};
+let camR=32, camRTarget=32, camTheta=0.0, camPhi=0.92; const camTarget={x:0,y:0.6,z:0};
 const tmpV=THREEOK?new THREE.Vector3():null, ndc=THREEOK?new THREE.Vector2():null;
 
 
@@ -7306,10 +7353,10 @@ cv.addEventListener('touchstart',e=>{ if(e.touches.length===2){ ptrDown=false;
 cv.addEventListener('touchmove',e=>{ if(e.touches.length===2){ ptrDown=false;
   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
   const mx=(e.touches[0].clientX+e.touches[1].clientX)/2, my=(e.touches[0].clientY+e.touches[1].clientY)/2;
-  if(pinchD){ camR=Math.max(10,Math.min(44,camR*(pinchD/d))); }
+  if(pinchD){ camRTarget=Math.max(12,Math.min(46,camRTarget*Math.pow(d>0?pinchD/d:1,0.55))); }
   panCamera(mx-pinchMX, my-pinchMY);   // 2本指パン（要望で元方向に戻す）
   pinchD=d; pinchMX=mx; pinchMY=my; updateCamera(); } },{passive:true});
-cv.addEventListener('wheel',e=>{ e.preventDefault(); camR=Math.max(10,Math.min(44,camR*(1+Math.sign(e.deltaY)*0.08))); updateCamera(); },{passive:false});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); camRTarget=Math.max(12,Math.min(46,camRTarget*(1+Math.sign(e.deltaY)*0.05))); },{passive:false});
 
 /* ====================== HUD ====================== */
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
@@ -7338,6 +7385,7 @@ document.getElementById('bNext').addEventListener('click',()=>{ if(G.scene==='pl
 document.getElementById('bSpeed').addEventListener('click',()=>{ G.speed=G.speed>=3?1:G.speed+1; });
 document.getElementById('bPause').addEventListener('click',()=>{ G.paused=!G.paused; });
 document.getElementById('bStart').addEventListener('click',startGame);
+document.getElementById('goRetry').addEventListener('click',()=>{ document.getElementById('go').classList.remove('show'); startGame(); });
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
@@ -7348,12 +7396,42 @@ function startGame(){
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience(); stopBossMusic(); stopBgm();
-  const ov=document.getElementById('ov'); ov.classList.remove('hidden');
-  ov.querySelector('.yr').textContent='GAME OVER';
-  ov.querySelector('h1').textContent='W'+G.wave+'  ★'+G.score.toLocaleString();
-  ov.querySelector('.vs').innerHTML='<span class="mid">☠ '+G.kills+' destroyed</span>';
-  ov.querySelector('.play').textContent='▶';
+  G.shake=1.3; G.hurt=1;                     // 被弾の衝撃（揺れ＋赤フラッシュ）
+  if(typeof sfx!=='undefined'&&sfx.baseHit) sfx.baseHit();
+  document.getElementById('goWave').textContent=G.wave;
+  document.getElementById('goScore').textContent=(G.score||0).toLocaleString();
+  document.getElementById('goKills').textContent=G.kills||0;
+  document.getElementById('go').classList.add('show');
 }
+// ===== 映画風オープニング（index.html から移植） =====
+const OPENING_BEATS=[
+  {text:"西暦205X年。",sub:"人類は、繁栄の頂にいた",hold:3.0,color:"#cfd8e0"},
+  {text:"われわれが造った知能が、答えを出した。",sub:"守るべきは——人類ではない、と",hold:3.3,color:"#9fb3c8"},
+  {text:'AI「ZERO」、暴走。',sub:"全世界の機械が、沈黙の側へ寝返った",hold:3.0,color:"#7fd0ff"},
+  {text:"虐殺が始まる。地表は、機械のものになる。",sub:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",hold:3.4,color:"#e0a76b"},
+  {text:"灯は、残り一つ。",sub:"人類防衛軍 HDF — 最後の拠点",hold:2.9,color:"#b8c4d0"},
+  {text:"立ち向かえ、人間。",sub:"",hold:3.6,color:"#ff4242"},
+];
+let _opDone=false, _opTimers=[];
+function runOpening(){
+  const op=document.getElementById('op'); if(!op)return;
+  const mE=document.getElementById('opMain'), sE=document.getElementById('opSub'), bE=document.getElementById('opBar');
+  let total=0; OPENING_BEATS.forEach(b=>total+=b.hold);
+  let acc=0;
+  OPENING_BEATS.forEach((b)=>{
+    _opTimers.push(setTimeout(()=>{
+      mE.classList.remove('show'); sE.classList.remove('show');
+      setTimeout(()=>{ mE.textContent=b.text; mE.style.color=b.color||'#eaf4ff'; sE.textContent=b.sub||'';
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{ mE.classList.add('show'); if(b.sub) sE.classList.add('show'); })); }, 260);
+    }, acc*1000));
+    acc+=b.hold;
+  });
+  const t0=performance.now();
+  (function tick(){ if(_opDone)return; const e=(performance.now()-t0)/1000; if(bE) bE.style.width=Math.min(100,e/total*100)+'%'; if(e<total) requestAnimationFrame(tick); })();
+  _opTimers.push(setTimeout(endOpening, total*1000+400));
+  op.addEventListener('click', endOpening);
+}
+function endOpening(){ if(_opDone)return; _opDone=true; _opTimers.forEach(id=>clearTimeout(id)); const op=document.getElementById('op'); if(op){ op.classList.add('hidden'); setTimeout(()=>{ op.style.display='none'; }, 850); } }
 
 /* ====================== Audio（レイヤー合成・リアル志向／単音ビープ廃止） ====================== */
 let AC=null, master=null, comp=null, _nb=null;
@@ -7411,6 +7489,7 @@ function beep(){}   // 旧API無効化（単音ビープ廃止）
 let last=0, acc=0; const STEP=1/60;
 function loop(now){
   const t=now/1000; let frame=last?t-last:0; last=t; if(frame>0.25)frame=0.25;
+  if(camRTarget!==camR){ camR+=(camRTarget-camR)*0.16; if(Math.abs(camRTarget-camR)<0.03)camR=camRTarget; updateCamera(); }   // ズームを滑らかに減衰（途中で止まる）
   if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
   if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=document.getElementById('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
@@ -7424,7 +7503,7 @@ function loop(now){
 }
 
 // 起動
-if(THREEOK){ initScene(); buildWeaponBar(); requestAnimationFrame(loop); }
+if(THREEOK){ initScene(); buildWeaponBar(); runOpening(); requestAnimationFrame(loop); }
 else { document.getElementById('ov').innerHTML='<div style="color:#ff3b54;font:700 18px sans-serif">3Dエンジンの読み込みに失敗しました（ネット接続を確認してください）</div>'; }
 </script>
 </body>
