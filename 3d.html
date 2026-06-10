@@ -38,6 +38,12 @@
   .wbtn .wc{font:700 13px "JetBrains Mono";color:#ffb22e;margin-top:2px;}
   .wbtn::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;background:var(--sc,#33e0ff);
     box-shadow:0 0 8px var(--sc,#33e0ff);opacity:.5;}
+  .wcls{display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:2px;height:14px;line-height:1;}
+  .wcls svg{width:13px;height:13px;display:block;}
+  .wcls .ic{opacity:.20;display:inline-flex;}
+  .wcls .ic.on{opacity:1;}
+  .wcls .lab{font:800 9px "Rajdhani";letter-spacing:1px;margin-left:3px;}
+  .wcls-g .lab{color:#7fe0a0;} .wcls-a .lab{color:#59c4ee;} .wcls-b .lab{color:#ffd23f;} .wcls-s .lab{color:#ffb347;}
   .wbtn.sel{background:linear-gradient(180deg,rgba(60,90,120,.6),rgba(14,22,34,.6));}
   .wbtn.sel::after{opacity:1;height:3px;}
   /* オーバーレイ（タイトル/ゲームオーバー） */
@@ -115,7 +121,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 34（解放をW1〜W100に分散・空中敵はAA解放と同期）</div>
+  <div id="badge">3D MVP · build 35（地上/対空/両用を役割整理＋アイコン表記）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -184,21 +190,22 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 // ---- 兵器定義（MVP 3種）----
 // 並びは「左から順番に解放」される順（unlock 昇順）。アンロックは W1〜W100 に分散＝長期目標／やり込み。
 const TOWERS=[
-  {key:'gun', unlock:1,   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
-  {key:'cannon', unlock:1,name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
-  {key:'frost', unlock:1, name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'mg', unlock:5,     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
-  {key:'aa', unlock:10,     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
-  {key:'sniper', unlock:16,name:'SNIPER', cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
-  {key:'mortar', unlock:23,name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
-  {key:'poison', unlock:31, name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
-  {key:'flame', unlock:40,  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
-  {key:'tesla', unlock:50, name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
-  {key:'gatling_air', unlock:61, name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
-  {key:'laser', unlock:73, name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
-  {key:'barrier', unlock:85,name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
-  {key:'booster', unlock:93,name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
-  {key:'rail', unlock:100,   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
+  // cls: 'g'=地上のみ / 'a'=対空のみ / 'b'=両用 / 's'=支援
+  {key:'gun', unlock:1,   name:'GUN', cls:'g',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
+  {key:'cannon', unlock:1,name:'CANNON', cls:'g',cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'frost', unlock:1, name:'FROST', cls:'g', cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
+  {key:'mg', unlock:5,     name:'MG', cls:'g',    cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
+  {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
+  {key:'sniper', unlock:16,name:'SNIPER', cls:'b',cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
+  {key:'mortar', unlock:23,name:'MORTAR', cls:'g',cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
+  {key:'poison', unlock:31, name:'POISON', cls:'g',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
+  {key:'flame', unlock:40,  name:'FLAME', cls:'g', cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
+  {key:'tesla', unlock:50, name:'TESLA', cls:'b', cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
+  {key:'gatling_air', unlock:61, name:'AA-GAT', cls:'a', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
+  {key:'laser', unlock:73, name:'LASER', cls:'b', cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
+  {key:'barrier', unlock:85,name:'BARRIER', cls:'s',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
+  {key:'booster', unlock:93,name:'BOOSTER', cls:'s',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
+  {key:'rail', unlock:100,   name:'RAIL', cls:'b',  cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 const AIR_START=(TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||4;   // 空中敵の登場ウェーブ＝AA(対空)解放と同期
@@ -7267,7 +7274,7 @@ function update(dt){
     tw.cd-=dt;
     const r2=st.range*st.range; const mode=tw.targetMode||'first';
     let best=null,bestKey=1e9;
-    for(const e of G.enemies){ if(e.dead)continue; if(e.flying && !canHitAir(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz; if(d2>r2)continue;
+    for(const e of G.enemies){ if(e.dead)continue; if(e.flying ? !canHitAir(def) : !canHitGround(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz; if(d2>r2)continue;
       let key;
       if(mode==='close') key=d2;
       else if(mode==='strong') key=-e.hp;
@@ -7294,7 +7301,8 @@ function update(dt){
   if(spawnMesh) spawnMesh.userData.ring.rotation.z-=dt*2.0;
   updateFx(dt);
 }
-function canHitAir(def){ return def.air || def.key==='laser' || def.key==='tesla' || def.key==='sniper' || def.key==='rail'; }
+function canHitAir(def){ return def.cls==='a' || def.cls==='b'; }     // 対空 or 両用
+function canHitGround(def){ return def.cls==='g' || def.cls==='b'; }   // 地上 or 両用（対空専用は地上を撃てない）
 function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeometry(len,0.06,0.06), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9}));
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
 function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); e.dotType=dot.type||'burn'; }
@@ -7437,11 +7445,24 @@ window.addEventListener('pointerup',()=>{ if(_place) endPlaceDrag(); });
 window.addEventListener('pointercancel',()=>{ if(_place){ if(_place.ghost)scene.remove(_place.ghost); if(_place.ring)scene.remove(_place.ring); _place=null; } });
 
 /* ====================== HUD ====================== */
+// 地上=戦車アイコン / 対空=ジェットアイコン。撃てる対象だけ点灯＝言語に依存せず一目でわかる。
+const TANK_SVG='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="8" width="5" height="3" rx="1"/><rect x="10" y="9" width="9" height="2" rx="1"/><rect x="3" y="11" width="14" height="5" rx="1.5"/><rect x="2" y="17" width="16" height="2.4" rx="1.2"/></svg>';
+const JET_SVG='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 13.5l-8-1.6V5a1.4 1.4 0 0 0-2.8 0v6.9L2 13.5v2l8.2-1.3v3.6L7.7 19v1.5l3.9-1 3.9 1V19l-2.5-1.2v-3.6L21 15.5z"/></svg>';
+function clsLabel(cls){ return {g:'地上',a:'対空',b:'両用',s:'支援'}[cls]||''; }   // Part B(20言語)で t() 化予定
+function clsChip(cls){
+  if(cls==='s') return '<div class="wcls wcls-s"><span class="ic on" style="color:#ffb347;font-size:12px">⚙</span><span class="lab">'+clsLabel('s')+'</span></div>';
+  const g=(cls==='g'||cls==='b'), a=(cls==='a'||cls==='b');
+  const cn=(cls==='g')?'wcls-g':(cls==='a')?'wcls-a':'wcls-b';
+  return '<div class="wcls '+cn+'">'
+    +'<span class="ic'+(g?' on':'')+'" style="color:'+(g?'#7fe0a0':'#8aa')+'">'+TANK_SVG+'</span>'
+    +'<span class="ic'+(a?' on':'')+'" style="color:'+(a?'#59c4ee':'#8aa')+'">'+JET_SVG+'</span>'
+    +'<span class="lab">'+clsLabel(cls)+'</span></div>';
+}
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
   TOWERS.forEach(t=>{ const ul=(t.unlock||1); const locked=(Math.max(1,G.wave)<ul); const isNew=(G.wave===ul);
     const b=document.createElement('div'); b.className='wbtn'+(G.sel===t.key?' sel':'')+(locked?' lock':'')+(isNew?' newunlock':'');
     b.style.setProperty('--sc','#'+t.color.toString(16).padStart(6,'0'));
-    b.innerHTML='<div class="wn">'+t.name+'</div><div class="wc">'+(locked?('🔒 W'+ul):('⚙'+t.cost))+'</div>';
+    b.innerHTML=clsChip(t.cls)+'<div class="wn">'+t.name+'</div><div class="wc">'+(locked?('🔒 W'+ul):('⚙'+t.cost))+'</div>';
     if(!locked){ b.style.touchAction='pan-x';   // 横スクロールは許可、縦ドラッグで設置開始
       b.addEventListener('pointerdown',ev=>{ startPlaceDrag(t.key); sfx.ui(); });   // 上に引き出すと盤面に設置（startPlaceDragはactive化を保留）
     }
