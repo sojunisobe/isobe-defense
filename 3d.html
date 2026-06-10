@@ -7530,7 +7530,7 @@ function loop(now){
 
 // 起動
 if(THREEOK){ initScene(); buildWeaponBar(); runOpening(); requestAnimationFrame(loop);
-  if(/^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ if(typeof endOpening==='function')endOpening(); startGame(); },200); } }
+  if(typeof location!=='undefined' && /^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ if(typeof endOpening==='function')endOpening(); startGame(); },200); } }
 else { document.getElementById('ov').innerHTML='<div style="color:#ff3b54;font:700 18px sans-serif">3Dエンジンの読み込みに失敗しました（ネット接続を確認してください）</div>'; }
 </script>
 </body>
