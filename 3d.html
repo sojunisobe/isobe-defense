@@ -87,7 +87,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 26（音停止・3機解禁制・Lv可視化）</div>
+  <div id="badge">3D MVP · build 27（ボス音楽＋巨大3Dタイトル壁）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -338,6 +338,25 @@ function buildBackdrop(themeKey){ if(!scene)return; if(_backdrop){ scene.remove(
   buildSilhouettes(g,T); scene.add(g); _backdrop=g; G.bgTheme=themeKey;
 }
 
+let _bossMus=null,_bossStep=0;
+function bossStinger(){ if(!AC)return; const t=_now(); [55,82.4,110].forEach(function(f){tone(f,f,t,0.8,'sawtooth',0.2);}); tone(220,180,t,0.6,'square',0.1); noise(t,0.5,0.32,'highpass',3000,1); noise(t,0.7,0.42,'lowpass',300,1); }
+function startBossMusic(){ if(!AC||_bossMus)return; _bossStep=0; _bossMus=setInterval(function(){ if(!AC||G.paused)return; const t=_now(); const b=_bossStep%8;
+  tone(110,42,t,0.13,'sine',0.5); noise(t,0.05,0.3,'lowpass',180,1);
+  const riff=[55,55,65.4,55,49,49,58.3,65.4]; const f=riff[b]; tone(f,f,t,0.22,'sawtooth',0.26); tone(f*0.5,f*0.5,t,0.24,'square',0.14);
+  if(b===0||b===4){ tone(f*2,f*2,t,0.3,'sawtooth',0.12); }
+  if(b%2===1) noise(t,0.03,0.12,'highpass',6000,1);
+  _bossStep++; }, 230); }
+function stopBossMusic(){ if(_bossMus){ clearInterval(_bossMus); _bossMus=null; } }
+let _titlewall=null;
+function titleTextTex(){ const cv=document.createElement('canvas'); cv.width=1024; cv.height=256; const g=cv.getContext('2d'); g.clearRect(0,0,1024,256); g.textAlign='center'; g.textBaseline='middle';
+  g.font='900 124px sans-serif'; g.shadowColor='rgba(51,224,255,0.95)'; g.shadowBlur=26; g.fillStyle='#cfeeff'; g.fillText('HUMANITY DEFENSE',512,108);
+  g.shadowColor='rgba(255,120,50,0.9)'; g.shadowBlur=14; g.font='900 56px monospace'; g.fillStyle='#ff8a3a'; g.fillText('2 0 5 X',512,200);
+  const tx=new THREE.CanvasTexture(cv); return tx; }
+function buildTitleWall(){ if(!scene)return; if(_titlewall){ scene.remove(_titlewall); } const g=new THREE.Group(); const W=WW+6,H=10,D=0.8;
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(W,H,D), pbr(0x191e25,{metalness:0.6,roughness:0.6,grunge:true})); wall.position.y=H/2-0.5; wall.castShadow=true; g.add(wall);
+  for(const s of [-1,1]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.52,H+1.4,10), pbr(0x12161c,{metalness:0.6,roughness:0.6})); post.position.set(s*(W/2-0.3),(H-0.5)/2,0); post.castShadow=true; g.add(post); }
+  const tw=W-2, th=tw*256/1024; const tp=new THREE.Mesh(new THREE.PlaneGeometry(tw,th), new THREE.MeshBasicMaterial({map:titleTextTex(),transparent:true,fog:false})); tp.position.set(0,H/2-0.4,D/2+0.06); g.add(tp);
+  g.position.set(0,0,-WD/2-1.6); scene.add(g); _titlewall=g; }
 function initScene(){
   const cv=document.getElementById('cv');
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
@@ -379,6 +398,7 @@ function initScene(){
   const sr2=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.04,10,32), emis(0xb83a4c,1.2)); sr2.rotation.x=Math.PI/2; sr2.position.y=0.45; spawnMesh.add(sr2);
   spawnMesh.position.set(sw.x,0,sw.z); scene.add(spawnMesh);
   buildBackdrop(pickTheme());
+  buildTitleWall();
   // ポストプロセス（ブルーム＝発光の写実）
   try{
     composer=new THREE.EffectComposer(renderer);
@@ -7049,7 +7069,7 @@ function spawnOne(item){
   const fy=def.flying?1.5:0;
   m.position.set(w.x,fy,w.z); scene.add(m);
   G.enemies.push({def, mesh:m, x:w.x, z:w.z, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6});
-  if(def.boss){ G.bossWarnT=2.4; G.shake=Math.max(G.shake||0,0.5); sfx.baseHit(); }
+  if(def.boss){ G.bossWarnT=2.4; G.shake=Math.max(G.shake||0,0.5); sfx.baseHit(); bossStinger(); startBossMusic(); }
 }
 function placeTower(c,r){
   const def=TOWER_BY_KEY[G.sel]; if(!def) return false;
@@ -7066,7 +7086,7 @@ function placeTower(c,r){
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; scene.remove(e.mesh);
   if(byPlayer){ G.parts+=e.def.reward; G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;
-    const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss)G.shake=Math.max(G.shake||0,0.7); sfx.kill(G.combo, e.def&&e.def.boss); }
+    const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
 function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;
   sfx.baseHit();
@@ -7299,10 +7319,10 @@ function startGame(){
   G.scene='playing'; G.parts=220; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience();
+  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); stopBossMusic();
 }
 function gameOver(){
-  G.scene='gameover'; stopAmbience();
+  G.scene='gameover'; stopAmbience(); stopBossMusic();
   const ov=document.getElementById('ov'); ov.classList.remove('hidden');
   ov.querySelector('.yr').textContent='GAME OVER';
   ov.querySelector('h1').textContent='W'+G.wave+'  ★'+G.score.toLocaleString();
