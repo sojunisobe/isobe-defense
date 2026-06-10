@@ -133,7 +133,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 41（武器バーに機械の3Dアイコン・ゲームオーバー文を地表陥落の残酷表現に）</div>
+  <div id="badge">3D MVP · build 42（自陣HQ大型化10マス・敵AI HQ盤外左・敵は左外中央から入場・一列目配置可）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -238,6 +238,20 @@ const inGrid=(c,r)=>c>=0&&r>=0&&c<COLS&&r<ROWS;
 const occ=new Uint8Array(COLS*ROWS);          // 1=タワー(壁)
 const distF=new Int32Array(COLS*ROWS);
 const flowC=new Float32Array(COLS*ROWS), flowR=new Float32Array(COLS*ROWS);
+// ---- 多セルの本部（自陣HQ）。右端2列×中央5行=10マスをゴール(占有)に。右端の上下端は funnel 用に壁。 ----
+const goalCell=new Uint8Array(COLS*ROWS);      // 1=本部(敵の到達目標／タワー不可)
+const staticWall=new Uint8Array(COLS*ROWS);    // 常時壁(本部footprint＋右端funnel壁)
+const BASE_C0=COLS-2, BASE_C1=COLS-1, BASE_R0=BASE_R-2, BASE_R1=BASE_R+2;   // 本部 footprint
+(function setupBaseCells(){
+  for(let c=BASE_C0;c<=BASE_C1;c++) for(let r=BASE_R0;r<=BASE_R1;r++){ const i=idx(c,r); goalCell[i]=1; staticWall[i]=1; }
+  for(let r=0;r<ROWS;r++){ if(r<BASE_R0||r>BASE_R1){ staticWall[idx(COLS-1,r)]=1; } }   // 右端の上下端を壁にして敵を本部へ funnel
+})();
+function applyStaticOcc(){ for(let i=0;i<occ.length;i++){ if(staticWall[i]) occ[i]=1; } }
+applyStaticOcc();
+// 敵の盤外スポーン（左外・中央）と入場マス
+const ENTRY_C=0, ENTRY_R=BASE_R;                          // 一列目の真ん中＝敵の入場マス
+const OFFBOARD_X=-WW/2-2.6;                               // 盤面左の外側（敵HQの位置）
+function entryWorld(){ return cellToWorld(ENTRY_C,ENTRY_R); }
 const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0, combo:0, comboT:0,
   speed:1, paused:false, sel:'gun', towers:[], enemies:[], shots:[], fx:[],
   spawnQueue:[], spawnTimer:0, waveActive:false, betweenT:3, flowDirty:true };
@@ -332,7 +346,7 @@ function arm(raw,e){ const a=enemyArmor(e); if(a<=0)return raw; return Math.max(
 const _q=new Int32Array(COLS*ROWS);
 function buildFlow(){
   distF.fill(-1); let head=0,tail=0;
-  for(let r=0;r<ROWS;r++){ const i=idx(GOAL_C,r); if(!occ[i]){ distF[i]=0; _q[tail++]=i; } }
+  for(let i=0;i<distF.length;i++){ if(goalCell[i]){ distF[i]=0; _q[tail++]=i; } }   // 本部(多セル)から逆フロー
   while(head<tail){ const i=_q[head++]; const c=i%COLS, r=(i/COLS)|0, d=distF[i]+1;
     if(c+1<COLS){const j=i+1;   if(!occ[j]&&distF[j]<0){distF[j]=d;_q[tail++]=j;}}
     if(c-1>=0){ const j=i-1;    if(!occ[j]&&distF[j]<0){distF[j]=d;_q[tail++]=j;}}
@@ -352,16 +366,16 @@ const _seen=new Uint8Array(COLS*ROWS);
 function reachableAfter(c,r){ // そのマスに壁を置いても spawn→base が繋がるか
   const i0=idx(c,r); const was=occ[i0]; occ[i0]=1;
   _seen.fill(0); let head=0,tail=0,ok=false;
-  for(let rr=0;rr<ROWS;rr++){ const i=idx(GOAL_C,rr); if(!occ[i]){_seen[i]=1;_q[tail++]=i;} }
+  for(let i=0;i<occ.length;i++){ if(goalCell[i]){_seen[i]=1;_q[tail++]=i;} }   // 本部セルから探索
   while(head<tail){ const i=_q[head++]; const cc=i%COLS, rr=(i/COLS)|0;
-    if(cc===SPAWN_C&&rr===SPAWN_R){ok=true;break;}
+    if(cc===ENTRY_C&&rr===ENTRY_R){ok=true;break;}
     const nb=[i+1,i-1,i+COLS,i-COLS], cs=[cc+1,cc-1,cc,cc], rs=[rr,rr,rr+1,rr-1];
     for(let k=0;k<4;k++){ if(cs[k]<0||cs[k]>=COLS||rs[k]<0||rs[k]>=ROWS)continue; const j=nb[k];
       if(!occ[j]&&!_seen[j]){_seen[j]=1;_q[tail++]=j;} } }
   occ[i0]=was; return ok;
 }
 function cellFree(c,r){ if(!inGrid(c,r))return false;
-  if(c===GOAL_C&&r===BASE_R)return false; if(c===SPAWN_C&&r===SPAWN_R)return false;
+  if(c===ENTRY_C&&r===ENTRY_R)return false;   // 敵の入場マスは常に開けておく（本部セルは occ で不可）
   return !occ[idx(c,r)]; }
 
 /* ====================== Three.js シーン ====================== */
@@ -552,17 +566,13 @@ function initScene(){
     const gGeo=new THREE.BufferGeometry(); gGeo.setAttribute('position',new THREE.Float32BufferAttribute(gv,3));
     scene.add(new THREE.LineSegments(gGeo,new THREE.LineBasicMaterial({color:0x4a6a5a,transparent:true,opacity:0.28}))); }
   // 基地（HDF・シアン）
-  baseMesh=new THREE.Group(); const bw=cellToWorld(GOAL_C,BASE_R);
-  const core=new THREE.Mesh(roundedBox(1.0,1.5,1.0,0.22), pbr(0x16323f,{metalness:0.85,roughness:0.32,emissive:0x0a3a4a,ei:0.5,clearcoat:0.6}));
-  core.position.y=0.8; core.castShadow=true; baseMesh.add(core);
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.5,24,16,0,Math.PI*2,0,Math.PI/2), pbr(0x153a48,{metalness:0.45,roughness:0.5,emissive:0x2fb6dc,ei:0.18,clearcoat:0.1})); dome.position.y=1.55; dome.castShadow=true; baseMesh.add(dome);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.9,0.06,12,40), emis(0x2fb6dc,0.85)); ring.position.y=0.95; ring.rotation.x=Math.PI/2; baseMesh.add(ring); baseMesh.userData.ring=ring;
-  baseMesh.position.set(bw.x,0,bw.z); scene.add(baseMesh);
-  // スポーン（ZERO・レッド）
-  spawnMesh=new THREE.Group(); const sw=cellToWorld(SPAWN_C,SPAWN_R);
-  const sr=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.06,12,40), emis(0xff3b54,1.6)); sr.rotation.x=Math.PI/2; sr.position.y=0.45; spawnMesh.add(sr); spawnMesh.userData.ring=sr;
-  const sr2=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.04,10,32), emis(0xb83a4c,1.2)); sr2.rotation.x=Math.PI/2; sr2.position.y=0.45; spawnMesh.add(sr2);
-  spawnMesh.position.set(sw.x,0,sw.z); scene.add(spawnMesh);
+  // 自陣HQ（右の footprint 中央に大型配置）
+  baseMesh=buildFriendlyHQ();
+  { const x0=cellToWorld(BASE_C0,BASE_R).x-CELL/2, x1=cellToWorld(BASE_C1,BASE_R).x+CELL/2; baseMesh.position.set((x0+x1)/2,0,cellToWorld(BASE_C0,BASE_R).z); }
+  scene.add(baseMesh);
+  // 敵HQ（盤外左・中央のAIコア）
+  spawnMesh=buildEnemyHQ();
+  spawnMesh.position.set(OFFBOARD_X-0.6,0,entryWorld().z); scene.add(spawnMesh);
   buildBackdrop(pickTheme());
   buildTitleWall();
   // ポストプロセス（ブルーム＝発光の写実）
@@ -606,6 +616,63 @@ function roundedBox(w,h,d,r){ r=Math.max(0.02,Math.min(r,Math.min(w,h)/2-0.02));
 // 使い込まれた軍用メタル（マット寄り・反射控えめ）。色がしっかり乗るよう metalness 抑制
 function steel(c){ return pbr(c,{metalness:0.0,roughness:0.95,clearcoat:0.0,ccr:1.0,envI:0.0,grunge:true}); }
 const GUNMETAL=0x4b5158;   // 二次部品の中立グレー
+/* ====================== 本部HQ（自陣＝HDFシアン要塞 / 敵陣＝ZERO赤AI） ====================== */
+function _box(w,h,d,mat,x,y,z,rx,ry,rz){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x||0,y||0,z||0); if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0); m.castShadow=true; return m; }
+function buildFriendlyHQ(){   // HDF：大型・高層・カッコいい防衛要塞（シアン発光）
+  const g=new THREE.Group();
+  const HULL=()=>pbr(0x16323f,{metalness:0.85,roughness:0.34,emissive:0x0a3a4a,ei:0.12,clearcoat:0.5});
+  const DARK=()=>pbr(0x0e1c24,{metalness:0.8,roughness:0.45});
+  const CY=(i)=>emis(0x2fb6dc,i||1.0);
+  // 基壇（footprint 全体）
+  g.add(_box(2.6,0.5,6.4,DARK(),0,0.25,0));
+  g.add(_box(2.7,0.12,6.5,CY(0.6),0,0.52,0));                 // 縁の発光ライン
+  // 中央キープ（高層）
+  g.add(_box(1.4,3.4,1.8,HULL(),0,2.2,0));
+  // 窓ストリップ（発光）
+  for(let k=0;k<4;k++){ g.add(_box(1.45,0.16,0.5,CY(1.4), 0,1.4+k*0.6,0.66)); }
+  g.add(_box(0.6,3.0,0.6,CY(0.9),0,2.2,0.95));                // 前面の発光コア柱
+  // 上部ブロック＋管制ドーム
+  g.add(_box(1.0,1.0,1.2,HULL(),0,4.4,0));
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.5,20,14,0,Math.PI*2,0,Math.PI/2), pbr(0x153a48,{metalness:0.4,roughness:0.4,emissive:0x2fb6dc,ei:0.3})); dome.position.y=4.9; dome.castShadow=true; g.add(dome);
+  // スパイア（アンテナ）＋発光チップ
+  const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.16,2.4,10),DARK()); spire.position.y=6.3; g.add(spire);
+  const tip=new THREE.Mesh(new THREE.SphereGeometry(0.16,12,12),CY(2.4)); tip.position.y=7.6; g.add(tip);
+  // 左右の副塔
+  [-2.3,2.3].forEach(z=>{ g.add(_box(0.8,2.2,0.8,HULL(),0,1.6,z)); g.add(_box(0.86,0.18,0.86,CY(1.2),0,2.75,z));
+    const a=new THREE.Mesh(new THREE.ConeGeometry(0.18,0.6,10),DARK()); a.position.set(0,3.1,z); g.add(a); });
+  // 角の防衛タレット
+  [[-1.0,-2.9],[1.0,-2.9],[-1.0,2.9],[1.0,2.9]].forEach(p=>{ const t=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.26,0.4,10),DARK()); t.position.set(p[0],0.7,p[1]); t.castShadow=true; g.add(t);
+    const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.7,8),pbr(0x23262a,{metalness:0.9,roughness:0.4})); bar.rotation.z=Math.PI/2; bar.position.set(p[0]-0.35,0.85,p[1]); g.add(bar); });
+  // 回転リング（loopで回す）
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.07,12,44),CY(1.0)); ring.rotation.x=Math.PI/2; ring.position.y=0.9; g.add(ring); g.userData.ring=ring;
+  return g;
+}
+function buildEnemyHQ(){   // ZERO：盤外左の巨大AIコア（赤・不気味）。単眼＝AIらしさ
+  const g=new THREE.Group();
+  const DARK=()=>pbr(0x100507,{metalness:0.72,roughness:0.5});
+  const RED=(i)=>emis(0xd01222,i||0.9);   // 深い赤・低強度＝ブルームで白飛び/ピンク化させない
+  g.add(_box(2.8,0.6,5.2,DARK(),0,0.3,0));
+  // 縁だけ細く光らせる（全面デッキにすると赤ブルームでピンク化するため）
+  g.add(_box(2.9,0.07,0.16,RED(0.5),0,0.6,2.55)); g.add(_box(2.9,0.07,0.16,RED(0.5),0,0.6,-2.55));
+  g.add(_box(0.16,0.07,5.2,RED(0.5),1.4,0.6,0)); g.add(_box(0.16,0.07,5.2,RED(0.5),-1.4,0.6,0));
+  // 中央モノリス（高く威圧的に・やや傾け）
+  const mono=_box(2.0,5.6,0.8,DARK(),0,3.1,0,0,0,0.05); g.add(mono);
+  // 赤い亀裂（発光・控えめ）
+  for(let k=0;k<6;k++){ const cr=_box(0.11,0.6+Math.random()*0.5,0.84,RED(0.4), (Math.random()-0.5)*1.4, 1.4+k*0.75, 0, 0,0,(Math.random()-0.5)*0.5); g.add(cr); }
+  // 単眼コア（AIの眼）＝深紅の核＋暗いレンズ枠（白飛び防止に低強度）
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(0.6,24,18),emis(0xa00d1a,0.55)); eye.position.set(0,3.4,0.5); g.add(eye);
+  const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.26,18,14),emis(0xc01323,0.5)); pupil.position.set(0,3.4,0.78); g.add(pupil);
+  const lens=new THREE.Mesh(new THREE.TorusGeometry(0.66,0.12,14,30),DARK()); lens.position.set(0,3.4,0.55); g.add(lens);
+  g.add(_box(1.5,0.2,0.5,DARK(),0,4.3,0.45)); g.add(_box(1.5,0.2,0.5,DARK(),0,2.5,0.45));   // 眼の上下ブラケット
+  // 触手ケーブル
+  [-0.8,0,0.8].forEach((x,i)=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,2.8,8),DARK()); c.position.set(x,1.5,0.55+i*0.08); c.rotation.x=0.12; g.add(c); });
+  // 角スパイク（赤チップ・控えめ）
+  [[-1.1,-2.0],[1.1,-2.0],[-1.1,2.0],[1.1,2.0]].forEach(p=>{ const s=new THREE.Mesh(new THREE.ConeGeometry(0.2,1.3,8),DARK()); s.position.set(p[0],1.0,p[1]); g.add(s);
+    const st=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.3,8),RED(0.9)); st.position.set(p[0],1.75,p[1]); g.add(st); });
+  // 回転リング
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.08,12,40),RED(0.8)); ring.rotation.x=Math.PI/2; ring.position.y=0.85; g.add(ring); g.userData.ring=ring;
+  return g;
+}
 function buildGun(def){
 
 var g = new THREE.Group();
@@ -7233,10 +7300,11 @@ function meteorImpact(x,z){ G.shake=Math.max(G.shake||0,1.0); G.hurt=Math.max(G.
   const R=2.6, R2=R*R; for(const e of G.enemies){ if(e.dead||e.flying)continue; const dx=e.x-x,dz=e.z-z; if(dx*dx+dz*dz<=R2){ e.hp-=140; if(e.hp<=0)killEnemy(e,true); } }
   if(AC){ if(!playSample('boombig',{rate:0.9,vol:0.95,duck:true})){ const t=_now(); tone(70,28,t,0.7,'sine',0.55); noise(t,0.6,0.55,'lowpass',500,1); noise(t,0.08,0.5,'highpass',2000,1); } } }
 function spawnOne(item){
-  const def=item.def; const m=makeEnemyMesh(def); const w=cellToWorld(SPAWN_C,SPAWN_R);
+  const def=item.def; const m=makeEnemyMesh(def); const ent=entryWorld();
+  const sx=OFFBOARD_X, sz=ent.z;   // 盤外左・中央から出現
   const fy=def.flying?1.5:0;
-  m.position.set(w.x,fy,w.z); scene.add(m);
-  G.enemies.push({def, mesh:m, x:w.x, z:w.z, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed*ENEMY_SPEED_MUL, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6});
+  m.position.set(sx,fy,sz); scene.add(m);
+  G.enemies.push({def, mesh:m, x:sx, z:sz, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed*ENEMY_SPEED_MUL, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6, entering:!def.flying});
   if(def.boss){ G.bossWarnT=2.4; G.shake=Math.max(G.shake||0,0.5); sfx.baseHit(); bossStinger(); startBossMusic(); }
 }
 function placeTower(c,r){
@@ -7308,16 +7376,17 @@ function update(dt){
     if(e.flying){ const bx=cellToWorld(GOAL_C,BASE_R).x, bz=cellToWorld(GOAL_C,BASE_R).z; dirx=bx-e.x; dirz=bz-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl;
       if(e.mesh.userData.spin){ for(const ro of e.mesh.userData.spin) ro.rotation.y+=dt*34; } if(e.mesh.userData.rotor) e.mesh.userData.rotor.rotation.y+=dt*34;
       e.bobP+=dt; }
-    else { const cell=worldToCell(e.x,e.z); let c=Math.max(0,Math.min(COLS-1,cell.c)), r=Math.max(0,Math.min(ROWS-1,cell.r)); const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii]; if(fc===0&&fr===0){ fc=(GOAL_C>0?1:-1); fr=0; } const len=Math.hypot(fc,fr)||1; dirx=fc/len; dirz=fr/len; }
+    else if(e.entering){ const ent=entryWorld(); dirx=ent.x-e.x; dirz=ent.z-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl;   // 盤外→一列目中央へ入場
+      if(e.x>=ent.x-0.02){ e.entering=false; } }
+    else { const cell=worldToCell(e.x,e.z); let c=Math.max(0,Math.min(COLS-1,cell.c)), r=Math.max(0,Math.min(ROWS-1,cell.r)); const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii]; if(fc===0&&fr===0){ fc=1; fr=0; } const len=Math.hypot(fc,fr)||1; dirx=fc/len; dirz=fr/len; }   // 一列目から上/下/前へ（迷路で分岐）
     e.x+=dirx*sp*dt*CELL; e.z+=dirz*sp*dt*CELL;
     e.mesh.position.set(e.x, e.flying?(e.y+Math.sin(e.bobP*3)*0.06):0, e.z);
     const heading=Math.atan2(dirz,dirx); e.mesh.rotation.y=-heading+Math.PI/2;
     // HPバー更新＋ビルボード
     const hb=e.mesh.userData.hpbar; if(hb){ hb.scale.x=Math.max(0.001,e.hp/e.maxhp); hb.position.x=-(1-e.hp/e.maxhp)*0.5; hb.lookAt(camera.position); }
-    // 基地到達（飛行/地上どちらでも有効なよう、ここで列を取り直す。以前は else ブロック内の c を参照して未定義→例外でループ停止だった）
-    const reachC=Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c));
-    const goalX=cellToWorld(GOAL_C,BASE_R).x;   // 基地到達判定（ゴールが右=高x側ならその向きで判定）
-    if((GOAL_C>0 ? (e.x>goalX-0.5 && reachC>=GOAL_C) : (e.x<goalX+0.5 && reachC<=GOAL_C))){ damageBase(e); G.enemies.splice(i,1); }
+    // 本部(多セル)到達判定
+    const rc=worldToCell(e.x,e.z); const rcc=Math.max(0,Math.min(COLS-1,rc.c)), rcr=Math.max(0,Math.min(ROWS-1,rc.r));
+    if(goalCell[idx(rcc,rcr)] || e.x>=cellToWorld(BASE_C0,BASE_R).x-0.5){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
   for(const tw of G.towers){ const def=tw.def; const st=lvlStat(def,tw.lv);
@@ -7586,7 +7655,7 @@ function startGame(){
   document.getElementById('ov').classList.add('hidden');
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
-  G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
+  G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
 }
 function gameOver(){
