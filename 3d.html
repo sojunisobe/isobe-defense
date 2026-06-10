@@ -64,6 +64,9 @@
   #bossfill{height:100%;width:100%;background:linear-gradient(90deg,#ff3b54,#ff8a3a);}
 #combo{position:absolute;left:50%;top:84px;transform:translateX(-50%);font:700 26px 'Chakra Petch';letter-spacing:2px;color:#ffd23f;text-shadow:0 0 12px rgba(255,180,40,.6),0 2px 3px #000;display:none;pointer-events:none;}
   #hurt{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,40,40,0) 40%,rgba(255,30,30,.5) 100%);opacity:0;pointer-events:none;}
+.wbtn.lock{opacity:.4;filter:grayscale(.7);cursor:default;}
+  .wbtn.newunlock{animation:nu 1.2s ease-in-out 3;}
+  @keyframes nu{0%,100%{box-shadow:0 0 0 rgba(255,210,60,0)}50%{box-shadow:0 0 16px rgba(255,210,60,.9)}}
 </style>
 </head>
 <body>
@@ -84,7 +87,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 25（背景刷新・地平まで連続する戦場）</div>
+  <div id="badge">3D MVP · build 26（音停止・3機解禁制・Lv可視化）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -133,21 +136,21 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 
 // ---- 兵器定義（MVP 3種）----
 const TOWERS=[
-  {key:'gun',   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
-  {key:'cannon',name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
-  {key:'frost', name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'sniper',name:'SNIPER', cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
-  {key:'mortar',name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
-  {key:'laser', name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
-  {key:'tesla', name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
-  {key:'mg',     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
-  {key:'flame',  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
-  {key:'poison', name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
-  {key:'rail',   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
-  {key:'aa',     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
-  {key:'gatling_air', name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
-  {key:'barrier',name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
-  {key:'booster',name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
+  {key:'gun', unlock:1,   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
+  {key:'cannon', unlock:1,name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'frost', unlock:1, name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
+  {key:'sniper', unlock:3,name:'SNIPER', cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
+  {key:'mortar', unlock:5,name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
+  {key:'laser', unlock:10, name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
+  {key:'tesla', unlock:8, name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
+  {key:'mg', unlock:2,     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
+  {key:'flame', unlock:7,  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
+  {key:'poison', unlock:6, name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
+  {key:'rail', unlock:12,   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
+  {key:'aa', unlock:4,     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
+  {key:'gatling_air', unlock:6, name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
+  {key:'barrier', unlock:9,name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
+  {key:'booster', unlock:11,name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -7024,6 +7027,7 @@ function startWave(early){
   if(early) G.parts+=18+Math.round(G.wave*1.8);
   const ne=Math.min(3,((G.wave-1)/5)|0); if(ne!==G.era){ G.era=ne; applyEra(ne); }
   if(G.era>=1 && G.disasterT==null) G.disasterT=7;
+  if(typeof buildWeaponBar==='function')buildWeaponBar();
   sfx.wave();
 }
 const ERA_FOG=[0x05070c,0x0a0710,0x140608,0x1a0406];
@@ -7055,7 +7059,7 @@ function placeTower(c,r){
   G.parts-=def.cost; occ[idx(c,r)]=1; G.flowDirty=true;
   const m=makeTowerMesh(def); const w=cellToWorld(c,r); m.position.set(w.x,0,w.z); scene.add(m);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.028,8,24), emis(def.color,0.5)); ring.rotation.x=-Math.PI/2; ring.position.y=0.05; m.add(ring);
-  G.towers.push({def, mesh:m, c, r, x:w.x, z:w.z, cd:0, ang:Math.PI, lv:1, invested:def.cost, targetMode:'first', ring});
+  const tw={def, mesh:m, c, r, x:w.x, z:w.z, cd:0, ang:Math.PI, lv:1, invested:def.cost, targetMode:'first', ring}; tw.pips=new THREE.Group(); m.add(tw.pips); G.towers.push(tw); setLevelPips(tw);
   sfx.place(); spawnRing(w.x,w.z,def.color); hideTowerPanel();
   return true;
 }
@@ -7188,7 +7192,8 @@ function refreshTowerPanel(t){ const p=towerPanel(); if(!t){ p.style.display='no
   p.querySelector('#tpSell').textContent='✕ ⚙'+sellValue(t); }
 function selectTower(t){ G.selTower=t; refreshTowerPanel(t); sfx.ui(); }
 function hideTowerPanel(){ G.selTower=null; refreshTowerPanel(null); }
-function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.06); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.55; } spawnRing(t.x,t.z,t.def.color); sfx.place(); refreshTowerPanel(t); }
+function setLevelPips(tw){ if(!tw.pips)return; while(tw.pips.children.length)tw.pips.remove(tw.pips.children[0]); const n=tw.lv||1; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), emis(0xffd23f,2.2)); p.position.set((i-(n-1)/2)*0.22,1.2,0); tw.pips.add(p); } }
+function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.10); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.6; } setLevelPips(t); spawnRing(t.x,t.z,0xffd23f); spawnBurst(t.x,t.z,0xffd23f,9); G.shake=Math.max(G.shake||0,0.18); sfx.place(); refreshTowerPanel(t); }
 function sellTower(t){ G.parts+=sellValue(t); scene.remove(t.mesh); occ[idx(t.c,t.r)]=0; G.flowDirty=true; const i=G.towers.indexOf(t); if(i>=0)G.towers.splice(i,1); spawnBurst(t.x,t.z,t.def.color,7); hideTowerPanel(); sfx.ui(); }
 function cycleTarget(t){ const m=['first','last','strong','close']; t.targetMode=m[(m.indexOf(t.targetMode||'first')+1)%4]; refreshTowerPanel(t); sfx.ui(); }
 function fireShot(tw,target){
@@ -7263,10 +7268,12 @@ cv.addEventListener('wheel',e=>{ e.preventDefault(); camR=Math.max(10,Math.min(4
 
 /* ====================== HUD ====================== */
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
-  TOWERS.forEach(t=>{ const b=document.createElement('div'); b.className='wbtn'+(G.sel===t.key?' sel':'');
+  TOWERS.forEach(t=>{ const ul=(t.unlock||1); const locked=(Math.max(1,G.wave)<ul); const isNew=(G.wave===ul);
+    const b=document.createElement('div'); b.className='wbtn'+(G.sel===t.key?' sel':'')+(locked?' lock':'')+(isNew?' newunlock':'');
     b.style.setProperty('--sc','#'+t.color.toString(16).padStart(6,'0'));
-    b.innerHTML='<div class="wn">'+t.name+'</div><div class="wc">⚙'+t.cost+'</div>';
-    b.addEventListener('click',()=>{ G.sel=t.key; buildWeaponBar(); sfx.ui(); }); bar.appendChild(b); });
+    b.innerHTML='<div class="wn">'+t.name+'</div><div class="wc">'+(locked?('🔒 W'+ul):('⚙'+t.cost))+'</div>';
+    if(!locked) b.addEventListener('click',()=>{ G.sel=t.key; buildWeaponBar(); sfx.ui(); });
+    bar.appendChild(b); });
 }
 function syncHUD(){
   document.getElementById('hpfill').style.width=Math.max(0,G.hp/G.hpMax*100)+'%';
@@ -7292,7 +7299,7 @@ function startGame(){
   G.scene='playing'; G.parts=220; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); startAmbience();
+  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience();
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience();
@@ -7362,7 +7369,6 @@ function loop(now){
   if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
   if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=document.getElementById('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
-  if(G.scene==='playing'&&!G.paused&&!_amb&&SAMPLES.warfield)startAmbience();
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
   const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
