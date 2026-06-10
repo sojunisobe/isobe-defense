@@ -126,7 +126,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 37（武器ドラッグ設置の不具合修正・スクロール奪取/RTLはみ出し対策）</div>
+  <div id="badge">3D MVP · build 38（砲身向き修正・配置プレビューを指の上・盤面ミラー・血糊除去・OP戦闘BGM・高難度化）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -220,8 +220,8 @@ function setLang(code){ if(!I18N[code])return; LANG=code; try{localStorage.setIt
 // ---- 盤面定数 ----
 const COLS=24, ROWS=13, CELL=1.4;   // マス1.5倍
 const WW=COLS*CELL, WD=ROWS*CELL;
-const GOAL_C=0, BASE_R=Math.floor(ROWS/2);
-const SPAWN_C=COLS-1, SPAWN_R=Math.floor(ROWS/2);
+const GOAL_C=COLS-1, BASE_R=Math.floor(ROWS/2);   // 基地（味方）を右側へ＝敵味方の位置を真逆に
+const SPAWN_C=0, SPAWN_R=Math.floor(ROWS/2);       // 敵スポーンを左側へ
 const idx=(c,r)=>r*COLS+c;
 function cellToWorld(c,r){ return {x:(c+0.5)*CELL-WW/2, z:(r+0.5)*CELL-WD/2}; }
 function worldToCell(x,z){ return {c:Math.floor((x+WW/2)/CELL), r:Math.floor((z+WD/2)/CELL)}; }
@@ -239,14 +239,14 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 // 並びは「左から順番に解放」される順（unlock 昇順）。アンロックは W1〜W100 に分散＝長期目標／やり込み。
 const TOWERS=[
   // cls: 'g'=地上のみ / 'a'=対空のみ / 'b'=両用 / 's'=支援
-  {key:'gun', unlock:1,   name:'GUN', cls:'g',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
+  {key:'gun', unlock:1,   name:'GUN', cls:'g', tfwd:'z',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール（砲身=ローカル+z）
   {key:'cannon', unlock:1,name:'CANNON', cls:'g',cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
   {key:'frost', unlock:1, name:'FROST', cls:'g', cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'mg', unlock:5,     name:'MG', cls:'g',    cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
+  {key:'mg', unlock:5,     name:'MG', cls:'g', tfwd:'z',    cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
   {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
   {key:'sniper', unlock:16,name:'SNIPER', cls:'b',cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
   {key:'mortar', unlock:23,name:'MORTAR', cls:'g',cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
-  {key:'poison', unlock:31, name:'POISON', cls:'g',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
+  {key:'poison', unlock:31, name:'POISON', cls:'g', tfwd:'z',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
   {key:'flame', unlock:40,  name:'FLAME', cls:'g', cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
   {key:'tesla', unlock:50, name:'TESLA', cls:'b', cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
   {key:'gatling_air', unlock:61, name:'AA-GAT', cls:'a', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
@@ -257,6 +257,7 @@ const TOWERS=[
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 const AIR_START=(TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||4;   // 空中敵の登場ウェーブ＝AA(対空)解放と同期
+const ENEMY_SPEED_MUL=0.85;   // 敵の移動を少しゆっくりに（読みやすく＝戦術性UP）
 
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
@@ -505,9 +506,7 @@ function titleTextTex(){ const m=titleMask(); const cv=document.createElement('c
   var grd=g.createLinearGradient(0,30,0,300); grd.addColorStop(0,'#c41f15'); grd.addColorStop(0.5,'#8f120b'); grd.addColorStop(1,'#4e0805'); g.fillStyle=grd; g.fillRect(0,0,1024,320);
   g.globalCompositeOperation='source-atop';                              // 内部に陰影(上明/下暗)
   var sh=g.createLinearGradient(0,30,0,300); sh.addColorStop(0,'rgba(255,110,80,0.30)'); sh.addColorStop(0.4,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,0,0.6)'); g.fillStyle=sh; g.fillRect(0,0,1024,320);
-  g.globalCompositeOperation='source-over';                              // 血だれ(下に垂れる)
-  g.fillStyle='#5c0a05';
-  for(var i=0;i<30;i++){ var x=110+Math.random()*820, y=150+Math.random()*70, w=1.4+Math.random()*3.2, h=12+Math.random()*64; g.fillRect(x,y,w,h); g.beginPath(); g.arc(x+w/2,y+h,w*0.95,0,7); g.fill(); }
+  g.globalCompositeOperation='source-over';                              // 血だれ(血糊)は要望により撤去。赤グラデは維持
   return new THREE.CanvasTexture(cv); }
 function buildTitleWall(){ if(!scene)return; if(_titlewall){ scene.remove(_titlewall); } const g=new THREE.Group(); const tw=26, th=tw*320/1024;
   const bodyTex=titleSolidTex(); const Y=4.2, depth=1.5, N=16;
@@ -7191,8 +7190,8 @@ function makeEnemyMesh(def){
 
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
-  const q=[]; const count=Math.round(6+n*1.15+Math.max(0,n-5)*0.7);
-  const hpMul=1+(n-1)*0.08+Math.pow(n/12,2)*0.5;   // 中程度：序盤から緩やかに圧、中盤で本格的に効く
+  const q=[]; const count=Math.round(7+n*1.45+Math.max(0,n-4)*1.2);
+  const hpMul=1+(n-1)*0.15+Math.pow(n/8.5,2)*1.3;   // 高難度：敵を遅くした分HP/数を厚く。戦略(迷路/相性/集中)を立てないと序盤で詰む
   const NB=ENEMIES.filter(e=>!e.boss);
   const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
   const lo=Math.max(0,center-7), hi=Math.min(NB.length-1,center+2);
@@ -7206,7 +7205,7 @@ function buildWave(n){
 }
 function startWave(early){
   G.wave++; G.spawnQueue=buildWave(G.wave); G.spawnTimer=0; G.waveActive=true; G.betweenT=0;
-  if(early) G.parts+=12+Math.round(G.wave*1.4);   // 早出しボーナスも引き締め
+  if(early) G.parts+=8+Math.round(G.wave*1.0);   // 早出しボーナスも引き締め
   const ne=Math.min(3,((G.wave-1)/5)|0); if(ne!==G.era){ G.era=ne; applyEra(ne); }
   if(G.era>=1 && G.disasterT==null) G.disasterT=7;
   if(typeof buildWeaponBar==='function')buildWeaponBar();
@@ -7230,7 +7229,7 @@ function spawnOne(item){
   const def=item.def; const m=makeEnemyMesh(def); const w=cellToWorld(SPAWN_C,SPAWN_R);
   const fy=def.flying?1.5:0;
   m.position.set(w.x,fy,w.z); scene.add(m);
-  G.enemies.push({def, mesh:m, x:w.x, z:w.z, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6});
+  G.enemies.push({def, mesh:m, x:w.x, z:w.z, y:fy, hp:item.hp, maxhp:item.hp, speed:def.speed*ENEMY_SPEED_MUL, slowT:0, dead:false, flying:!!def.flying, arch:def.arch, bobP:Math.random()*6});
   if(def.boss){ G.bossWarnT=2.4; G.shake=Math.max(G.shake||0,0.5); sfx.baseHit(); bossStinger(); startBossMusic(); }
 }
 function placeTower(c,r){
@@ -7247,10 +7246,10 @@ function placeTower(c,r){
 }
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; scene.remove(e.mesh);
-  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.85); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬を引き締め（スコアは据え置き）
+  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.6); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬をさらに引き締め（物量で押せない＝選択が要る）
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
-function damageBase(e){ G.hp-=e.def.dmg*1.5; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を増（放置で確実に削られる）
+function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
   sfx.baseHit();
   if(G.hp<=0){ G.hp=0; gameOver(); } }
 
@@ -7291,7 +7290,7 @@ function update(dt){
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
-    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=14+Math.round(G.wave*1.6); G.parts+=cb; sfx.waveClear(); }   // ウェーブ報酬を引き締め
+    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=6+Math.round(G.wave*0.9); G.parts+=cb; sfx.waveClear(); }   // ウェーブ報酬をさらに引き締め（部品が溜まりすぎない）
   } else { G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }
   if(G.era>=1 && G.waveActive && G.disasterT!=null){ G.disasterT-=dt; if(G.disasterT<=0){ const n=G.era; for(let m=0;m<n;m++) meteorStrike(); G.disasterT=Math.max(5,11-G.era*1.5); } }
   // 敵移動（フローフィールド）
@@ -7302,7 +7301,7 @@ function update(dt){
     if(e.flying){ const bx=cellToWorld(GOAL_C,BASE_R).x, bz=cellToWorld(GOAL_C,BASE_R).z; dirx=bx-e.x; dirz=bz-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl;
       if(e.mesh.userData.spin){ for(const ro of e.mesh.userData.spin) ro.rotation.y+=dt*34; } if(e.mesh.userData.rotor) e.mesh.userData.rotor.rotation.y+=dt*34;
       e.bobP+=dt; }
-    else { const cell=worldToCell(e.x,e.z); let c=Math.max(0,Math.min(COLS-1,cell.c)), r=Math.max(0,Math.min(ROWS-1,cell.r)); const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii]; if(fc===0&&fr===0){ fc=-1; fr=0; } const len=Math.hypot(fc,fr)||1; dirx=fc/len; dirz=fr/len; }
+    else { const cell=worldToCell(e.x,e.z); let c=Math.max(0,Math.min(COLS-1,cell.c)), r=Math.max(0,Math.min(ROWS-1,cell.r)); const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii]; if(fc===0&&fr===0){ fc=(GOAL_C>0?1:-1); fr=0; } const len=Math.hypot(fc,fr)||1; dirx=fc/len; dirz=fr/len; }
     e.x+=dirx*sp*dt*CELL; e.z+=dirz*sp*dt*CELL;
     e.mesh.position.set(e.x, e.flying?(e.y+Math.sin(e.bobP*3)*0.06):0, e.z);
     const heading=Math.atan2(dirz,dirx); e.mesh.rotation.y=-heading+Math.PI/2;
@@ -7310,7 +7309,8 @@ function update(dt){
     const hb=e.mesh.userData.hpbar; if(hb){ hb.scale.x=Math.max(0.001,e.hp/e.maxhp); hb.position.x=-(1-e.hp/e.maxhp)*0.5; hb.lookAt(camera.position); }
     // 基地到達（飛行/地上どちらでも有効なよう、ここで列を取り直す。以前は else ブロック内の c を参照して未定義→例外でループ停止だった）
     const reachC=Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c));
-    if(e.x < cellToWorld(GOAL_C,BASE_R).x+0.5 && reachC<=GOAL_C){ damageBase(e); G.enemies.splice(i,1); }
+    const goalX=cellToWorld(GOAL_C,BASE_R).x;   // 基地到達判定（ゴールが右=高x側ならその向きで判定）
+    if((GOAL_C>0 ? (e.x>goalX-0.5 && reachC>=GOAL_C) : (e.x<goalX+0.5 && reachC<=GOAL_C))){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
   for(const tw of G.towers){ const def=tw.def; const st=lvlStat(def,tw.lv);
@@ -7329,7 +7329,7 @@ function update(dt){
       else { const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const df=distF[ii]>=0?distF[ii]:9999; key=(mode==='last')?-df:df; }
       if(key<bestKey){bestKey=key;best=e;} }
     if(best){ const ang=Math.atan2(best.z-tw.z, best.x-tw.x); tw.ang=ang;
-      const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=-ang;
+      const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=(def.tfwd==='z')?(Math.PI/2-ang):-ang;   // 砲身がローカル+zのタワーは+90°補正（弾が横から出るのを修正）
       if(tw.cd<=0){ tw.cd=st.cd; fireShot(tw,best); } }
     if(tw.mesh.userData.crystal) tw.mesh.userData.crystal.rotation.y+=dt*1.4;
   }
@@ -7355,7 +7355,7 @@ function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeomet
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
 function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); e.dotType=dot.type||'burn'; }
 function lvlStat(def,lv){ const k=(lv||1)-1; return { range:def.range*(1+0.07*k), dmg:def.dmg*Math.pow(1.4,k), cd:def.cd*Math.pow(0.93,k) }; }
-function upCost(def,lv){ return Math.round(def.cost*0.6*Math.pow(1.55,(lv||1)-1)); }
+function upCost(def,lv){ return Math.round(def.cost*0.75*Math.pow(1.7,(lv||1)-1)); }   // 強化コストを高めに（部品が余っても全強化はできない＝選択が必要）
 function sellValue(tw){ return Math.round((tw.invested||tw.def.cost)*0.7); }
 function towerAt(c,r){ for(const t of G.towers) if(t.c===c&&t.r===r) return t; return null; }
 let _tp=null;
@@ -7470,7 +7470,8 @@ function buildGhost(def){ const g=new THREE.Group();
   const post=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.40,0.7,16), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.5,depthWrite:false,fog:false})); post.position.y=0.35; g.add(post);
   const cap=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.55,depthWrite:false,fog:false})); cap.position.y=0.78; g.add(cap);
   return g; }
-function updatePlaceDrag(cx,cy){ if(!_place||!_place.active) return; const cell=raycastCell(cx,cy);
+const PLACE_LIFT=78;   // 指の上にプレビューを出すための画面オフセット(px)。指で隠れて見えない問題対策
+function updatePlaceDrag(cx,cy){ if(!_place||!_place.active) return; const cell=raycastCell(cx,cy-PLACE_LIFT);   // 指より上のマスを対象に
   if(!cell){ if(_place.ghost)_place.ghost.visible=false; if(_place.ring)_place.ring.visible=false; _place.cell=null; _place.valid=false; return; }
   const w=cellToWorld(cell.c,cell.r); const def=_place.def;
   const valid=cellFree(cell.c,cell.r)&&reachableAfter(cell.c,cell.r)&&(G.parts>=def.cost);
@@ -7536,12 +7537,20 @@ function syncHUD(){
 document.getElementById('bNext').addEventListener('click',()=>{ if(G.scene==='playing'&&!G.waveActive){ startWave(true); } });
 document.getElementById('bSpeed').addEventListener('click',()=>{ G.speed=G.speed>=3?1:G.speed+1; });
 document.getElementById('bPause').addEventListener('click',()=>{ G.paused=!G.paused; });
-document.getElementById('bStart').addEventListener('click',startGame);
+document.getElementById('bStart').addEventListener('click',beginGame);   // ▶ → 音声起動＋戦闘BGM＋オープニング→ゲーム
+function beginGame(){
+  if(typeof initAudio==='function') initAudio();
+  if(typeof startBossMusic==='function') startBossMusic();   // オープニングから戦闘(procedural)BGM。タップ起点なのでautoplay制約を回避
+  _opDone=false; _opTimers=[];
+  const op=document.getElementById('op'); if(op){ op.classList.remove('hidden'); op.style.display='flex'; }
+  document.getElementById('ov').classList.add('hidden');
+  runOpening();
+}
 document.getElementById('goRetry').addEventListener('click',()=>{ document.getElementById('go').classList.remove('show'); startGame(); });
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
-  G.scene='playing'; G.parts=180; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源を引き締め
+  G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
@@ -7578,7 +7587,7 @@ function runOpening(){
   _opTimers.push(setTimeout(endOpening, total*1000+400));
   op.addEventListener('click', endOpening);
 }
-function endOpening(){ if(_opDone)return; _opDone=true; _opTimers.forEach(id=>clearTimeout(id)); const op=document.getElementById('op'); if(op){ op.classList.add('hidden'); setTimeout(()=>{ op.style.display='none'; }, 850); } }
+function endOpening(){ if(_opDone)return; _opDone=true; _opTimers.forEach(id=>clearTimeout(id)); const op=document.getElementById('op'); if(op){ op.classList.add('hidden'); setTimeout(()=>{ op.style.display='none'; }, 850); } if(G.scene!=='playing') startGame(); }   // オープニング終了→ゲーム開始
 
 /* ====================== Audio（レイヤー合成・リアル志向／単音ビープ廃止） ====================== */
 let AC=null, master=null, comp=null, _nb=null;
@@ -7653,8 +7662,10 @@ function loop(now){
 }
 
 // 起動
-if(THREEOK){ LANG=detectLang(); applyLang(); buildLangPicker(); initScene(); buildWeaponBar(); runOpening(); requestAnimationFrame(loop);
-  if(typeof location!=='undefined' && /^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ if(typeof endOpening==='function')endOpening(); startGame(); },200); } }
+if(THREEOK){ LANG=detectLang(); applyLang(); buildLangPicker(); initScene(); buildWeaponBar();
+  var _op0=document.getElementById('op'); if(_op0){ _op0.classList.add('hidden'); _op0.style.display='none'; }   // タイトル先・オープニングは▶タップ後に再生（音声起動のため）
+  requestAnimationFrame(loop);
+  if(typeof location!=='undefined' && /^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ _opDone=true; var op=document.getElementById('op'); if(op)op.style.display='none'; startGame(); },200); } }
 else { document.getElementById('ov').innerHTML='<div style="color:#ff3b54;font:700 18px sans-serif">3Dエンジンの読み込みに失敗しました（ネット接続を確認してください）</div>'; }
 </script>
 </body>
