@@ -115,7 +115,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 32（実写戦場スカイボックス・ポリゴン廃止）</div>
+  <div id="badge">3D MVP · build 33（GO固まり修正・装甲タイプ・難易度/経済・ドラッグ設置/射程表示・解放順W30分散）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -182,22 +182,23 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
   spawnQueue:[], spawnTimer:0, waveActive:false, betweenT:3, flowDirty:true };
 
 // ---- 兵器定義（MVP 3種）----
+// 並びは「左から順番に解放」される順（unlock 昇順）。アンロックは W1〜W30 に分散＝長期目標／やり込み。
 const TOWERS=[
   {key:'gun', unlock:1,   name:'GUN',    cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール
   {key:'cannon', unlock:1,name:'CANNON', cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
   {key:'frost', unlock:1, name:'FROST',  cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'sniper', unlock:3,name:'SNIPER', cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
-  {key:'mortar', unlock:5,name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
-  {key:'laser', unlock:10, name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
-  {key:'tesla', unlock:8, name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
-  {key:'mg', unlock:2,     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
-  {key:'flame', unlock:7,  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
-  {key:'poison', unlock:6, name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
-  {key:'rail', unlock:12,   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
+  {key:'mg', unlock:3,     name:'MG',     cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
   {key:'aa', unlock:4,     name:'AA',     cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
-  {key:'gatling_air', unlock:6, name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
-  {key:'barrier', unlock:9,name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
-  {key:'booster', unlock:11,name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
+  {key:'sniper', unlock:5,name:'SNIPER', cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
+  {key:'mortar', unlock:7,name:'MORTAR', cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
+  {key:'poison', unlock:9, name:'POISON', cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
+  {key:'flame', unlock:11,  name:'FLAME',  cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
+  {key:'tesla', unlock:14, name:'TESLA',  cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
+  {key:'gatling_air', unlock:17, name:'AA-GAT', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
+  {key:'laser', unlock:20, name:'LASER',  cost:140, range:3.9, dmg:13, cd:0.38, color:0xb04dff, splash:0,   slow:0},
+  {key:'barrier', unlock:24,name:'BARRIER',cost:90,  range:2.7, dmg:0,  cd:0,    color:0x35d6e6, splash:0, slow:0, support:'slow'},
+  {key:'booster', unlock:27,name:'BOOSTER',cost:110, range:2.9, dmg:0,  cd:0,    color:0xffb347, splash:0, slow:0, support:'buff'},
+  {key:'rail', unlock:30,   name:'RAIL',   cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 
@@ -256,6 +257,12 @@ const ENEMIES=[
   {arch:"brute", name:"ZERO ブルート", color:0x322028, scale:1.2, hp:380, speed:0.8, reward:34, dmg:18, flying:false, boss:true},
   {arch:"siege", name:"ZERO シージ・ロード", color:0x24221b, scale:1.3, hp:520, speed:0.7, reward:46, dmg:22, flying:false, boss:true}
 ];
+// ---- 装甲（相性ゲーの核）: 被弾ごとに固定値を減算。連射系は通りにくく、高威力1発(CANNON/SNIPER/RAIL/MORTAR)が刺さる。
+//      DoT(炎/毒)と天災は装甲を貫通＝アンチ装甲の専門役。アーキタイプ単位で付与。
+const ARMOR_BY_ARCH={ wartank:8, siege:14, shielded:18, hovertank:6, brute:14 };
+function enemyArmor(e){ const d=e&&e.def; if(!d)return 0; return (d.armor!=null)?d.armor:(ARMOR_BY_ARCH[d.arch]||0); }
+function defArmor(def){ return def?((def.armor!=null)?def.armor:(ARMOR_BY_ARCH[def.arch]||0)):0; }
+function arm(raw,e){ const a=enemyArmor(e); if(a<=0)return raw; return Math.max(raw*0.15, raw-a); }   // 最低15%は通す（完全無効化で理不尽にしない）
 
 /* ====================== フローフィールド ====================== */
 const _q=new Int32Array(COLS*ROWS);
@@ -7119,15 +7126,17 @@ function makeEnemyMesh(def){
   let vis; try{ vis = ENEMY_BUILDERS[def.arch] ? ENEMY_BUILDERS[def.arch](def) : genericEnemyBody(def); }catch(e){ vis=genericEnemyBody(def); }
   g.add(vis); g.userData.body=(vis.userData&&vis.userData.body)||vis; g.userData.spin=vis.userData&&vis.userData.spin; g.userData.rotor=vis.userData&&vis.userData.rotor;
   g.scale.setScalar(def.scale*0.95);
-  const hp=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.11), new THREE.MeshBasicMaterial({color:0x46f08a})); hp.position.y=1.25; g.add(hp); g.userData.hpbar=hp;
-  const hpbg=new THREE.Mesh(new THREE.PlaneGeometry(1.05,0.15), new THREE.MeshBasicMaterial({color:0x0a0f16})); hpbg.position.set(0,1.25,-0.01); g.add(hpbg);
+  const _armored=defArmor(def)>0;
+  const hp=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.11), new THREE.MeshBasicMaterial({color:_armored?0x2f9fd6:0x46f08a})); hp.position.y=1.25; g.add(hp); g.userData.hpbar=hp;   // 装甲持ち＝鋼青バーで識別（ブルームで白飛びしない彩度）
+  const hpbg=new THREE.Mesh(new THREE.PlaneGeometry(1.05,0.15), new THREE.MeshBasicMaterial({color:_armored?0x141d28:0x0a0f16})); hpbg.position.set(0,1.25,-0.01); g.add(hpbg);
+  if(_armored){ const bolt=new THREE.Mesh(new THREE.PlaneGeometry(0.17,0.17), new THREE.MeshBasicMaterial({color:0x59c4ee,transparent:true,opacity:0.95})); bolt.position.set(-0.63,1.25,0); g.add(bolt); }   // バー左の鋲マーク＝装甲アイコン
   return g;
 }
 
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
-  const q=[]; const count=Math.round(5+n*1.0+Math.max(0,n-6)*0.6);
-  const hpMul=1+(n-1)*0.05+Math.pow(n/15,2)*0.3;
+  const q=[]; const count=Math.round(6+n*1.15+Math.max(0,n-5)*0.7);
+  const hpMul=1+(n-1)*0.08+Math.pow(n/12,2)*0.5;   // 中程度：序盤から緩やかに圧、中盤で本格的に効く
   const NB=ENEMIES.filter(e=>!e.boss);
   const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
   const lo=Math.max(0,center-7), hi=Math.min(NB.length-1,center+2);
@@ -7141,7 +7150,7 @@ function buildWave(n){
 }
 function startWave(early){
   G.wave++; G.spawnQueue=buildWave(G.wave); G.spawnTimer=0; G.waveActive=true; G.betweenT=0;
-  if(early) G.parts+=18+Math.round(G.wave*1.8);
+  if(early) G.parts+=12+Math.round(G.wave*1.4);   // 早出しボーナスも引き締め
   const ne=Math.min(3,((G.wave-1)/5)|0); if(ne!==G.era){ G.era=ne; applyEra(ne); }
   if(G.era>=1 && G.disasterT==null) G.disasterT=7;
   if(typeof buildWeaponBar==='function')buildWeaponBar();
@@ -7182,10 +7191,10 @@ function placeTower(c,r){
 }
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; scene.remove(e.mesh);
-  if(byPlayer){ G.parts+=e.def.reward; G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;
+  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.85); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬を引き締め（スコアは据え置き）
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
-function damageBase(e){ G.hp-=e.def.dmg; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;
+function damageBase(e){ G.hp-=e.def.dmg*1.5; e.dead=true; scene.remove(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を増（放置で確実に削られる）
   sfx.baseHit();
   if(G.hp<=0){ G.hp=0; gameOver(); } }
 
@@ -7226,7 +7235,7 @@ function update(dt){
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
-    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=28+Math.round(G.wave*2.8); G.parts+=cb; sfx.waveClear(); }
+    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=14+Math.round(G.wave*1.6); G.parts+=cb; sfx.waveClear(); }   // ウェーブ報酬を引き締め
   } else { G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }
   if(G.era>=1 && G.waveActive && G.disasterT!=null){ G.disasterT-=dt; if(G.disasterT<=0){ const n=G.era; for(let m=0;m<n;m++) meteorStrike(); G.disasterT=Math.max(5,11-G.era*1.5); } }
   // 敵移動（フローフィールド）
@@ -7243,8 +7252,9 @@ function update(dt){
     const heading=Math.atan2(dirz,dirx); e.mesh.rotation.y=-heading+Math.PI/2;
     // HPバー更新＋ビルボード
     const hb=e.mesh.userData.hpbar; if(hb){ hb.scale.x=Math.max(0.001,e.hp/e.maxhp); hb.position.x=-(1-e.hp/e.maxhp)*0.5; hb.lookAt(camera.position); }
-    // 基地到達
-    if(e.x < cellToWorld(GOAL_C,BASE_R).x+0.5 && c<=GOAL_C){ damageBase(e); G.enemies.splice(i,1); }
+    // 基地到達（飛行/地上どちらでも有効なよう、ここで列を取り直す。以前は else ブロック内の c を参照して未定義→例外でループ停止だった）
+    const reachC=Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c));
+    if(e.x < cellToWorld(GOAL_C,BASE_R).x+0.5 && reachC<=GOAL_C){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
   for(const tw of G.towers){ const def=tw.def; const st=lvlStat(def,tw.lv);
@@ -7307,10 +7317,10 @@ function refreshTowerPanel(t){ const p=towerPanel(); if(!t){ p.style.display='no
   const up=p.querySelector('#tpUp'); if(t.lv>=5){ up.textContent='MAX'; up.classList.add('off'); } else { up.textContent='▲ ⚙'+upCost(t.def,t.lv); up.classList.toggle('off',G.parts<upCost(t.def,t.lv)); }
   const tg=p.querySelector('#tpTgt'); tg.style.display=t.def.support?'none':'block'; tg.textContent='◎ '+({first:'FIRST',last:'LAST',strong:'STRONG',close:'CLOSE'}[t.targetMode||'first']);
   p.querySelector('#tpSell').textContent='✕ ⚙'+sellValue(t); }
-function selectTower(t){ G.selTower=t; refreshTowerPanel(t); sfx.ui(); }
-function hideTowerPanel(){ G.selTower=null; refreshTowerPanel(null); }
+function selectTower(t){ G.selTower=t; refreshTowerPanel(t); if(typeof showSelRange==='function')showSelRange(t); sfx.ui(); }
+function hideTowerPanel(){ G.selTower=null; refreshTowerPanel(null); if(typeof hideSelRange==='function')hideSelRange(); }
 function setLevelPips(tw){ if(!tw.pips)return; while(tw.pips.children.length)tw.pips.remove(tw.pips.children[0]); const n=tw.lv||1; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), emis(0xffd23f,2.2)); p.position.set((i-(n-1)/2)*0.22,1.2,0); tw.pips.add(p); } }
-function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.10); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.6; } setLevelPips(t); spawnRing(t.x,t.z,0xffd23f); spawnBurst(t.x,t.z,0xffd23f,9); G.shake=Math.max(G.shake||0,0.18); sfx.place(); refreshTowerPanel(t); }
+function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.10); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.6; } setLevelPips(t); spawnRing(t.x,t.z,0xffd23f); spawnBurst(t.x,t.z,0xffd23f,9); G.shake=Math.max(G.shake||0,0.18); sfx.place(); refreshTowerPanel(t); if(typeof showSelRange==='function')showSelRange(t); }   // 強化で射程が伸びるのでリングも更新
 function sellTower(t){ G.parts+=sellValue(t); scene.remove(t.mesh); occ[idx(t.c,t.r)]=0; G.flowDirty=true; const i=G.towers.indexOf(t); if(i>=0)G.towers.splice(i,1); spawnBurst(t.x,t.z,t.def.color,7); hideTowerPanel(); sfx.ui(); }
 function cycleTarget(t){ const m=['first','last','strong','close']; t.targetMode=m[(m.indexOf(t.targetMode||'first')+1)%4]; refreshTowerPanel(t); sfx.ui(); }
 function fireShot(tw,target){
@@ -7320,7 +7330,7 @@ function fireShot(tw,target){
   for(const o of G.towers){ if(o.def.support==='buff'){ const dx=o.x-tw.x,dz=o.z-tw.z; if(dx*dx+dz*dz<=o.def.range*o.def.range){ dmg*=1.4; break; } } }
   if(def.pierce){   // RAIL：貫通ヒットスキャン＋ビーム
     const ang=Math.atan2(target.z-tw.z,target.x-tw.x), ux=Math.cos(ang),uz=Math.sin(ang);
-    for(const e of G.enemies){ if(e.dead)continue; const rx=e.x-tw.x,rz=e.z-tw.z; const proj=rx*ux+rz*uz; if(proj<0||proj>def.range)continue; const perp=Math.abs(rx*uz-rz*ux); if(perp<0.45){ e.hp-=dmg; if(e.hp<=0)killEnemy(e,true); } }
+    for(const e of G.enemies){ if(e.dead)continue; const rx=e.x-tw.x,rz=e.z-tw.z; const proj=rx*ux+rz*uz; if(proj<0||proj>def.range)continue; const perp=Math.abs(rx*uz-rz*ux); if(perp<0.45){ e.hp-=arm(dmg,e); if(e.hp<=0)killEnemy(e,true); } }
     beamFx(tw.x,tw.z,ux,uz,def.range,def.color); sfx.fire('rail'); return; }
   const big=def.splash>0;
   const m=new THREE.Mesh(new THREE.BoxGeometry(big?0.5:0.4, big?0.1:0.07, big?0.1:0.07), new THREE.MeshStandardMaterial({color:def.color,emissive:def.color,emissiveIntensity:0.3,metalness:0.55,roughness:0.45}));
@@ -7332,11 +7342,11 @@ function fireShot(tw,target){
   sfx.fire(def.key);
 }
 function hitEnemy(e,dmg,s){
-  if(s&&s.splash>0){ for(const o of G.enemies){ if(o.dead)continue; const dx=o.x-e.x,dz=o.z-e.z; if(dx*dx+dz*dz<=s.splash*s.splash){ o.hp-=dmg*(o===e?1:0.6); if(s.slow>0)o.slowT=1.2; if(s.dot)applyDot(o,s.dot); if(o.hp<=0)killEnemy(o,true);} } hitSpark(e.x,e.z,0xff8a3a); }
-  else { e.hp-=dmg; if(s&&s.slow>0)e.slowT=1.2; if(s&&s.dot)applyDot(e,s.dot); hitSpark(e.x,e.z,0xff9a3a); if(e.hp<=0)killEnemy(e,true); }
+  if(s&&s.splash>0){ for(const o of G.enemies){ if(o.dead)continue; const dx=o.x-e.x,dz=o.z-e.z; if(dx*dx+dz*dz<=s.splash*s.splash){ o.hp-=arm(dmg*(o===e?1:0.6),o); if(s.slow>0)o.slowT=1.2; if(s.dot)applyDot(o,s.dot); if(o.hp<=0)killEnemy(o,true);} } hitSpark(e.x,e.z,0xff8a3a); }
+  else { e.hp-=arm(dmg,e); if(s&&s.slow>0)e.slowT=1.2; if(s&&s.dot)applyDot(e,s.dot); hitSpark(e.x,e.z,0xff9a3a); if(e.hp<=0)killEnemy(e,true); }
   if(s&&s.chain){ let hops=s.chain, from=e; const used=new Set([e]); const R2=2.6*2.6;
     while(hops-->0){ let best=null,bd=R2; for(const o of G.enemies){ if(o.dead||used.has(o))continue; const dx=o.x-from.x,dz=o.z-from.z,dd=dx*dx+dz*dz; if(dd<bd){bd=dd;best=o;} }
-      if(!best)break; used.add(best); hitSpark(best.x,best.z,s.color||0x6fd0ff); best.hp-=dmg*0.6; if(best.hp<=0)killEnemy(best,true); from=best; } }
+      if(!best)break; used.add(best); hitSpark(best.x,best.z,s.color||0x6fd0ff); best.hp-=arm(dmg*0.6,best); if(best.hp<=0)killEnemy(best,true); from=best; } }
 }
 
 /* ====================== 入力（左ドラッグ=回転 / 右・Shift・2本指=平行移動 / ピンチ=ズーム / タップ=設置） ====================== */
@@ -7369,8 +7379,9 @@ cv.addEventListener('pointermove',e=>{ if(!ptrDown) return;
   if(panMode) panCamera(dx,dy);
   else { camTheta-=dx*0.006; camPhi=Math.max(0.30,Math.min(1.30,camPhi-dy*0.005)); updateCamera(); } });
 cv.addEventListener('pointerup',e=>{ if(!ptrDown) return; ptrDown=false;
+  // 盤面タップは「設置」しない。タワー上なら選択、何もなければ選択解除（配置はバーからのドラッグのみ）。
   if(!dragged && !panMode && G.scene==='playing' && !G.paused){ const cell=raycastCell(e.clientX,e.clientY);
-    if(cell){ const t=towerAt(cell.c,cell.r); if(t){ selectTower(t); } else { hideTowerPanel(); placeTower(cell.c,cell.r); } } else { hideTowerPanel(); } } });
+    if(cell){ const t=towerAt(cell.c,cell.r); if(t){ selectTower(t); } else { hideTowerPanel(); } } else { hideTowerPanel(); } } });
 cv.addEventListener('pointercancel',()=>{ ptrDown=false; });
 // 2本指：平行移動（中点の移動）＋ピンチズーム（指間距離）
 cv.addEventListener('touchstart',e=>{ if(e.touches.length===2){ ptrDown=false;
@@ -7384,13 +7395,55 @@ cv.addEventListener('touchmove',e=>{ if(e.touches.length===2){ ptrDown=false;
   pinchD=d; pinchMX=mx; pinchMY=my; updateCamera(); } },{passive:true});
 cv.addEventListener('wheel',e=>{ e.preventDefault(); camRTarget=Math.max(12,Math.min(46,camRTarget*(1+Math.sign(e.deltaY)*0.05))); },{passive:false});
 
+/* ===== 射程リング表示（設置プレビュー＆選択タワー） ===== */
+function makeRangeRing(radius,color){ const g=new THREE.Group();
+  const ring=new THREE.Mesh(new THREE.RingGeometry(Math.max(0.05,radius-0.10),radius,56), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide,depthWrite:false,fog:false}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.09; g.add(ring);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(radius,56), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.12,side:THREE.DoubleSide,depthWrite:false,fog:false}));
+  disc.rotation.x=-Math.PI/2; disc.position.y=0.07; g.add(disc);
+  return g; }
+let _selRing=null;
+function showSelRange(t){ hideSelRange(); if(!t)return; const st=lvlStat(t.def,t.lv); _selRing=makeRangeRing(st.range, t.def.support?0x35d6e6:0x7fe0a0); _selRing.position.set(t.x,0,t.z); scene.add(_selRing); }
+function hideSelRange(){ if(_selRing){ scene.remove(_selRing); _selRing=null; } }
+
+/* ===== バーから盤面へドラッグして設置 ===== */
+let _place=null;           // {key, active, ghost, ring, def, valid, cell}
+function startPlaceDrag(key){ if(G.scene!=='playing'||G.paused) return; const def=TOWER_BY_KEY[key]; if(!def) return; _place={key,def,active:false,ghost:null,ring:null,valid:false,cell:null}; }
+function buildGhost(def){ const g=new THREE.Group();
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.40,0.7,16), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.5,depthWrite:false,fog:false})); post.position.y=0.35; g.add(post);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.55,depthWrite:false,fog:false})); cap.position.y=0.78; g.add(cap);
+  return g; }
+function updatePlaceDrag(cx,cy){ if(!_place||!_place.active) return; const cell=raycastCell(cx,cy);
+  if(!cell){ if(_place.ghost)_place.ghost.visible=false; if(_place.ring)_place.ring.visible=false; _place.cell=null; _place.valid=false; return; }
+  const w=cellToWorld(cell.c,cell.r); const def=_place.def;
+  const valid=cellFree(cell.c,cell.r)&&reachableAfter(cell.c,cell.r)&&(G.parts>=def.cost);
+  _place.cell=cell; _place.valid=valid;
+  const col=valid?0x46f08a:0xff3b54;
+  if(!_place.ghost){ _place.ghost=buildGhost(def); scene.add(_place.ghost); }
+  if(_place.ring){ scene.remove(_place.ring); } _place.ring=makeRangeRing(def.range,col); scene.add(_place.ring);
+  _place.ghost.visible=true; _place.ghost.position.set(w.x,0,w.z);
+  _place.ghost.traverse(o=>{ if(o.material&&o.material.color){ o.material.color.setHex(valid?def.color:0xff6a6a); } });
+  _place.ring.visible=true; _place.ring.position.set(w.x,0,w.z); }
+function endPlaceDrag(){ if(!_place) return; const p=_place; _place=null;
+  if(p.ghost) scene.remove(p.ghost); if(p.ring) scene.remove(p.ring);
+  if(p.active && p.cell && p.valid){ G.sel=p.key; placeTower(p.cell.c,p.cell.r); }
+  else if(p.active){ sfx.error&&sfx.error(); } }
+window.addEventListener('pointermove',e=>{ if(!_place) return;
+  if(!_place.active){ const barTop=document.getElementById('bottom').getBoundingClientRect().top;
+    if(e.clientY < barTop-6){ _place.active=true; G.sel=_place.key; } else return; }   // バーから上=盤面に出たら設置モード開始（横スクロールは妨げない／ドラッグ中はバー再構築しない＝タッチキャプチャ維持）
+  e.preventDefault(); updatePlaceDrag(e.clientX,e.clientY); },{passive:false});
+window.addEventListener('pointerup',()=>{ if(_place) endPlaceDrag(); });
+window.addEventListener('pointercancel',()=>{ if(_place){ if(_place.ghost)scene.remove(_place.ghost); if(_place.ring)scene.remove(_place.ring); _place=null; } });
+
 /* ====================== HUD ====================== */
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
   TOWERS.forEach(t=>{ const ul=(t.unlock||1); const locked=(Math.max(1,G.wave)<ul); const isNew=(G.wave===ul);
     const b=document.createElement('div'); b.className='wbtn'+(G.sel===t.key?' sel':'')+(locked?' lock':'')+(isNew?' newunlock':'');
     b.style.setProperty('--sc','#'+t.color.toString(16).padStart(6,'0'));
     b.innerHTML='<div class="wn">'+t.name+'</div><div class="wc">'+(locked?('🔒 W'+ul):('⚙'+t.cost))+'</div>';
-    if(!locked) b.addEventListener('click',()=>{ G.sel=t.key; buildWeaponBar(); sfx.ui(); });
+    if(!locked){ b.style.touchAction='pan-x';   // 横スクロールは許可、縦ドラッグで設置開始
+      b.addEventListener('pointerdown',ev=>{ startPlaceDrag(t.key); sfx.ui(); });   // 上に引き出すと盤面に設置（startPlaceDragはactive化を保留）
+    }
     bar.appendChild(b); });
 }
 function syncHUD(){
@@ -7415,7 +7468,7 @@ document.getElementById('goRetry').addEventListener('click',()=>{ document.getEl
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
-  G.scene='playing'; G.parts=220; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
+  G.scene='playing'; G.parts=180; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源を引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
@@ -7513,7 +7566,9 @@ function beep(){}   // 旧API無効化（単音ビープ廃止）
 
 /* ====================== ループ ====================== */
 let last=0, acc=0; const STEP=1/60;
+let _loopErr=0;
 function loop(now){
+ try{
   const t=now/1000; let frame=last?t-last:0; last=t; if(frame>0.25)frame=0.25;
   if(camRTarget!==camR){ camR+=(camRTarget-camR)*0.16; if(Math.abs(camRTarget-camR)<0.03)camR=camRTarget; updateCamera(); }   // ズームを滑らかに減衰（途中で止まる）
   if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
@@ -7525,7 +7580,8 @@ function loop(now){
   const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
   if(composer) composer.render(); else if(renderer) renderer.render(scene,camera);
   if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
-  requestAnimationFrame(loop);
+ }catch(e){ if(_loopErr++<5) console.error('loop frame error:',e); }   // 1フレームの例外でrAFチェーンを殺さない（画面フリーズ防止）
+ requestAnimationFrame(loop);
 }
 
 // 起動
