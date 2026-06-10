@@ -84,7 +84,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 23（実録SFX＋戦場BGMアレンジ実装）</div>
+  <div id="badge">3D MVP · build 24（戦場の遠景背景・6テーマ）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -279,6 +279,61 @@ function gridTexture(){
   for(let r=0;r<=ROWS;r++){ g.beginPath(); g.moveTo(0,r*32); g.lineTo(cv.width,r*32); g.stroke(); }
   const tx=new THREE.CanvasTexture(cv); tx.anisotropy=4; return tx;
 }
+/* ====================== 背景（戦場の遠景）システム ====================== */
+const THEMES={
+  city:     { sky:['#1c2636','#33445e','#6a7e9a'], fog:0x44546e, build:'city' },
+  ruins:    { sky:['#2a221e','#4e3a2e','#7a5a44'], fog:0x4a3a2e, build:'ruins' },
+  forest:   { sky:['#16221c','#27382c','#48624a'], fog:0x2c3c30, build:'forest' },
+  desert:   { sky:['#4a3c28','#7e6442','#b89a64'], fog:0x6e583a, build:'dunes' },
+  scorched: { sky:['#240f0c','#5e1f0e','#b8451a'], fog:0x521c10, build:'ruins', fire:true, smoke:true },
+  snow:     { sky:['#33414e','#5a6e80','#9fb2c2'], fog:0x6a7e90, build:'snow' },
+};
+function pickTheme(){ const k=Object.keys(THEMES); return k[(Math.random()*k.length)|0]; }
+function skyTex(cols){ const cv=document.createElement('canvas'); cv.width=8; cv.height=256; const g=cv.getContext('2d');
+  const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,cols[0]); grd.addColorStop(0.62,cols[1]); grd.addColorStop(1,cols[2]);
+  g.fillStyle=grd; g.fillRect(0,0,8,256); const tx=new THREE.CanvasTexture(cv); tx.magFilter=THREE.LinearFilter; return tx; }
+const _bmat=(c,o)=>new THREE.MeshBasicMaterial(o?{color:c,transparent:true,opacity:o}:{color:c});
+function buildSilhouettes(g,T){ const RR=46; const t=T.build;
+  if(t==='city'||t==='ruins'){ const n=t==='city'?76:60; const base=t==='city'?0x0d1320:0x16110d;
+    for(let i=0;i<n;i++){ const a=(i/n)*Math.PI*2+(Math.random()-0.5)*0.05; const rr=RR+(Math.random()-0.5)*12;
+      const hgt=(t==='city'?3:1.6)+Math.random()*(t==='city'?13:6); const w=1.3+Math.random()*2.2;
+      const b=new THREE.Mesh(new THREE.BoxGeometry(w,hgt,w*(0.7+Math.random()*0.6)), _bmat(base));
+      b.position.set(Math.cos(a)*rr, hgt/2-1.2, Math.sin(a)*rr); b.rotation.y=Math.random()*0.6;
+      if(t==='ruins') b.rotation.z=(Math.random()-0.5)*0.18; g.add(b);
+      if(t==='city' && Math.random()<0.45){ const wd=new THREE.Mesh(new THREE.BoxGeometry(w*0.85,hgt*0.82,0.06), _bmat(0x2c3852));
+        wd.position.set(Math.cos(a)*(rr-w*0.5), hgt/2-1.2, Math.sin(a)*(rr-w*0.5)); wd.lookAt(0,wd.position.y,0); g.add(wd); } }
+  } else if(t==='forest'){ const n=130;
+    for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2; const rr=RR+(Math.random()-0.5)*16; const hh=2+Math.random()*4;
+      const tr=new THREE.Mesh(new THREE.ConeGeometry(0.7+Math.random()*0.6,hh,6), _bmat(0x0e1c12));
+      tr.position.set(Math.cos(a)*rr, hh/2-1, Math.sin(a)*rr); g.add(tr);
+      const tk=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.16,0.8,5), _bmat(0x140f0a)); tk.position.set(tr.position.x,-0.6,tr.position.z); g.add(tk); }
+  } else if(t==='dunes'){ const n=46;
+    for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2; const rr=RR+(Math.random()-0.5)*16; const w=4+Math.random()*7;
+      const d=new THREE.Mesh(new THREE.SphereGeometry(w,10,8,0,Math.PI*2,0,Math.PI/2), _bmat(0x3a2e1c)); d.scale.y=0.28; d.position.set(Math.cos(a)*rr,-1.1,Math.sin(a)*rr); g.add(d); }
+  } else if(t==='snow'){ const n=40;
+    for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2; const rr=RR+(Math.random()-0.5)*16; const w=3+Math.random()*6;
+      const d=new THREE.Mesh(new THREE.SphereGeometry(w,10,8,0,Math.PI*2,0,Math.PI/2), _bmat(0x586878)); d.scale.y=0.22; d.position.set(Math.cos(a)*rr,-1.0,Math.sin(a)*rr); g.add(d); }
+    for(let i=0;i<24;i++){ const a=Math.random()*Math.PI*2,rr=RR+(Math.random()-0.5)*14,hh=2+Math.random()*3; const tr=new THREE.Mesh(new THREE.ConeGeometry(0.5,hh,5), _bmat(0x2a3038)); tr.position.set(Math.cos(a)*rr,hh/2-1,Math.sin(a)*rr); g.add(tr); }
+  }
+  // 炎のグロー（地平に）
+  if(T.fire){ for(let i=0;i<12;i++){ const a=Math.random()*Math.PI*2, rr=RR+(Math.random()-0.5)*14;
+    const f=new THREE.Mesh(new THREE.SphereGeometry(2.2+Math.random()*2.4,8,6), new THREE.MeshBasicMaterial({color:0xff5a1e,transparent:true,opacity:0.55,fog:false}));
+    f.scale.y=0.4; f.position.set(Math.cos(a)*rr,0.2,Math.sin(a)*rr); g.add(f); } }
+  // 立ち上る煙
+  if(T.smoke || T.build==='ruins'){ const sn=T.smoke?10:5; for(let i=0;i<sn;i++){ const a=Math.random()*Math.PI*2, rr=RR+(Math.random()-0.5)*12;
+    const sm=new THREE.Mesh(new THREE.ConeGeometry(1.4+Math.random(),12+Math.random()*8,7,1,true), new THREE.MeshBasicMaterial({color:0x16130f,transparent:true,opacity:0.5,side:THREE.DoubleSide}));
+    sm.position.set(Math.cos(a)*rr,6,Math.sin(a)*rr); g.add(sm); } }
+}
+let _backdrop=null;
+function buildBackdrop(themeKey){ if(!scene)return; if(_backdrop){ scene.remove(_backdrop); _backdrop=null; }
+  const T=THEMES[themeKey]||THEMES.city; const g=new THREE.Group();
+  const sky=new THREE.Mesh(new THREE.SphereGeometry(170,28,18), new THREE.MeshBasicMaterial({map:skyTex(T.sky),side:THREE.BackSide,fog:false})); g.add(sky);
+  if(scene.fog&&scene.fog.color&&scene.fog.color.setHex) scene.fog.color.setHex(T.fog);
+  if(scene.background&&scene.background.setHex) scene.background.setHex(T.fog);
+  if(scene.fog){ scene.fog.near=30; scene.fog.far=120; }
+  buildSilhouettes(g,T); scene.add(g); _backdrop=g; G.bgTheme=themeKey;
+}
+
 function initScene(){
   const cv=document.getElementById('cv');
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
@@ -319,6 +374,7 @@ function initScene(){
   const sr=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.06,12,40), emis(0xff3b54,1.6)); sr.rotation.x=Math.PI/2; sr.position.y=0.45; spawnMesh.add(sr); spawnMesh.userData.ring=sr;
   const sr2=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.04,10,32), emis(0xb83a4c,1.2)); sr2.rotation.x=Math.PI/2; sr2.position.y=0.45; spawnMesh.add(sr2);
   spawnMesh.position.set(sw.x,0,sw.z); scene.add(spawnMesh);
+  buildBackdrop(pickTheme());
   // ポストプロセス（ブルーム＝発光の写実）
   try{
     composer=new THREE.EffectComposer(renderer);
@@ -7235,7 +7291,7 @@ function startGame(){
   G.scene='playing'; G.parts=220; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); startAmbience();
+  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); startAmbience();
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience();
