@@ -115,7 +115,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 31（映画OP・ゲームオーバー画面・ズーム減衰）</div>
+  <div id="badge">3D MVP · build 32（実写戦場スカイボックス・ポリゴン廃止）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -374,15 +374,41 @@ function buildSilhouettes(g,T){ const RR=82; const t=T.build;
     sm.position.set(Math.cos(a)*rr,hh/2-1,Math.sin(a)*rr); sm.rotation.z=(Math.random()-0.5)*0.3; g.add(sm); } }
 }
 let _backdrop=null;
+/* ===== 実写スカイボックス（戦場パノラマ写真・ポリゴン廃止） ===== */
+const BG_PHOTOS=[
+  {key:'ruins', file:'bg/ruins.jpg', fog:0x5a4f3c, ground:0x231f18, tint:0x9a8f7c, fire:0.35, smoke:0.85},
+  {key:'fire',  file:'bg/fire.jpg',  fog:0x5e4450, ground:0x241a20, tint:0xb39aa0, fire:0.85, smoke:0.5},
+  {key:'indus', file:'bg/indus.jpg', fog:0x55626c, ground:0x1c2228, tint:0x9aa6ae, fire:0.3,  smoke:0.55},
+];
+const _bgTexCache={};
+function loadBgTex(file){ if(_bgTexCache[file])return _bgTexCache[file]; const t=new THREE.TextureLoader().load(file); t.encoding=THREE.sRGBEncoding; _bgTexCache[file]=t; return t; }
+let _smokeTex=null,_glowTex=null;
+function smokeSpriteTex(){ if(_smokeTex)return _smokeTex; const cv=document.createElement('canvas'); cv.width=cv.height=128; const g=cv.getContext('2d');
+  const grd=g.createRadialGradient(64,64,3,64,64,62); grd.addColorStop(0,'rgba(48,45,40,0.95)'); grd.addColorStop(0.5,'rgba(32,30,27,0.55)'); grd.addColorStop(1,'rgba(20,18,16,0)');
+  g.fillStyle=grd; g.beginPath(); g.arc(64,64,62,0,7); g.fill(); _smokeTex=new THREE.CanvasTexture(cv); return _smokeTex; }
+function glowSpriteTex(){ if(_glowTex)return _glowTex; const cv=document.createElement('canvas'); cv.width=cv.height=128; const g=cv.getContext('2d');
+  const grd=g.createRadialGradient(64,64,2,64,64,62); grd.addColorStop(0,'rgba(255,180,70,0.95)'); grd.addColorStop(0.4,'rgba(255,90,28,0.5)'); grd.addColorStop(1,'rgba(170,40,10,0)');
+  g.fillStyle=grd; g.fillRect(0,0,128,128); _glowTex=new THREE.CanvasTexture(cv); return _glowTex; }
+function addWarAtmosphere(g,P){ const RR=52;
+  const sn=Math.round(8*(P.smoke||0.5));                              // 立ち上る煙柱（ソフトスプライト・地平の奥）
+  for(let i=0;i<sn;i++){ const a=(Math.random()-0.5)*2.6+Math.PI, rr=RR+(Math.random()-0.5)*30, bx=Math.cos(a)*rr, bz=Math.sin(a)*rr; const col=10+(Math.random()*6|0);
+    for(let j=0;j<col;j++){ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeSpriteTex(),color:0x26221a,transparent:true,opacity:Math.max(0,0.62-j*0.035),depthWrite:false,fog:false}));
+      const s=8+j*2.2; sp.scale.set(s,s,1); sp.position.set(bx+(Math.random()-0.5)*5, 3+j*4.0, bz+(Math.random()-0.5)*5); g.add(sp); } }
+  const fn=Math.round(10*(P.fire||0.3));                             // 地平の炎グロー（加算合成）
+  for(let i=0;i<fn;i++){ const a=(Math.random()-0.5)*2.8+Math.PI, rr=RR+(Math.random()-0.5)*30;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowSpriteTex(),transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    const s=9+Math.random()*10; sp.scale.set(s,s*0.6,1); sp.position.set(Math.cos(a)*rr, 1.5+Math.random()*3, Math.sin(a)*rr); g.add(sp); } }
 function buildBackdrop(themeKey){ if(!scene)return; if(_backdrop){ scene.remove(_backdrop); _backdrop=null; }
-  const T=THEMES[themeKey]||THEMES.city; const g=new THREE.Group();
-  // 空ドーム（奥）
-  const sky=new THREE.Mesh(new THREE.SphereGeometry(300,28,18), new THREE.MeshBasicMaterial({map:skyTex(T.sky),side:THREE.BackSide,fog:false})); g.add(sky);
-  // 地平まで広がる大地（空洞を埋める）
-  const wg=new THREE.Mesh(new THREE.PlaneGeometry(700,700), new THREE.MeshStandardMaterial({color:T.ground,roughness:0.99,metalness:0})); wg.rotation.x=-Math.PI/2; wg.position.y=-0.06; wg.receiveShadow=true; g.add(wg);
-  if(scene.fog&&scene.fog.color&&scene.fog.color.setHex){ scene.fog.color.setHex(T.fog); scene.fog.near=24; scene.fog.far=155; }
-  if(scene.background&&scene.background.setHex) scene.background.setHex(T.fog);
-  buildSilhouettes(g,T); scene.add(g); _backdrop=g; G.bgTheme=themeKey;
+  const P=(window.__bg!=null)?BG_PHOTOS[window.__bg]:BG_PHOTOS[(Math.random()*BG_PHOTOS.length)|0]; const g=new THREE.Group();
+  // 実写の全天球（戦場パノラマ）
+  const sky=new THREE.Mesh(new THREE.SphereGeometry(300,48,32), new THREE.MeshBasicMaterial({map:loadBgTex(P.file),color:P.tint,side:THREE.BackSide,fog:false}));
+  sky.rotation.y=(window.__bgrot!=null?window.__bgrot:Math.random()*Math.PI*2); g.add(sky);
+  // 足元の地面（盤面周りだけ／外側は実写の戦場が見えるよう小さめ＋霧でブレンド）
+  const at=battlefieldTexture(); at.repeat.set(13,9); at.encoding=THREE.sRGBEncoding;
+  const wg=new THREE.Mesh(new THREE.PlaneGeometry(64,44), new THREE.MeshStandardMaterial({map:at,color:0xcfc4b2,roughness:1,metalness:0})); wg.rotation.x=-Math.PI/2; wg.position.y=-0.05; wg.receiveShadow=true; g.add(wg);
+  if(scene.fog&&scene.fog.color&&scene.fog.color.setHex){ scene.fog.color.setHex(P.fog); scene.fog.near=24; scene.fog.far=82; }
+  if(scene.background&&scene.background.setHex) scene.background.setHex(P.fog);
+  addWarAtmosphere(g,P); scene.add(g); _backdrop=g; G.bgTheme=P.key;
 }
 
 let _bossMus=null,_bossStep=0;
@@ -7503,7 +7529,8 @@ function loop(now){
 }
 
 // 起動
-if(THREEOK){ initScene(); buildWeaponBar(); runOpening(); requestAnimationFrame(loop); }
+if(THREEOK){ initScene(); buildWeaponBar(); runOpening(); requestAnimationFrame(loop);
+  if(/^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ if(typeof endOpening==='function')endOpening(); startGame(); },200); } }
 else { document.getElementById('ov').innerHTML='<div style="color:#ff3b54;font:700 18px sans-serif">3Dエンジンの読み込みに失敗しました（ネット接続を確認してください）</div>'; }
 </script>
 </body>
