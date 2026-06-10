@@ -133,7 +133,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 42（自陣HQ大型化10マス・敵AI HQ盤外左・敵は左外中央から入場・一列目配置可）</div>
+  <div id="badge">3D MVP · build 43（縦画面で盤面全体が見えるよう視点を90°回して自動フィット）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -593,7 +593,17 @@ function updateCamera(){
 function resize(){ const w=window.innerWidth,h=window.innerHeight;
   renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
   if(composer){ composer.setSize(w,h); if(bloomPass&&bloomPass.setSize) bloomPass.setSize(w,h); } }
-window.addEventListener('resize',()=>{ if(renderer)resize(); });
+// 画面の向きに合わせて初期視点をフィット。横長盤面が縦画面で見切れる対策：
+// 縦画面は視点を90°回して盤面の長辺を縦に＝全体が収まる（敵HQ上→自陣HQ下）。横画面は従来通り。
+let _lastPortrait=null;
+function fitView(force){ if(!camera) return; const portrait = window.innerHeight > window.innerWidth*1.05;
+  if(!force && portrait===_lastPortrait) return; _lastPortrait=portrait;
+  if(portrait){ camTheta=Math.PI/2; camPhi=0.82; camR=camRTarget=45; }
+  else { camTheta=0; camPhi=0.92; camR=camRTarget=32; }
+  camTarget.x=0; camTarget.y=0.6; camTarget.z=0; updateCamera();
+}
+window.addEventListener('resize',()=>{ if(renderer){ resize(); fitView(false); } });
+window.addEventListener('orientationchange',()=>{ if(renderer) setTimeout(()=>{ resize(); fitView(true); },200); });
 
 /* ====================== マテリアル/形状ヘルパー（写実化） ====================== */
 function pbr(color,o){ o=o||{}; const m=new THREE.MeshPhysicalMaterial({ color:color,
@@ -7656,7 +7666,7 @@ function startGame(){
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
+  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience(); stopBossMusic(); stopBgm();
@@ -7772,7 +7782,7 @@ function loop(now){
 }
 
 // 起動
-if(THREEOK){ LANG=detectLang(); applyLang(); buildLangPicker(); initScene(); if(typeof buildWeaponThumbs==='function')buildWeaponThumbs(); buildWeaponBar();
+if(THREEOK){ LANG=detectLang(); applyLang(); buildLangPicker(); initScene(); if(typeof fitView==='function')fitView(true); if(typeof buildWeaponThumbs==='function')buildWeaponThumbs(); buildWeaponBar();
   var _op0=document.getElementById('op'); if(_op0){ _op0.classList.add('hidden'); _op0.style.display='none'; }   // タイトル先・オープニングは▶タップ後に再生（音声起動のため）
   requestAnimationFrame(loop);
   if(typeof location!=='undefined' && /^#play/.test(location.hash)){ const m=location.hash.match(/bg=(\d)/); if(m)window.__bg=+m[1]; const r=location.hash.match(/rot=(-?[0-9.]+)/); if(r)window.__bgrot=+r[1]; setTimeout(function(){ _opDone=true; var op=document.getElementById('op'); if(op)op.style.display='none'; startGame(); },200); } }
