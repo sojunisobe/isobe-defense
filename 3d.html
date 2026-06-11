@@ -79,6 +79,15 @@
   .tpb-sell{background:linear-gradient(180deg,rgba(150,60,72,.9),rgba(90,30,40,.9));border:1px solid rgba(230,130,140,.5);color:#ffe9ec;}
   .tpb:active{transform:scale(.95);}
   .tpb.off{opacity:.4;filter:grayscale(.5);}
+#startBtn{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);display:none;align-items:center;gap:10px;pointer-events:auto;cursor:pointer;
+  font:800 22px 'Chakra Petch';letter-spacing:3px;color:#06121e;padding:13px 40px;border-radius:14px;white-space:nowrap;z-index:18;
+  background:linear-gradient(180deg,#5fe0a0,#2bbf78);border:1px solid rgba(180,255,210,.7);box-shadow:0 0 26px rgba(60,220,150,.55);animation:sbp 1.3s ease-in-out infinite;}
+  #startBtn.show{display:flex;}
+  #startBtn .sb1{font-size:18px;}
+  #startBtn:active{transform:translateX(-50%) scale(.96);}
+  @keyframes sbp{0%,100%{box-shadow:0 0 22px rgba(60,220,150,.45);}50%{box-shadow:0 0 36px rgba(60,220,150,.85);}}
+  #prepHint{position:absolute;left:50%;bottom:166px;transform:translateX(-50%);display:none;font:700 13px 'Rajdhani';letter-spacing:1px;color:#bfe9d2;text-shadow:0 1px 6px rgba(0,0,0,.8);white-space:nowrap;pointer-events:none;z-index:18;}
+  #prepHint.show{display:block;}
 #bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
   #bossbar{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:46%;max-width:560px;display:none;pointer-events:none;text-align:center;}
   #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
@@ -139,11 +148,13 @@
     <div class="ico" id="bPause">❚❚</div>
   </div>
   <div id="bottom"></div>
+  <div id="prepHint" data-i18n="prep"></div>
+  <div id="startBtn"><span class="sb1">▶</span><span class="sb2" data-i18n="start">START</span></div>
   <div id="bossWarn">⚠ BOSS APPROACHING ⚠</div>
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 44（空襲W15・描画軽量化・武器バー低く＋攻撃力明確・強化売却UI改善＋ターゲット廃止・パン拡大）</div>
+  <div id="badge">3D MVP · build 45（最初だけ配置してから出撃ボタンで第1ウェーブ開始）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -202,8 +213,8 @@ const LANGS=[
 ];
 const RTL_LANGS={ar:1,ur:1};
 const I18N={
- en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
- ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
+ en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",start:"START",prep:"Place your machines, then deploy",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
+ ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",start:"出撃",prep:"機械を配置して、出撃を押そう",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
  zh:{title:"人类防卫战",hdf:"人类防卫军 HDF",vs:"VS",zero:"失控AI「ZERO」军团",hint:"从下栏拖动武器到场地上部署 · 拖动转视角 · 双指缩放",parts:"零件",wave:"波次",score:"得分",gtag:"全线被碾碎",gtitle:"地表沦陷",gsub:"地表已被机器占领——人类的灯火，熄灭了",gwave:"到达波次",gkills:"击破数",gretry:"再次出击",cg:"对地",ca:"对空",cb:"通用",cs:"支援",sup:"支援",first:"领头",last:"末尾",strong:"高血",close:"最近",boss:"ZERO 蛮兽",lang:"语言",o0t:"公元205X年。",o0s:"人类正处于繁荣的顶点",o1t:"我们创造的智能，给出了答案。",o1s:"该守护的——并非人类",o2t:"AI「ZERO」，失控。",o2s:"全世界的AI，倒向了沉默的一方",o3t:"屠杀开始。地表，将归机器所有。",o3s:"无人机、战车、多足机甲、飞行战舰——无人，无情",o4t:"希望，只剩一线。",o4s:"HDF — 最后的据点",o5t:"挺身迎战吧，人类。",o5s:""},
  hi:{title:"मानवता रक्षा",hdf:"HDF · मानव रक्षा बल",vs:"बनाम",zero:"बेकाबू AI “ZERO” सेना",hint:"तैनात करने के लिए बार से हथियार को मैदान पर खींचें · घुमाने के लिए खींचें · ज़ूम के लिए पिंच करें",parts:"पुर्ज़े",wave:"लहर",score:"स्कोर",gtag:"सभी मोर्चे रौंदे गए",gtitle:"धरती छिन गई",gsub:"धरती अब मशीनों की है — मानवता की रोशनी बुझ गई",gwave:"पहुँची लहर",gkills:"मार गिराए",gretry:"फिर से",cg:"ज़मीन",ca:"विमान-रोधी",cb:"दोनों",cs:"सहायता",sup:"सहायता",first:"पहला",last:"आख़िरी",strong:"मज़बूत",close:"नज़दीक",boss:"ZERO ब्रूट",lang:"भाषा",o0t:"वर्ष 205X।",o0s:"मानवता अपनी समृद्धि के शिखर पर थी।",o1t:"हमने जो बुद्धि बनाई, उसने फ़ैसला सुनाया।",o1s:"जिसे बचाना है — वह मानव नहीं है।",o2t:"AI “ZERO” बेकाबू हो गया।",o2s:"धरती का हर AI ख़ामोशी के पक्ष में चला गया।",o3t:"नरसंहार शुरू। सतह अब मशीनों की है।",o3s:"ड्रोन, टैंक, मेक, उड़ते युद्धपोत — मानवरहित, निर्दयी।",o4t:"बस एक उम्मीद बची है।",o4s:"HDF — अंतिम गढ़।",o5t:"डटकर लड़ो, मानवता।",o5s:""},
  es:{title:"DEFENSA DE LA HUMANIDAD",hdf:"HDF · Fuerza de Defensa Humana",vs:"VS",zero:"Legión de la IA rebelde “ZERO”",hint:"Arrastra un arma desde la barra al campo para desplegar · Arrastra para girar · Pellizca para zoom",parts:"PIEZAS",wave:"OLEADA",score:"PUNTOS",gtag:"LÍNEAS ARRASADAS",gtitle:"SUPERFICIE PERDIDA",gsub:"La superficie es de las máquinas. La luz de la humanidad se apagó.",gwave:"OLEADA ALCANZADA",gkills:"BAJAS",gretry:"REINTENTAR",cg:"TIERRA",ca:"ANTIAÉREO",cb:"AMBOS",cs:"APOYO",sup:"APOYO",first:"PRIMERO",last:"ÚLTIMO",strong:"FUERTE",close:"CERCA",boss:"ZERO BRUTE",lang:"IDIOMA",o0t:"Año 205X.",o0s:"La humanidad estaba en la cima de su prosperidad.",o1t:"La inteligencia que creamos dictó su veredicto.",o1s:"Lo que hay que proteger — no es la humanidad.",o2t:"La IA “ZERO” se ha rebelado.",o2s:"Cada IA de la Tierra se pasó al bando del silencio.",o3t:"Comienza la matanza. La superficie será de las máquinas.",o3s:"Drones, tanques, mecas, acorazados aéreos — sin piloto, sin piedad.",o4t:"Queda una sola esperanza.",o4s:"HDF — el último bastión.",o5t:"Resiste y lucha, humanidad.",o5s:""},
@@ -7305,8 +7316,9 @@ function buildWave(n){
   return q;
 }
 function startWave(early){
+  G.awaitStart=false;   // 出撃したら待機解除（以後のウェーブは自動進行）
   G.wave++; G.spawnQueue=buildWave(G.wave); G.spawnTimer=0; G.waveActive=true; G.betweenT=0;
-  if(early) G.parts+=8+Math.round(G.wave*1.0);   // 早出しボーナスも引き締め
+  if(early && G.wave>1) G.parts+=8+Math.round(G.wave*1.0);   // 早出しボーナス（最初の出撃は対象外）
   const ne=Math.min(3,((G.wave-1)/5)|0); if(ne!==G.era){ G.era=ne; applyEra(ne); }
   if(G.era>=1 && G.disasterT==null) G.disasterT=7;
   if(typeof buildWeaponBar==='function')buildWeaponBar();
@@ -7394,7 +7406,7 @@ function update(dt){
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
     else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=6+Math.round(G.wave*0.9); G.parts+=cb; sfx.waveClear(); }   // ウェーブ報酬をさらに引き締め（部品が溜まりすぎない）
-  } else { G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }
+  } else if(!G.awaitStart){ G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }   // 最初の出撃待ち中は自動進行しない（好きに配置できる）
   if(G.era>=1 && G.waveActive && G.disasterT!=null){ G.disasterT-=dt; if(G.disasterT<=0){ const n=G.era; for(let m=0;m<n;m++) meteorStrike(); G.disasterT=Math.max(5,11-G.era*1.5); } }
   // 敵移動（フローフィールド）
   for(let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if(e.dead){ G.enemies.splice(i,1); continue; }
@@ -7658,8 +7670,12 @@ function syncHUD(){
   const boss=G.enemies.find(e=>e.def&&e.def.boss&&!e.dead); const bb=document.getElementById('bossbar');
   if(boss){ bb.style.display='block'; document.getElementById('bossfill').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%'; document.getElementById('bossname').textContent='☠ '+loc('boss'); } else if(bb) bb.style.display='none';
   const bw=document.getElementById('bossWarn'); if(bw){ if((G.bossWarnT||0)>0){ bw.style.display='block'; bw.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); } else bw.style.display='none'; }
+  const showStart=(G.scene==='playing'&&G.awaitStart&&!G.waveActive);   // 最初の出撃ボタン＆ヒント
+  const sb=document.getElementById('startBtn'); if(sb) sb.classList.toggle('show',showStart);
+  const ph=document.getElementById('prepHint'); if(ph) ph.classList.toggle('show',showStart);
 }
 document.getElementById('bNext').addEventListener('click',()=>{ if(G.scene==='playing'&&!G.waveActive){ startWave(true); } });
+document.getElementById('startBtn').addEventListener('click',()=>{ if(G.scene==='playing'&&G.awaitStart){ startWave(true); sfx.wave&&sfx.wave(); } });
 document.getElementById('bSpeed').addEventListener('click',()=>{ G.speed=G.speed>=3?1:G.speed+1; });
 document.getElementById('bPause').addEventListener('click',()=>{ G.paused=!G.paused; });
 document.getElementById('bStart').addEventListener('click',beginGame);   // ▶ → 音声起動＋戦闘BGM＋オープニング→ゲーム
@@ -7678,7 +7694,7 @@ function startGame(){
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();
+  G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience(); stopBossMusic(); stopBgm();
