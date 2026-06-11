@@ -157,7 +157,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 48（出撃ボタンと準備ヒントの重なりを解消）</div>
+  <div id="badge">3D MVP · build 49（W10付近の固まり対策：スマホは影オフ＋WebGL消失で自動再読込／敵速度-5%）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -302,7 +302,7 @@ const TOWERS=[
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 const AIR_START=((TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||10)+5;   // 空中敵の登場＝AA解放(W10)から+5ウェーブ後＝W15（AA自体の解放はそのまま）
-const ENEMY_SPEED_MUL=0.85;   // 敵の移動を少しゆっくりに（読みやすく＝戦術性UP）
+const ENEMY_SPEED_MUL=0.81;   // 敵の移動を少しゆっくりに（さらに5%減速：0.85→0.81）
 
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
@@ -567,7 +567,7 @@ function initScene(){
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:!_isMobile});   // モバイルはMSAA切ってGPU負荷減
   renderer.setPixelRatio(Math.min(_isMobile?1.3:1.6,window.devicePixelRatio||1));   // 高解像度ピクセル比のフリーズ対策（特にスマホ）
   window.__isMobile=_isMobile;
-  renderer.shadowMap.enabled=true; renderer.shadowMap.type=_isMobile?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled=!_isMobile; renderer.shadowMap.type=THREE.PCFSoftShadowMap;   // スマホは影を無効化＝メモリ/GPU負荷を大きく削減（重い波/ボスでの固まり対策）
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.NoToneMapping;           // ACES廃止＝当たった面が脱色して白くならない
   renderer.toneMappingExposure=1.0;                          // 露出を下げて白飛び回避＝色が乗る
@@ -603,8 +603,12 @@ function initScene(){
   buildTitleWall();
   buildComposer();
   // WebGLコンテキスト消失からの復旧（スマホでメモリ逼迫等によりコンテキストが破棄され画面が固まる対策）
-  cv.addEventListener('webglcontextlost', function(ev){ ev.preventDefault(); _ctxLost=true; const tt=document.getElementById('ctxToast'); if(tt)tt.style.display='block'; }, false);
+  cv.addEventListener('webglcontextlost', function(ev){ ev.preventDefault(); _ctxLost=true; const tt=document.getElementById('ctxToast'); if(tt)tt.style.display='block';
+    // 自動復旧しない端末向け：セッション1回だけ自動リロード（無限ループ防止）。2回目以降はタップで再読込。
+    try{ if(!sessionStorage.getItem('hd_reloaded')){ setTimeout(function(){ if(_ctxLost){ try{sessionStorage.setItem('hd_reloaded','1');}catch(e){} try{location.reload();}catch(e){} } }, 2600); } }catch(e){}
+  }, false);
   cv.addEventListener('webglcontextrestored', function(){ try{ buildComposer(); resize(); }catch(e){} _ctxLost=false; const tt=document.getElementById('ctxToast'); if(tt)tt.style.display='none'; }, false);
+  try{ setTimeout(function(){ try{sessionStorage.removeItem('hd_reloaded');}catch(e){} }, 12000); }catch(e){}   // 12秒正常稼働したら自動リロード権を再付与（一過性の消失に対応）
   { const tt=document.getElementById('ctxToast'); if(tt) tt.addEventListener('click',function(){ try{ location.reload(); }catch(e){} }); }   // 復旧しない場合の最終手段＝タップで再読み込み
   buildFlow(); updateCamera(); resize();
 }
