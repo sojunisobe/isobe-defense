@@ -157,7 +157,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 46（止まる対策：武器サムネを単一WebGLで生成・コンテキスト消失から自動復旧）</div>
+  <div id="badge">3D MVP · build 47（描画状態リセット強化＋レイアウト確定後の再フィットで「半分しか映らない」対策）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -638,6 +638,9 @@ function fitView(force){ if(!camera) return; const portrait = window.innerHeight
 }
 window.addEventListener('resize',()=>{ if(renderer){ resize(); fitView(false); } });
 window.addEventListener('orientationchange',()=>{ if(renderer) setTimeout(()=>{ resize(); fitView(true); },200); });
+// モバイルはURLバーの出入りで表示領域(高さ)が遅れて確定する→確定後に再フィットして「半分しか映らない」を防ぐ
+if(typeof visualViewport!=='undefined'&&visualViewport){ visualViewport.addEventListener('resize',()=>{ if(renderer)resize(); }); }
+function refitSoon(){ [120,400,900,1600].forEach(d=>setTimeout(()=>{ if(renderer){ resize(); fitView(true); } },d)); }
 
 /* ====================== マテリアル/形状ヘルパー（写実化） ====================== */
 function pbr(color,o){ o=o||{}; const m=new THREE.MeshPhysicalMaterial({ color:color,
@@ -7665,6 +7668,7 @@ function buildWeaponThumbs(){
       sc.remove(mesh); }
   }catch(e){}
   renderer.setRenderTarget(prevRT); renderer.setClearColor(pc,pa); try{ rt.dispose(); }catch(e){}
+  try{ if(typeof resize==='function')resize(); }catch(e){}   // サムネ生成でレンダーターゲットを借りたので、メイン描画のサイズ/ビューポートを確実に元へ戻す
 }
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
   TOWERS.forEach(t=>{ const ul=(t.unlock||1); const locked=(Math.max(1,G.wave)<ul); const isNew=(G.wave===ul);
@@ -7714,7 +7718,7 @@ function startGame(){
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
   G.towers.forEach(t=>scene.remove(t.mesh)); G.enemies.forEach(e=>scene.remove(e.mesh)); G.shots.forEach(s=>scene.remove(s.mesh)); G.fx.forEach(f=>scene.remove(f.mesh));
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる
+  G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience(); stopBossMusic(); stopBgm();
