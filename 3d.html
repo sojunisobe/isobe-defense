@@ -88,7 +88,9 @@
   @keyframes sbp{0%,100%{box-shadow:0 0 22px rgba(60,220,150,.45);}50%{box-shadow:0 0 36px rgba(60,220,150,.85);}}
   #prepHint{position:absolute;left:50%;bottom:166px;transform:translateX(-50%);display:none;font:700 13px 'Rajdhani';letter-spacing:1px;color:#bfe9d2;text-shadow:0 1px 6px rgba(0,0,0,.8);white-space:nowrap;pointer-events:none;z-index:18;}
   #prepHint.show{display:block;}
-#bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
+#ctxToast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;font:700 16px 'Rajdhani';letter-spacing:1px;color:#cfe6ff;background:rgba(10,16,26,.88);padding:14px 24px;border-radius:12px;border:1px solid rgba(120,160,200,.35);z-index:40;pointer-events:auto;cursor:pointer;}
+  #ctxToast small{display:block;margin-top:5px;font-size:11px;color:#9ab;}
+  #bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
   #bossbar{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:46%;max-width:560px;display:none;pointer-events:none;text-align:center;}
   #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
   #bossfillwrap{height:10px;background:rgba(40,10,16,.7);border:1px solid rgba(255,59,84,.45);border-radius:5px;overflow:hidden;}
@@ -150,11 +152,12 @@
   <div id="bottom"></div>
   <div id="prepHint" data-i18n="prep"></div>
   <div id="startBtn"><span class="sb1">▶</span><span class="sb2" data-i18n="start">START</span></div>
+  <div id="ctxToast">⟳ 描画を復旧中…<br><small>戻らない場合はタップで再読み込み</small></div>
   <div id="bossWarn">⚠ BOSS APPROACHING ⚠</div>
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 45（最初だけ配置してから出撃ボタンで第1ウェーブ開始）</div>
+  <div id="badge">3D MVP · build 46（止まる対策：武器サムネを単一WebGLで生成・コンテキスト消失から自動復旧）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -598,16 +601,23 @@ function initScene(){
   spawnMesh.position.set(OFFBOARD_X-0.6,0,entryWorld().z); scene.add(spawnMesh);
   buildBackdrop(pickTheme());
   buildTitleWall();
-  // ポストプロセス（ブルーム＝発光の写実）
-  try{
+  buildComposer();
+  // WebGLコンテキスト消失からの復旧（スマホでメモリ逼迫等によりコンテキストが破棄され画面が固まる対策）
+  cv.addEventListener('webglcontextlost', function(ev){ ev.preventDefault(); _ctxLost=true; const tt=document.getElementById('ctxToast'); if(tt)tt.style.display='block'; }, false);
+  cv.addEventListener('webglcontextrestored', function(){ try{ buildComposer(); resize(); }catch(e){} _ctxLost=false; const tt=document.getElementById('ctxToast'); if(tt)tt.style.display='none'; }, false);
+  { const tt=document.getElementById('ctxToast'); if(tt) tt.addEventListener('click',function(){ try{ location.reload(); }catch(e){} }); }   // 復旧しない場合の最終手段＝タップで再読み込み
+  buildFlow(); updateCamera(); resize();
+}
+let _ctxLost=false;
+function buildComposer(){ try{
+    const _isMobile=window.__isMobile;
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
     const _br=_isMobile?0.45:0.55;
-    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(Math.min(window.innerWidth,1280),Math.min(window.innerHeight,1280)), _br, 0.35, 0.92);   // ブルーム解像度を上限制限＝負荷減
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(Math.min(window.innerWidth,1280),Math.min(window.innerHeight,1280)), _br, 0.35, 0.92);
     composer.addPass(bloomPass);
-  }catch(e){ composer=null; }
-  buildFlow(); updateCamera(); resize();
-}
+    if(typeof resize==='function'&&renderer){ const w=window.innerWidth,h=window.innerHeight; composer.setSize(w,h); }
+  }catch(e){ composer=null; } }
 function updateCamera(){
   const x=camTarget.x+camR*Math.sin(camPhi)*Math.sin(camTheta);
   const y=camTarget.y+camR*Math.cos(camPhi);
@@ -7629,22 +7639,32 @@ function weaponStatsHTML(t){
 }
 // 各武器の3Dメッシュをオフスクリーンで描画してアイコン(dataURL)化＝バーに「機械」を表示
 const WEAPON_THUMB={};
+// 武器アイコン：**メインのレンダラ＋レンダーターゲット**で生成（2つ目のWebGLコンテキストを作らない＝スマホでメイン文脈が破棄され画面が固まる事故を防止）
 function buildWeaponThumbs(){
-  if(typeof THREE==='undefined'||typeof makeTowerMesh!=='function') return;
-  let tr; try{ tr=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true}); }catch(e){ return; }
-  const SZ=160; tr.setSize(SZ,SZ); tr.setPixelRatio(1);
-  tr.outputEncoding=THREE.sRGBEncoding; tr.toneMapping=THREE.NoToneMapping;   // ゲームと同じ脱色しない設定
+  if(typeof THREE==='undefined'||typeof makeTowerMesh!=='function'||!renderer) return;
+  const SZ=160; let rt;
+  try{ rt=new THREE.WebGLRenderTarget(SZ,SZ,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat}); }catch(e){ return; }
   const sc=new THREE.Scene();
   sc.add(new THREE.AmbientLight(0x44505f,0.5));
   sc.add(new THREE.HemisphereLight(0x6a82a0,0x0a0e16,0.7));
   const key=new THREE.DirectionalLight(0xeef2f8,1.5); key.position.set(-5,9,7); sc.add(key);
   const rim=new THREE.DirectionalLight(0x4a7aaa,0.7); rim.position.set(7,4,-7); sc.add(rim);
   const cam=new THREE.PerspectiveCamera(32,1,0.1,50); cam.position.set(2.1,1.9,2.5); cam.lookAt(0,0.42,0);
-  for(const def of TOWERS){ let mesh; try{ mesh=makeTowerMesh(def); }catch(e){ continue; }
-    mesh.position.set(0,0,0); sc.add(mesh);
-    try{ tr.render(sc,cam); WEAPON_THUMB[def.key]=tr.domElement.toDataURL('image/png'); }catch(e){}
-    sc.remove(mesh); }
-  try{ tr.dispose(); tr.forceContextLoss&&tr.forceContextLoss(); }catch(e){}
+  const buf=new Uint8Array(SZ*SZ*4);
+  const cnv=document.createElement('canvas'); cnv.width=SZ; cnv.height=SZ; const ctx=cnv.getContext('2d');
+  const prevRT=renderer.getRenderTarget(); const pc=new THREE.Color(); renderer.getClearColor(pc); const pa=renderer.getClearAlpha();
+  try{
+    for(const def of TOWERS){ let mesh; try{ mesh=makeTowerMesh(def); }catch(e){ continue; }
+      mesh.position.set(0,0,0); sc.add(mesh);
+      renderer.setRenderTarget(rt); renderer.setClearColor(0x000000,0); renderer.clear(true,true,true); renderer.render(sc,cam);
+      renderer.readRenderTargetPixels(rt,0,0,SZ,SZ,buf);
+      const img=ctx.createImageData(SZ,SZ);
+      for(let y=0;y<SZ;y++){ const sy=SZ-1-y; for(let x=0;x<SZ;x++){ const si=(sy*SZ+x)*4, di=(y*SZ+x)*4; img.data[di]=buf[si]; img.data[di+1]=buf[si+1]; img.data[di+2]=buf[si+2]; img.data[di+3]=buf[si+3]; } }
+      ctx.putImageData(img,0,0);
+      try{ WEAPON_THUMB[def.key]=cnv.toDataURL('image/png'); }catch(e){}
+      sc.remove(mesh); }
+  }catch(e){}
+  renderer.setRenderTarget(prevRT); renderer.setClearColor(pc,pa); try{ rt.dispose(); }catch(e){}
 }
 function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.innerHTML='';
   TOWERS.forEach(t=>{ const ul=(t.unlock||1); const locked=(Math.max(1,G.wave)<ul); const isNew=(G.wave===ul);
@@ -7803,8 +7823,8 @@ function loop(now){
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
   const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
-  try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
-  catch(re){ try{ if(renderer) renderer.render(scene,camera); }catch(_){} }   // ブルーム/合成が一時的に失敗しても直接描画にフォールバック＝画面が固まらない
+  if(!_ctxLost){ try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
+    catch(re){ try{ if(renderer) renderer.render(scene,camera); }catch(_){} } }   // ブルーム/合成が一時的に失敗しても直接描画にフォールバック。コンテキスト消失中は描画スキップ（復旧待ち）
   if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
  }catch(e){ if(_loopErr++<5) console.error('loop frame error:',e); }   // 1フレームの例外でrAFチェーンを殺さない（画面フリーズ防止）
  requestAnimationFrame(loop);
