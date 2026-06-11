@@ -32,24 +32,21 @@
   /* 下：兵器ピッカー */
   #bottom{position:absolute;left:0;right:0;bottom:max(10px,env(safe-area-inset-bottom));display:flex;justify-content:flex-start;gap:10px;pointer-events:auto;overflow-x:auto;padding:4px 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
   #bottom::-webkit-scrollbar{display:none;}
-  .wbtn{pointer-events:auto;flex:0 0 auto;min-width:84px;padding:7px 12px 8px;cursor:pointer;position:relative;text-align:center;
-    background:linear-gradient(180deg,rgba(46,66,90,.42),rgba(10,16,26,.5));border-radius:12px;}
-  .wbtn .wn{font:700 14px "Rajdhani";letter-spacing:1px;color:#eef7ff;}
-  .wbtn .wc{font:700 13px "JetBrains Mono";color:#ffb22e;margin-top:2px;}
-  .wbtn::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;background:var(--sc,#33e0ff);
-    box-shadow:0 0 8px var(--sc,#33e0ff);opacity:.5;}
-  .wcls{display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:2px;height:14px;line-height:1;}
-  .wcls svg{width:13px;height:13px;display:block;}
-  .wcls .ic{opacity:.20;display:inline-flex;}
-  .wcls .ic.on{opacity:1;}
-  .wcls .lab{font:800 9px "Rajdhani";letter-spacing:1px;margin-left:3px;}
-  .wcls-g .lab{color:#7fe0a0;} .wcls-a .lab{color:#59c4ee;} .wcls-b .lab{color:#ffd23f;} .wcls-s .lab{color:#ffb347;}
-  .wbtn .wst{display:flex;gap:5px;justify-content:center;align-items:center;margin-top:3px;font:700 9.5px "JetBrains Mono";color:#aecbe0;flex-wrap:wrap;line-height:1.1;}
-  .wbtn .wst span{white-space:nowrap;}
-  .wbtn .wst .se{color:#9fdcc0;}
-  .wbtn .wst .tg{color:#ffd23f;letter-spacing:1px;}
-  .wbtn .wic{height:50px;display:flex;align-items:center;justify-content:center;margin:1px 0 2px;pointer-events:none;}
-  .wbtn .wic img{height:50px;width:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+  .wbtn{pointer-events:auto;flex:0 0 auto;min-width:74px;padding:3px 9px 5px;cursor:pointer;position:relative;text-align:center;line-height:1.08;
+    background:linear-gradient(180deg,rgba(46,66,90,.42),rgba(10,16,26,.5));border-radius:11px;}
+  .wbtn .wn{font:800 12px "Rajdhani";letter-spacing:.5px;color:#eef7ff;}
+  .wbtn .wc{font:700 12px "JetBrains Mono";color:#ffb22e;}
+  .wbtn::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;height:2px;background:var(--sc,#33e0ff);box-shadow:0 0 7px var(--sc,#33e0ff);opacity:.5;}
+  .wbtn .wic{height:34px;display:flex;align-items:center;justify-content:center;margin:0 0 1px;pointer-events:none;}
+  .wbtn .wic img{height:34px;width:auto;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));}
+  /* 攻撃力をはっきり大きく */
+  .wbtn .watk{display:flex;gap:5px;justify-content:center;align-items:baseline;line-height:1;}
+  .wbtn .watk .dm{font:800 14px "JetBrains Mono";color:#ffd23f;}
+  .wbtn .watk .rg{font:700 10px "JetBrains Mono";color:#9fc0d8;}
+  .wbtn .watk .tg{font-size:10px;}
+  /* クラス＝隅の小バッジ（地上=緑/対空=シアン/両用=金/支援=橙） */
+  .wbtn .wcb{position:absolute;top:3px;left:5px;font:800 8.5px "Rajdhani";letter-spacing:.5px;padding:1px 4px;border-radius:5px;}
+  .wcb-g{color:#0b1b12;background:#7fe0a0;} .wcb-a{color:#06202b;background:#59c4ee;} .wcb-b{color:#221a05;background:#ffd23f;} .wcb-s{color:#241704;background:#ffb347;}
   .wbtn.sel{background:linear-gradient(180deg,rgba(60,90,120,.6),rgba(14,22,34,.6));}
   .wbtn.sel::after{opacity:1;height:3px;}
   /* オーバーレイ（タイトル/ゲームオーバー） */
@@ -67,8 +64,21 @@
   #ov .hint{font:600 11px "Rajdhani";color:rgba(180,205,230,.55);margin-top:6px;}
   #ov.hidden{display:none;}
   #badge{position:absolute;right:10px;bottom:64px;font:600 10px "Rajdhani";color:rgba(180,205,230,.4);}
-.tpb{pointer-events:auto;cursor:pointer;font:700 12px 'Rajdhani';letter-spacing:.5px;color:#dff;padding:6px 11px;border-radius:8px;background:rgba(56,84,116,.5);}
-  .tpb.off{opacity:.45;}
+#tpName{font:800 16px 'Rajdhani';letter-spacing:.5px;color:#eef;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+  #tpName .tpLv{font:700 12px 'JetBrains Mono';color:#9ad;}
+  #tpName .tpPips{display:inline-flex;gap:3px;}
+  #tpName .lvp{width:8px;height:8px;border-radius:50%;background:rgba(255,210,63,.22);}
+  #tpName .lvp.on{background:#ffd23f;box-shadow:0 0 6px #ffd23f;}
+  #tpStat{font:600 12px 'JetBrains Mono';color:#bcd;margin:3px 0 8px;}
+  #tpStat .atk{font:800 16px 'JetBrains Mono';color:#ffd23f;}
+  .tprow{display:flex;gap:10px;justify-content:center;}
+  .tpb{pointer-events:auto;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.15;min-width:96px;padding:8px 14px;border-radius:10px;}
+  .tpb b{font:800 15px 'Rajdhani';letter-spacing:1px;}
+  .tpb span{font:700 11px 'JetBrains Mono';margin-top:1px;opacity:.92;}
+  .tpb-up{background:linear-gradient(180deg,rgba(60,150,90,.9),rgba(30,90,55,.9));border:1px solid rgba(120,230,160,.55);color:#eaffe9;}
+  .tpb-sell{background:linear-gradient(180deg,rgba(150,60,72,.9),rgba(90,30,40,.9));border:1px solid rgba(230,130,140,.5);color:#ffe9ec;}
+  .tpb:active{transform:scale(.95);}
+  .tpb.off{opacity:.4;filter:grayscale(.5);}
 #bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
   #bossbar{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:46%;max-width:560px;display:none;pointer-events:none;text-align:center;}
   #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
@@ -133,7 +143,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 43（縦画面で盤面全体が見えるよう視点を90°回して自動フィット）</div>
+  <div id="badge">3D MVP · build 44（空襲W15・描画軽量化・武器バー低く＋攻撃力明確・強化売却UI改善＋ターゲット廃止・パン拡大）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -192,8 +202,8 @@ const LANGS=[
 ];
 const RTL_LANGS={ar:1,ur:1};
 const I18N={
- en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
- ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
+ en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
+ ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
  zh:{title:"人类防卫战",hdf:"人类防卫军 HDF",vs:"VS",zero:"失控AI「ZERO」军团",hint:"从下栏拖动武器到场地上部署 · 拖动转视角 · 双指缩放",parts:"零件",wave:"波次",score:"得分",gtag:"全线被碾碎",gtitle:"地表沦陷",gsub:"地表已被机器占领——人类的灯火，熄灭了",gwave:"到达波次",gkills:"击破数",gretry:"再次出击",cg:"对地",ca:"对空",cb:"通用",cs:"支援",sup:"支援",first:"领头",last:"末尾",strong:"高血",close:"最近",boss:"ZERO 蛮兽",lang:"语言",o0t:"公元205X年。",o0s:"人类正处于繁荣的顶点",o1t:"我们创造的智能，给出了答案。",o1s:"该守护的——并非人类",o2t:"AI「ZERO」，失控。",o2s:"全世界的AI，倒向了沉默的一方",o3t:"屠杀开始。地表，将归机器所有。",o3s:"无人机、战车、多足机甲、飞行战舰——无人，无情",o4t:"希望，只剩一线。",o4s:"HDF — 最后的据点",o5t:"挺身迎战吧，人类。",o5s:""},
  hi:{title:"मानवता रक्षा",hdf:"HDF · मानव रक्षा बल",vs:"बनाम",zero:"बेकाबू AI “ZERO” सेना",hint:"तैनात करने के लिए बार से हथियार को मैदान पर खींचें · घुमाने के लिए खींचें · ज़ूम के लिए पिंच करें",parts:"पुर्ज़े",wave:"लहर",score:"स्कोर",gtag:"सभी मोर्चे रौंदे गए",gtitle:"धरती छिन गई",gsub:"धरती अब मशीनों की है — मानवता की रोशनी बुझ गई",gwave:"पहुँची लहर",gkills:"मार गिराए",gretry:"फिर से",cg:"ज़मीन",ca:"विमान-रोधी",cb:"दोनों",cs:"सहायता",sup:"सहायता",first:"पहला",last:"आख़िरी",strong:"मज़बूत",close:"नज़दीक",boss:"ZERO ब्रूट",lang:"भाषा",o0t:"वर्ष 205X।",o0s:"मानवता अपनी समृद्धि के शिखर पर थी।",o1t:"हमने जो बुद्धि बनाई, उसने फ़ैसला सुनाया।",o1s:"जिसे बचाना है — वह मानव नहीं है।",o2t:"AI “ZERO” बेकाबू हो गया।",o2s:"धरती का हर AI ख़ामोशी के पक्ष में चला गया।",o3t:"नरसंहार शुरू। सतह अब मशीनों की है।",o3s:"ड्रोन, टैंक, मेक, उड़ते युद्धपोत — मानवरहित, निर्दयी।",o4t:"बस एक उम्मीद बची है।",o4s:"HDF — अंतिम गढ़।",o5t:"डटकर लड़ो, मानवता।",o5s:""},
  es:{title:"DEFENSA DE LA HUMANIDAD",hdf:"HDF · Fuerza de Defensa Humana",vs:"VS",zero:"Legión de la IA rebelde “ZERO”",hint:"Arrastra un arma desde la barra al campo para desplegar · Arrastra para girar · Pellizca para zoom",parts:"PIEZAS",wave:"OLEADA",score:"PUNTOS",gtag:"LÍNEAS ARRASADAS",gtitle:"SUPERFICIE PERDIDA",gsub:"La superficie es de las máquinas. La luz de la humanidad se apagó.",gwave:"OLEADA ALCANZADA",gkills:"BAJAS",gretry:"REINTENTAR",cg:"TIERRA",ca:"ANTIAÉREO",cb:"AMBOS",cs:"APOYO",sup:"APOYO",first:"PRIMERO",last:"ÚLTIMO",strong:"FUERTE",close:"CERCA",boss:"ZERO BRUTE",lang:"IDIOMA",o0t:"Año 205X.",o0s:"La humanidad estaba en la cima de su prosperidad.",o1t:"La inteligencia que creamos dictó su veredicto.",o1s:"Lo que hay que proteger — no es la humanidad.",o2t:"La IA “ZERO” se ha rebelado.",o2s:"Cada IA de la Tierra se pasó al bando del silencio.",o3t:"Comienza la matanza. La superficie será de las máquinas.",o3s:"Drones, tanques, mecas, acorazados aéreos — sin piloto, sin piedad.",o4t:"Queda una sola esperanza.",o4s:"HDF — el último bastión.",o5t:"Resiste y lucha, humanidad.",o5s:""},
@@ -277,7 +287,7 @@ const TOWERS=[
   {key:'rail', unlock:100,   name:'RAIL', cls:'b',  cost:150, range:5.0, dmg:46, cd:1.30, color:0x4fa8ff, splash:0, slow:0, pierce:true},
 ];
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
-const AIR_START=(TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||4;   // 空中敵の登場ウェーブ＝AA(対空)解放と同期
+const AIR_START=((TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||10)+5;   // 空中敵の登場＝AA解放(W10)から+5ウェーブ後＝W15（AA自体の解放はそのまま）
 const ENEMY_SPEED_MUL=0.85;   // 敵の移動を少しゆっくりに（読みやすく＝戦術性UP）
 
 // ---- 敵アーキタイプ（MVP）----
@@ -539,9 +549,11 @@ function buildTitleWall(){ if(!scene)return; if(_titlewall){ scene.remove(_title
   g.position.set(0,0,-WD/2-0.5); scene.add(g); _titlewall=g; }
 function initScene(){
   const cv=document.getElementById('cv');
-  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
-  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const _isMobile=(typeof navigator!=='undefined'&&/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||''))||(typeof window!=='undefined'&&Math.min(window.innerWidth,window.innerHeight)<=820);
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:!_isMobile});   // モバイルはMSAA切ってGPU負荷減
+  renderer.setPixelRatio(Math.min(_isMobile?1.3:1.6,window.devicePixelRatio||1));   // 高解像度ピクセル比のフリーズ対策（特にスマホ）
+  window.__isMobile=_isMobile;
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=_isMobile?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
   renderer.toneMapping=THREE.NoToneMapping;           // ACES廃止＝当たった面が脱色して白くならない
   renderer.toneMappingExposure=1.0;                          // 露出を下げて白飛び回避＝色が乗る
@@ -554,7 +566,7 @@ function initScene(){
   scene.add(new THREE.AmbientLight(0x33404f, 0.22));
   scene.add(new THREE.HemisphereLight(0x5a708a, 0x0a0e16, 0.25));
   const key=new THREE.DirectionalLight(0xdfe6ee, 1.0); key.position.set(-10,18,12); key.castShadow=true;
-  key.shadow.mapSize.set(2048,2048); key.shadow.radius=5; key.shadow.bias=-0.0004;
+  key.shadow.mapSize.set(_isMobile?1024:2048,_isMobile?1024:2048); key.shadow.radius=_isMobile?2:5; key.shadow.bias=-0.0004;   // 影マップを軽量化
   key.shadow.camera.left=-WW; key.shadow.camera.right=WW; key.shadow.camera.top=WD; key.shadow.camera.bottom=-WD; key.shadow.camera.near=1; key.shadow.camera.far=70;
   scene.add(key);
   const rim=new THREE.DirectionalLight(0x3a6a9a, 0.45); rim.position.set(12,8,-14); scene.add(rim);
@@ -579,7 +591,8 @@ function initScene(){
   try{
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
-    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight), 0.55, 0.35, 0.92);
+    const _br=_isMobile?0.45:0.55;
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(Math.min(window.innerWidth,1280),Math.min(window.innerHeight,1280)), _br, 0.35, 0.92);   // ブルーム解像度を上限制限＝負荷減
     composer.addPass(bloomPass);
   }catch(e){ composer=null; }
   buildFlow(); updateCamera(); resize();
@@ -7277,11 +7290,15 @@ function buildWave(n){
   const q=[]; const count=Math.round(7+n*1.45+Math.max(0,n-4)*1.2);
   const hpMul=1+(n-1)*0.15+Math.pow(n/8.5,2)*1.3;   // 高難度：敵を遅くした分HP/数を厚く。戦略(迷路/相性/集中)を立てないと序盤で詰む
   const NB=ENEMIES.filter(e=>!e.boss);
+  const NBG=NB.filter(e=>!e.flying);   // 非飛行のみ（空中敵が出る前のウェーブの代替に使う）
   const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
   const lo=Math.max(0,center-7), hi=Math.min(NB.length-1,center+2);
   for(let i=0;i<count;i++){
     let def=NB[lo+Math.floor(Math.random()*(hi-lo+1))];
-    if(def.flying && n<AIR_START){ def=NB[lo]; }   // 空中敵は対空(AA)解放までは出さない
+    if(def.flying && n<AIR_START){   // 空中敵はW15まで出さない：必ず非飛行の同格に差し替え（代替が飛行だった漏れを修正）
+      let alt=null; for(let j=lo;j<=hi;j++){ if(NB[j]&&!NB[j].flying){ alt=NB[j]; break; } }
+      def = alt || NBG[Math.min(NBG.length-1, Math.round(n*1.2))] || NBG[NBG.length-1] || def;
+    }
     q.push({def, hp:def.hp*hpMul, gap:0.55+Math.random()*0.3});
   }
   if(n%10===0){ const B=ENEMIES.filter(e=>e.boss); const bd=B[Math.min(B.length-1,Math.floor((n-1)/10))]||B[0]||ENEMIES[ENEMIES.length-1]; const bm=1+Math.floor((n-1)/10)*0.5; q.push({def:bd, hp:bd.hp*hpMul*bm, gap:0.3}); }
@@ -7350,7 +7367,8 @@ function deathFlame(x,z,size){ size=Math.max(0.6,size); const n=Math.round(6*siz
     G.fx.push({mesh:m,life:0.55+0.24*size,max:0.55+0.24*size,kind:'flame',vy:(3.0+Math.random()*2.4)*size}); }
   const c=new THREE.Mesh(new THREE.ConeGeometry(0.2*size,1.1*size,8), new THREE.MeshBasicMaterial({color:0xff5418,transparent:true,opacity:0.82}));
   c.position.set(x,0.55*size,z); scene.add(c); G.fx.push({mesh:c,life:0.34,max:0.34,kind:'flamecol',base:0.55*size}); }
-function spawnBurst(x,z,color,n){ n=n||8; for(let k=0;k<n;k++){ const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,0.07), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:1})); m.position.set(x,0.32,z); scene.add(m); const a=Math.random()*6.2832, sp=1.4+Math.random()*2.6; G.fx.push({mesh:m,life:0.6,max:0.6,kind:'particle',vx:Math.cos(a)*sp,vy:2.0+Math.random()*2.6,vz:Math.sin(a)*sp}); } }
+const FX_CAP=240;   // エフェクト上限（積もり過ぎでカクつく/止まるのを防ぐ）
+function spawnBurst(x,z,color,n){ n=n||8; if(G.fx.length>FX_CAP)n=Math.min(n,3); for(let k=0;k<n;k++){ if(G.fx.length>FX_CAP+40)break; const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,0.07), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:1})); m.position.set(x,0.32,z); scene.add(m); const a=Math.random()*6.2832, sp=1.4+Math.random()*2.6; G.fx.push({mesh:m,life:0.6,max:0.6,kind:'particle',vx:Math.cos(a)*sp,vy:2.0+Math.random()*2.6,vz:Math.sin(a)*sp}); } }
 function muzzleFlash(x,z,ang,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8), new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:0.8})); m.position.set(x+Math.cos(ang)*0.85,0.6,z+Math.sin(ang)*0.85); scene.add(m); G.fx.push({mesh:m,life:0.07,max:0.07,kind:'flash'}); }
 function hitSpark(x,z,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.07,6,6), new THREE.MeshBasicMaterial({color:0xff8a3a,transparent:true,opacity:0.85})); m.position.set(x,0.5,z); scene.add(m); G.fx.push({mesh:m,life:0.06,max:0.06,kind:'flash'}); }
 function statusPuff(x,y,z,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6), new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.8})); m.position.set(x+(Math.random()-0.5)*0.3,y,z+(Math.random()-0.5)*0.3); scene.add(m); G.fx.push({mesh:m,life:0.5,max:0.5,kind:'puff',vy:0.7+Math.random()*0.4}); }
@@ -7406,13 +7424,10 @@ function update(dt){
       continue;
     }
     tw.cd-=dt;
-    const r2=st.range*st.range; const mode=tw.targetMode||'first';
-    let best=null,bestKey=1e9;
+    const r2=st.range*st.range;
+    let best=null,bestKey=1e9;   // 常に「本部に最も近い敵（先頭）」を狙う＝ターゲット選択は廃止
     for(const e of G.enemies){ if(e.dead)continue; if(e.flying ? !canHitAir(def) : !canHitGround(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz; if(d2>r2)continue;
-      let key;
-      if(mode==='close') key=d2;
-      else if(mode==='strong') key=-e.hp;
-      else { const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const df=distF[ii]>=0?distF[ii]:9999; key=(mode==='last')?-df:df; }
+      const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const key=distF[ii]>=0?distF[ii]:9999;
       if(key<bestKey){bestKey=key;best=e;} }
     if(best){ const ang=Math.atan2(best.z-tw.z, best.x-tw.x); tw.ang=ang;
       const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=(def.tfwd==='z')?(Math.PI/2-ang):-ang;   // 砲身がローカル+zのタワーは+90°補正（弾が横から出るのを修正）
@@ -7447,25 +7462,28 @@ function towerAt(c,r){ for(const t of G.towers) if(t.c===c&&t.r===r) return t; r
 let _tp=null;
 function towerPanel(){ if(_tp)return _tp; const p=document.createElement('div'); p.id='towerPanel';
   p.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:74px;pointer-events:auto;display:none;background:linear-gradient(180deg,rgba(20,28,40,.93),rgba(10,14,22,.93));border:1px solid rgba(120,160,200,.32);border-radius:12px;padding:8px 12px;min-width:250px;text-align:center;';
-  p.innerHTML='<div id="tpName" style="font:700 15px Rajdhani;letter-spacing:1px;color:#eef"></div><div id="tpStat" style="font:600 11px JetBrains Mono;color:#8fd;margin:2px 0 7px"></div><div style="display:flex;gap:8px;justify-content:center"><div id="tpUp" class="tpb"></div><div id="tpTgt" class="tpb"></div><div id="tpSell" class="tpb"></div></div>';
+  p.innerHTML='<div id="tpName"></div><div id="tpStat"></div><div class="tprow"><div id="tpUp" class="tpb tpb-up"></div><div id="tpSell" class="tpb tpb-sell"></div></div>';
   document.getElementById('hud').appendChild(p);
   p.querySelector('#tpUp').addEventListener('click',()=>{ if(G.selTower) upgradeTower(G.selTower); });
   p.querySelector('#tpSell').addEventListener('click',()=>{ if(G.selTower) sellTower(G.selTower); });
-  p.querySelector('#tpTgt').addEventListener('click',()=>{ if(G.selTower) cycleTarget(G.selTower); });
   _tp=p; return p; }
 function refreshTowerPanel(t){ const p=towerPanel(); if(!t){ p.style.display='none'; return; } p.style.display='block';
   const st=lvlStat(t.def,t.lv);
-  p.querySelector('#tpName').textContent=t.def.name+'  Lv'+t.lv+'/5';
-  p.querySelector('#tpStat').textContent = t.def.support?(loc('sup')+'  RNG '+st.range.toFixed(1)):('RNG '+st.range.toFixed(1)+'  DMG '+Math.round(st.dmg)+'  ROF '+st.cd.toFixed(2)+'s');
-  const up=p.querySelector('#tpUp'); if(t.lv>=5){ up.textContent='MAX'; up.classList.add('off'); } else { up.textContent='▲ ⚙'+upCost(t.def,t.lv); up.classList.toggle('off',G.parts<upCost(t.def,t.lv)); }
-  const tg=p.querySelector('#tpTgt'); tg.style.display=t.def.support?'none':'block'; tg.textContent='◎ '+({first:loc('first'),last:loc('last'),strong:loc('strong'),close:loc('close')}[t.targetMode||'first']);
-  p.querySelector('#tpSell').textContent='✕ ⚙'+sellValue(t); }
+  // 名前＋レベルピップ（●＝現Lv / ○＝未強化）でレベルが一目でわかる
+  let pips=''; for(let i=0;i<5;i++) pips+='<span class="lvp'+(i<t.lv?' on':'')+'"></span>';
+  p.querySelector('#tpName').innerHTML='<b>'+t.def.name+'</b> <span class="tpLv">'+loc('lv')+' '+t.lv+'/5</span> <span class="tpPips">'+pips+'</span>';
+  p.querySelector('#tpStat').innerHTML = t.def.support
+    ? (loc('sup')+' · ◎'+st.range.toFixed(1))
+    : ('<b class="atk">⚔'+Math.round(st.dmg)+'</b> 攻撃力 · ◎'+st.range.toFixed(1)+' · ⟳'+(st.cd>0?(1/st.cd).toFixed(1):'0')+'/s');
+  const up=p.querySelector('#tpUp');
+  if(t.lv>=5){ up.innerHTML='<b>'+loc('max')+'</b>'; up.classList.add('off'); }
+  else { const c=upCost(t.def,t.lv); up.innerHTML='<b>⬆ '+loc('upg')+'</b><span>Lv'+(t.lv+1)+' ⚙'+c+'</span>'; up.classList.toggle('off',G.parts<c); }
+  p.querySelector('#tpSell').innerHTML='<b>'+loc('sell')+'</b><span>+⚙'+sellValue(t)+'</span>'; }
 function selectTower(t){ G.selTower=t; refreshTowerPanel(t); if(typeof showSelRange==='function')showSelRange(t); sfx.ui(); }
 function hideTowerPanel(){ G.selTower=null; refreshTowerPanel(null); if(typeof hideSelRange==='function')hideSelRange(); }
 function setLevelPips(tw){ if(!tw.pips)return; while(tw.pips.children.length)tw.pips.remove(tw.pips.children[0]); const n=tw.lv||1; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), emis(0xffd23f,2.2)); p.position.set((i-(n-1)/2)*0.22,1.2,0); tw.pips.add(p); } }
 function upgradeTower(t){ if(t.lv>=5){return;} const c=upCost(t.def,t.lv); if(G.parts<c){ sfx.error(); return; } G.parts-=c; t.lv++; t.invested=(t.invested||t.def.cost)+c; t.mesh.scale.setScalar(1+(t.lv-1)*0.10); if(t.ring){ t.ring.material.emissiveIntensity=0.5+(t.lv-1)*0.6; } setLevelPips(t); spawnRing(t.x,t.z,0xffd23f); spawnBurst(t.x,t.z,0xffd23f,9); G.shake=Math.max(G.shake||0,0.18); sfx.place(); refreshTowerPanel(t); if(typeof showSelRange==='function')showSelRange(t); }   // 強化で射程が伸びるのでリングも更新
 function sellTower(t){ G.parts+=sellValue(t); scene.remove(t.mesh); occ[idx(t.c,t.r)]=0; G.flowDirty=true; const i=G.towers.indexOf(t); if(i>=0)G.towers.splice(i,1); spawnBurst(t.x,t.z,t.def.color,7); hideTowerPanel(); sfx.ui(); }
-function cycleTarget(t){ const m=['first','last','strong','close']; t.targetMode=m[(m.indexOf(t.targetMode||'first')+1)%4]; refreshTowerPanel(t); sfx.ui(); }
 function fireShot(tw,target){
   const def=tw.def;
   muzzleFlash(tw.x,tw.z,(tw.ang!=null?tw.ang:Math.PI),def.color);
@@ -7507,8 +7525,9 @@ function panCamera(dx,dy){
   const k=camR*0.0018;
   camTarget.x += -dx*k*r.x - dy*k*f.x;
   camTarget.z += -dx*k*r.z - dy*k*f.z;
-  camTarget.x=Math.max(-WW*0.75,Math.min(WW*0.75,camTarget.x));
-  camTarget.z=Math.max(-WD*0.75,Math.min(WD*0.75,camTarget.z));
+  // 端まで（盤外左の敵HQ〜右の自陣HQ）余裕を持って見渡せるよう可動域を拡大
+  camTarget.x=Math.max(-WW*0.95-8,Math.min(WW*0.95+8,camTarget.x));
+  camTarget.z=Math.max(-WD*0.95-6,Math.min(WD*0.95+6,camTarget.z));
   updateCamera();
 }
 const cv=document.getElementById('cv');
@@ -7587,21 +7606,14 @@ function clsLabel(cls){ return {g:loc('cg'),a:loc('ca'),b:loc('cb'),s:loc('cs')}
 function buildLangPicker(){ const c=document.getElementById('langpick'); if(!c)return; c.innerHTML='';
   LANGS.forEach(L=>{ const b=document.createElement('div'); b.className='lng'+(L.c===LANG?' on':''); b.textContent=L.n;
     b.addEventListener('click',()=>{ setLang(L.c); }); c.appendChild(b); }); }
-function clsChip(cls){
-  if(cls==='s') return '<div class="wcls wcls-s"><span class="ic on" style="color:#ffb347;font-size:12px">⚙</span><span class="lab">'+clsLabel('s')+'</span></div>';
-  const g=(cls==='g'||cls==='b'), a=(cls==='a'||cls==='b');
-  const cn=(cls==='g')?'wcls-g':(cls==='a')?'wcls-a':'wcls-b';
-  return '<div class="wcls '+cn+'">'
-    +'<span class="ic'+(g?' on':'')+'" style="color:'+(g?'#7fe0a0':'#8aa')+'">'+TANK_SVG+'</span>'
-    +'<span class="ic'+(a?' on':'')+'" style="color:'+(a?'#59c4ee':'#8aa')+'">'+JET_SVG+'</span>'
-    +'<span class="lab">'+clsLabel(cls)+'</span></div>';
-}
-// 各武器の強さを常時表示（言語非依存の数値＋記号）。⚔威力 ◎射程 ⟳発/秒、特殊タグ=◉範囲/❄減速/☣毒/🔥炎/⚡連鎖/⇥貫通
+// クラスは隅の小バッジで表示（地上/対空/両用/支援）＝高さを取らない
+function clsBadge(cls){ return '<div class="wcb wcb-'+cls+'">'+clsLabel(cls)+'</div>'; }
+// 攻撃力を大きくはっきり：⚔威力(大・金) ◎射程(小)＋特殊タグ(◉範囲/❄減速/☣毒/🔥炎/⚡連鎖/⇥貫通)
 function weaponStatsHTML(t){
-  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄ SLOW':'▲ +40%'; return '<div class="wst"><span class="se">'+eff+'</span><span>◎'+t.range.toFixed(1)+'</span></div>'; }
-  const rof=(t.cd>0?(1/t.cd):0); let tags='';
+  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄SLOW':'▲+40%'; return '<div class="watk"><span class="rg">'+eff+' ◎'+t.range.toFixed(1)+'</span></div>'; }
+  let tags='';
   if(t.splash>0)tags+='◉'; if(t.slow>0)tags+='❄'; if(t.dot)tags+=(t.dot.type==='poison'?'☣':'🔥'); if(t.chain)tags+='⚡'; if(t.pierce)tags+='⇥';
-  return '<div class="wst"><span>⚔'+Math.round(t.dmg)+'</span><span>◎'+t.range.toFixed(1)+'</span><span>⟳'+rof.toFixed(1)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
+  return '<div class="watk"><span class="dm">⚔'+Math.round(t.dmg)+'</span><span class="rg">◎'+t.range.toFixed(1)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
 }
 // 各武器の3Dメッシュをオフスクリーンで描画してアイコン(dataURL)化＝バーに「機械」を表示
 const WEAPON_THUMB={};
@@ -7627,7 +7639,7 @@ function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.inne
     const b=document.createElement('div'); b.className='wbtn'+(G.sel===t.key?' sel':'')+(locked?' lock':'')+(isNew?' newunlock':'');
     b.style.setProperty('--sc','#'+t.color.toString(16).padStart(6,'0'));
     const thumb=WEAPON_THUMB[t.key]?('<div class="wic"><img src="'+WEAPON_THUMB[t.key]+'" alt=""></div>'):'';
-    b.innerHTML=clsChip(t.cls)+thumb+'<div class="wn">'+t.name+'</div><div class="wc">'+(locked?('🔒 W'+ul):('⚙'+t.cost))+'</div>'+weaponStatsHTML(t);
+    b.innerHTML=clsBadge(t.cls)+thumb+'<div class="wn">'+t.name+'</div>'+weaponStatsHTML(t)+'<div class="wc">'+(locked?('🔒W'+ul):('⚙'+t.cost))+'</div>';
     if(!locked){ b.style.touchAction='none';   // ボタン上のドラッグはブラウザのスクロールに奪わせない（設置を確実に発火）
       b.addEventListener('pointerdown',ev=>{ startPlaceDrag(t.key,ev); try{b.setPointerCapture(ev.pointerId);}catch(_){} ev.preventDefault(); sfx.ui(); });   // 武器をドラッグ→盤面で離して設置
     }
@@ -7775,7 +7787,8 @@ function loop(now){
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
   const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
-  if(composer) composer.render(); else if(renderer) renderer.render(scene,camera);
+  try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
+  catch(re){ try{ if(renderer) renderer.render(scene,camera); }catch(_){} }   // ブルーム/合成が一時的に失敗しても直接描画にフォールバック＝画面が固まらない
   if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
  }catch(e){ if(_loopErr++<5) console.error('loop frame error:',e); }   // 1フレームの例外でrAFチェーンを殺さない（画面フリーズ防止）
  requestAnimationFrame(loop);
