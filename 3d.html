@@ -157,7 +157,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 50（W10付近の固まり＝根治：敵/弾/エフェクトのGPUメモリ解放漏れをdispose化）</div>
+  <div id="badge">3D MVP · build 51（電池消費を抑える描画間引き＝モバイル30fps/待機8fps・索敵最適化／飛行敵HP-30%・MGを近距離速射に・CANNON値下げ）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -285,9 +285,9 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 const TOWERS=[
   // cls: 'g'=地上のみ / 'a'=対空のみ / 'b'=両用 / 's'=支援
   {key:'gun', unlock:1,   name:'GUN', cls:'g', tfwd:'z',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール（砲身=ローカル+z）
-  {key:'cannon', unlock:1,name:'CANNON', cls:'g',cost:110, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮
+  {key:'cannon', unlock:1,name:'CANNON', cls:'g',cost:95, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮（コスト110→95に引き下げ）
   {key:'frost', unlock:1, name:'FROST', cls:'g', cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'mg', unlock:5,     name:'MG', cls:'g', tfwd:'z',    cost:70,  range:3.2, dmg:5,  cd:0.12, color:0xffa23a, splash:0, slow:0},
+  {key:'mg', unlock:5,     name:'MG', cls:'g', tfwd:'z',    cost:75,  range:2.8, dmg:5,  cd:0.09, color:0xffa23a, splash:0, slow:0},   // 至近の速射でDPS特化（射程短・連射↑）。GUN＝射程と安さ／MG＝近距離の手数で差別化
   {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
   {key:'sniper', unlock:16,name:'SNIPER', cls:'b',cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
   {key:'mortar', unlock:23,name:'MORTAR', cls:'g',cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
@@ -303,6 +303,7 @@ const TOWERS=[
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 const AIR_START=((TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||10)+5;   // 空中敵の登場＝AA解放(W10)から+5ウェーブ後＝W15（AA自体の解放はそのまま）
 const ENEMY_SPEED_MUL=0.81;   // 敵の移動を少しゆっくりに（さらに5%減速：0.85→0.81）
+const FLYING_HP_MUL=0.7;   // 飛行敵が強すぎたのでHPを30%ダウン
 
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
@@ -7327,7 +7328,7 @@ function buildWave(n){
       let alt=null; for(let j=lo;j<=hi;j++){ if(NB[j]&&!NB[j].flying){ alt=NB[j]; break; } }
       def = alt || NBG[Math.min(NBG.length-1, Math.round(n*1.2))] || NBG[NBG.length-1] || def;
     }
-    q.push({def, hp:def.hp*hpMul, gap:0.55+Math.random()*0.3});
+    q.push({def, hp:def.hp*hpMul*(def.flying?FLYING_HP_MUL:1), gap:0.55+Math.random()*0.3});   // 飛行敵は強すぎたのでHP30%ダウン
   }
   if(n%10===0){ const B=ENEMIES.filter(e=>e.boss); const bd=B[Math.min(B.length-1,Math.floor((n-1)/10))]||B[0]||ENEMIES[ENEMIES.length-1]; const bm=1+Math.floor((n-1)/10)*0.5; q.push({def:bd, hp:bd.hp*hpMul*bm, gap:0.3}); }
   return q;
@@ -7449,8 +7450,9 @@ function update(dt){
     // HPバー更新＋ビルボード
     const hb=e.mesh.userData.hpbar; if(hb){ hb.scale.x=Math.max(0.001,e.hp/e.maxhp); hb.position.x=-(1-e.hp/e.maxhp)*0.5; hb.lookAt(camera.position); }
     // 本部(多セル)到達判定
-    const rc=worldToCell(e.x,e.z); const rcc=Math.max(0,Math.min(COLS-1,rc.c)), rcr=Math.max(0,Math.min(ROWS-1,rc.r));
-    if(goalCell[idx(rcc,rcr)] || e.x>=cellToWorld(BASE_C0,BASE_R).x-0.5){ damageBase(e); G.enemies.splice(i,1); }
+    const rc=worldToCell(e.x,e.z); const rcc=Math.max(0,Math.min(COLS-1,rc.c)), rcr=Math.max(0,Math.min(ROWS-1,rc.r)); const _ci=idx(rcc,rcr);
+    e._key=distF[_ci]>=0?distF[_ci]:9999;   // 索敵用の先頭距離キーを1体1回だけ算出（タワー×敵ループ内の二重worldToCellを除去＝多数敵時のカクつき軽減）
+    if(goalCell[_ci] || e.x>=cellToWorld(BASE_C0,BASE_R).x-0.5){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
   for(const tw of G.towers){ const def=tw.def; const st=lvlStat(def,tw.lv);
@@ -7463,7 +7465,7 @@ function update(dt){
     const r2=st.range*st.range;
     let best=null,bestKey=1e9;   // 常に「本部に最も近い敵（先頭）」を狙う＝ターゲット選択は廃止
     for(const e of G.enemies){ if(e.dead)continue; if(e.flying ? !canHitAir(def) : !canHitGround(def)) continue; const dx=e.x-tw.x, dz=e.z-tw.z; const d2=dx*dx+dz*dz; if(d2>r2)continue;
-      const ii=idx(Math.max(0,Math.min(COLS-1,worldToCell(e.x,e.z).c)),Math.max(0,Math.min(ROWS-1,worldToCell(e.x,e.z).r))); const key=distF[ii]>=0?distF[ii]:9999;
+      const key=(e._key!=null?e._key:9999);   // フレーム頭でキャッシュ済みの先頭距離キーを使用（worldToCellの再計算を回避）
       if(key<bestKey){bestKey=key;best=e;} }
     if(best){ const ang=Math.atan2(best.z-tw.z, best.x-tw.x); tw.ang=ang;
       const tg=tw.mesh.userData.turret; if(tg) tg.rotation.y=(def.tfwd==='z')?(Math.PI/2-ang):-ang;   // 砲身がローカル+zのタワーは+90°補正（弾が横から出るのを修正）
@@ -7826,21 +7828,29 @@ function beep(){}   // 旧API無効化（単音ビープ廃止）
 
 /* ====================== ループ ====================== */
 let last=0, acc=0; const STEP=1/60;
-let _loopErr=0;
+let _loopErr=0, _rAcc=0;
 function loop(now){
  try{
   const t=now/1000; let frame=last?t-last:0; last=t; if(frame>0.25)frame=0.25;
   if(camRTarget!==camR){ camR+=(camRTarget-camR)*0.16; if(Math.abs(camRTarget-camR)<0.03)camR=camRTarget; updateCamera(); }   // ズームを滑らかに減衰（途中で止まる）
-  if(!G.paused && G.scene==='playing'){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
+  const _playing=!G.paused && G.scene==='playing';
+  if(_playing){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
   if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=document.getElementById('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
   if(typeof updateBgm==='function')updateBgm();
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
-  const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
-  if(!_ctxLost){ try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
-    catch(re){ try{ if(renderer) renderer.render(scene,camera); }catch(_){} } }   // ブルーム/合成が一時的に失敗しても直接描画にフォールバック。コンテキスト消失中は描画スキップ（復旧待ち）
-  if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
+  // 描画間引き＝電池消費対策。モバイルはプレイ中30fps・待機8fps／PCはプレイ中フル・待機8fps。画面揺れ中は毎フレーム描画。
+  // シミュレーションは固定ステップ(STEP)のまま正確。重いブルーム合成の回数を減らすのが目的。
+  const _minDt = window.__isMobile ? (_playing?(1/30):(1/8)) : (_playing?0:(1/8));
+  _rAcc+=frame;
+  if(_rAcc>=_minDt-1e-4 || (G.shake||0)>0){
+    _rAcc=0;
+    const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
+    if(!_ctxLost){ try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
+      catch(re){ try{ if(renderer) renderer.render(scene,camera); }catch(_){} } }   // ブルーム/合成が一時的に失敗しても直接描画にフォールバック。コンテキスト消失中は描画スキップ（復旧待ち）
+    if(_sk>0&&camera){ camera.position.x-=_ox; camera.position.y-=_oy; }
+  }
  }catch(e){ if(_loopErr++<5) console.error('loop frame error:',e); }   // 1フレームの例外でrAFチェーンを殺さない（画面フリーズ防止）
  requestAnimationFrame(loop);
 }
