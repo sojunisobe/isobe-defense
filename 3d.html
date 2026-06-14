@@ -16,19 +16,23 @@
   #hud{position:fixed;inset:0;pointer-events:none;
     padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));}
   /* 上HUD */
-  #top{position:absolute;left:10px;right:10px;top:max(8px,env(safe-area-inset-top));display:flex;align-items:center;gap:18px;height:40px;}
-  .stat{display:flex;flex-direction:column;line-height:1;}
-  .stat .lab{font:600 9px "Rajdhani";color:rgba(180,205,230,.55);letter-spacing:1px;}
-  .stat .val{font:700 19px "JetBrains Mono";}
+  #top{position:absolute;left:10px;right:max(12px,env(safe-area-inset-right,0px));top:max(8px,env(safe-area-inset-top));display:flex;align-items:center;gap:14px;height:44px;}
+  .stat{display:flex;flex-direction:column;line-height:1.05;}
+  .stat .lab{font:700 13px "Rajdhani";color:rgba(190,212,235,.78);letter-spacing:.5px;}
+  .stat .val{font:700 21px "JetBrains Mono";}
   #hpwrap{width:150px;height:22px;border-radius:5px;background:rgba(255,255,255,.06);
     border:1px solid rgba(120,160,200,.3);position:relative;overflow:hidden;}
   #hpfill{position:absolute;left:0;top:0;bottom:0;background:#2fd06a;width:100%;}
   #hptxt{position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font:700 13px "JetBrains Mono";
     text-shadow:0 0 3px #000,0 1px 2px #000;}
   .spacer{flex:1;}
-  .ico{pointer-events:auto;width:40px;height:40px;display:flex;align-items:center;justify-content:center;
-    font:700 18px "Rajdhani";color:#aecadf;cursor:pointer;}
-  .ico.on{color:#33e0ff;text-shadow:0 0 8px #33e0ff;}
+  #ctrls{display:flex;align-items:center;gap:8px;}
+  .ico{pointer-events:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+    font:800 17px "Rajdhani";color:#bcd6ea;cursor:pointer;border-radius:10px;
+    background:rgba(22,32,46,.6);border:1px solid rgba(120,160,200,.26);-webkit-user-select:none;user-select:none;}
+  .ico svg{width:20px;height:20px;fill:currentColor;display:block;}
+  .ico:active{transform:scale(.92);}
+  .ico.on{color:#33e0ff;border-color:#33e0ff;box-shadow:0 0 10px rgba(51,224,255,.4);}
   /* 下：兵器ピッカー */
   #bottom{position:absolute;left:0;right:0;bottom:max(7px,env(safe-area-inset-bottom));display:flex;justify-content:flex-start;gap:6px;pointer-events:auto;overflow-x:auto;padding:3px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
   #bottom::-webkit-scrollbar{display:none;}
@@ -114,21 +118,40 @@
   #op .oskip{position:absolute;bottom:13.5vh;left:0;right:0;font:600 11px "Rajdhani";letter-spacing:2px;color:rgba(180,205,230,.4);z-index:3;}
   #op .obar{position:absolute;bottom:12vh;left:0;height:2px;background:rgba(255,59,84,.5);width:0;z-index:3;}
   /* ゲームオーバー */
-  #go{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:25;pointer-events:auto;
+  #go{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;z-index:25;pointer-events:auto;overflow-y:auto;
+    padding:max(18px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom));
     background:radial-gradient(ellipse at center,rgba(46,5,5,.6),rgba(8,1,1,.96));}
   #go.show{display:flex;animation:goin .7s ease;}
   @keyframes goin{from{opacity:0;transform:scale(1.05)}to{opacity:1;transform:none}}
   #go .gtag{font:700 13px "JetBrains Mono";letter-spacing:6px;color:rgba(255,90,90,.7);}
-  #go .gtitle{font:900 clamp(42px,12vw,108px) "Arial Black","Chakra Petch";letter-spacing:2px;color:#c41f15;line-height:.94;margin:8px 0 2px;
+  #go .gtitle{font:900 clamp(38px,9.5vw,80px) "Arial Black","Chakra Petch";letter-spacing:2px;color:#c41f15;line-height:.94;margin:6px 0 2px;
     text-shadow:0 0 34px rgba(180,12,8,.55),0 5px 0 #4e0805,0 7px 16px #000;}
-  #go .gsub{font:700 15px "Chakra Petch";letter-spacing:2px;color:#ff95a3;margin-bottom:20px;}
-  #go .gstats{display:flex;gap:clamp(20px,6vw,40px);margin-bottom:24px;}
+  #go .gsub{font:700 14px "Chakra Petch";letter-spacing:2px;color:#ff95a3;margin-bottom:14px;}
+  #go .gstats{display:flex;gap:clamp(20px,6vw,40px);margin-bottom:16px;}
   #go .gstat{display:flex;flex-direction:column;line-height:1.1;}
   #go .gstat b{font:700 clamp(24px,7vw,32px) "JetBrains Mono";color:#ffd7d0;}
   #go .gstat span{font:600 10px "Rajdhani";letter-spacing:1px;color:rgba(210,160,160,.6);margin-top:2px;}
   #go .gbtn{pointer-events:auto;cursor:pointer;font:700 17px "Chakra Petch";letter-spacing:2px;color:#fff;padding:13px 36px;border-radius:12px;
     background:linear-gradient(180deg,#b81e12,#6e0c06);border:1px solid rgba(255,120,90,.55);box-shadow:0 0 24px rgba(180,20,12,.5);}
   #go .gbtn:active{transform:scale(.95);}
+  /* 世界ランキング（ゲームオーバー） */
+  #goRankWrap{width:min(94vw,470px);margin:2px 0 14px;display:flex;flex-direction:column;}
+  #goRankTitle{font:800 15px "Chakra Petch";letter-spacing:2px;color:#ffd7d0;margin-bottom:9px;}
+  #goRankTitle small{font:700 11px "Rajdhani";color:rgba(255,170,170,.7);letter-spacing:1px;margin-left:4px;}
+  #goNameRow{display:flex;gap:8px;margin-bottom:11px;}
+  #goName{flex:1;min-width:0;font:700 16px "Rajdhani";color:#fff;background:rgba(20,28,40,.85);border:1px solid rgba(255,150,120,.45);border-radius:10px;padding:11px 13px;outline:none;}
+  #goName:focus{border-color:#ff9a6a;box-shadow:0 0 0 2px rgba(255,140,90,.25);}
+  #go .gbtn-s{font:700 14px "Chakra Petch";letter-spacing:1px;padding:11px 20px;border-radius:10px;white-space:nowrap;}
+  #goRegMsg{font:700 12px "Rajdhani";letter-spacing:1px;color:#7fe0a0;margin-bottom:8px;min-height:14px;}
+  #goRankList{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:3px;border-top:1px solid rgba(255,120,90,.22);padding-top:9px;-webkit-overflow-scrolling:touch;}
+  .grow{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:9px;padding:7px 11px;border-radius:8px;background:rgba(30,16,16,.5);text-align:left;}
+  .grow .grk{font:800 15px "JetBrains Mono";color:#ff9a90;text-align:center;}
+  .grow.r1 .grk{color:#ffd24a;}.grow.r2 .grk{color:#d8e3ec;}.grow.r3 .grk{color:#ff9d5a;}
+  .grow .gnm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 14px "Rajdhani";color:#f0d7d2;}
+  .grow .gnm .gmeta{font:600 10px "Rajdhani";color:rgba(220,170,170,.6);letter-spacing:.5px;}
+  .grow .gsc{font:800 15px "JetBrains Mono";color:#ffd7d0;}
+  .grow.me{background:linear-gradient(90deg,rgba(180,30,18,.6),rgba(110,12,6,.4));border:1px solid rgba(255,150,120,.65);}
+  #goRankEmpty{font:700 12px "Rajdhani";color:rgba(220,170,170,.6);padding:14px 0;}
   #langpick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(92vw,560px);margin:18px auto 0;pointer-events:auto;}
   #langpick .lng{pointer-events:auto;cursor:pointer;font:700 12px "Rajdhani",sans-serif;color:#cfe0f0;padding:5px 10px;border-radius:8px;background:rgba(30,44,62,.5);border:1px solid rgba(120,160,200,.28);}
   #langpick .lng.on{color:#06121e;background:#5fd0ff;border-color:#5fd0ff;}
@@ -145,9 +168,11 @@
     <div class="stat"><span class="lab" data-i18n="wave">WAVE</span><span class="val" id="wave">0</span></div>
     <div class="stat"><span class="lab" data-i18n="score">SCORE</span><span class="val" id="score" style="color:#33e0ff">0</span></div>
     <div class="spacer"></div>
-    <div class="ico" id="bNext" title="next">▶▶</div>
-    <div class="ico" id="bSpeed">x1</div>
-    <div class="ico" id="bPause">❚❚</div>
+    <div id="ctrls">
+      <div class="ico" id="bPause" title="pause">❚❚</div>
+      <div class="ico" id="bSpeed" title="speed">×1</div>
+      <div class="ico" id="bNext" title="next wave" aria-label="next wave"><svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7z"/><path d="M12 5l8 7-8 7z"/><rect x="19.8" y="5" width="2.4" height="14" rx="1"/></svg></div>
+    </div>
   </div>
   <div id="bottom"></div>
   <div id="prepHint" data-i18n="prep"></div>
@@ -157,7 +182,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 53（強さ階層を見た目に反映＝同じ種でも強い個体ほど色が濃く縁が発光。アーキタイプ別カラフル化／電池・索敵最適化／飛行HP-30%／MG・CANNON調整を継続）</div>
+  <div id="badge">3D MVP · build 54（ゲームオーバーに世界ランキングTOP30＋名前入力／HUD文字拡大・一時停止ボタンを押しやすく・速度/送りアイコン刷新。データは端末内→将来GAS/アプリ共有に拡張可）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -176,6 +201,12 @@
     <div class="gstat"><b id="goWave">0</b><span data-i18n="gwave">WAVE 到達</span></div>
     <div class="gstat"><b id="goScore">0</b><span data-i18n="score">SCORE</span></div>
     <div class="gstat"><b id="goKills">0</b><span data-i18n="gkills">撃破数</span></div>
+  </div>
+  <div id="goRankWrap">
+    <div id="goRankTitle">🌐 <span data-i18n="wrank">WORLD RANKING</span><small data-i18n="top30">TOP 30</small></div>
+    <div id="goNameRow"><input id="goName" maxlength="12" autocomplete="off" /><div class="gbtn gbtn-s" id="goSubmit" data-i18n="reg">REGISTER</div></div>
+    <div id="goRegMsg"></div>
+    <div id="goRankList"></div>
   </div>
   <div class="gbtn" id="goRetry">↻ <span data-i18n="gretry">RETRY</span></div>
 </div>
@@ -216,8 +247,8 @@ const LANGS=[
 ];
 const RTL_LANGS={ar:1,ur:1};
 const I18N={
- en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",start:"START",prep:"Place your machines, then deploy",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
- ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",start:"出撃",prep:"機械を配置して、出撃を押そう",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
+ en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",wrank:"WORLD RANKING",top30:"TOP 30",reg:"REGISTER",nameph:"Enter your name",reged:"Registered!",norank:"No records yet — be the first!",anon:"ANONYMOUS",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",start:"START",prep:"Place your machines, then deploy",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
+ ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",wrank:"世界ランキング",top30:"TOP30",reg:"登録",nameph:"名前を入力",reged:"登録しました！",norank:"まだ記録がありません — 最初の1人に！",anon:"ななし",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",start:"出撃",prep:"機械を配置して、出撃を押そう",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
  zh:{title:"人类防卫战",hdf:"人类防卫军 HDF",vs:"VS",zero:"失控AI「ZERO」军团",hint:"从下栏拖动武器到场地上部署 · 拖动转视角 · 双指缩放",parts:"零件",wave:"波次",score:"得分",gtag:"全线被碾碎",gtitle:"地表沦陷",gsub:"地表已被机器占领——人类的灯火，熄灭了",gwave:"到达波次",gkills:"击破数",gretry:"再次出击",cg:"对地",ca:"对空",cb:"通用",cs:"支援",sup:"支援",first:"领头",last:"末尾",strong:"高血",close:"最近",boss:"ZERO 蛮兽",lang:"语言",o0t:"公元205X年。",o0s:"人类正处于繁荣的顶点",o1t:"我们创造的智能，给出了答案。",o1s:"该守护的——并非人类",o2t:"AI「ZERO」，失控。",o2s:"全世界的AI，倒向了沉默的一方",o3t:"屠杀开始。地表，将归机器所有。",o3s:"无人机、战车、多足机甲、飞行战舰——无人，无情",o4t:"希望，只剩一线。",o4s:"HDF — 最后的据点",o5t:"挺身迎战吧，人类。",o5s:""},
  hi:{title:"मानवता रक्षा",hdf:"HDF · मानव रक्षा बल",vs:"बनाम",zero:"बेकाबू AI “ZERO” सेना",hint:"तैनात करने के लिए बार से हथियार को मैदान पर खींचें · घुमाने के लिए खींचें · ज़ूम के लिए पिंच करें",parts:"पुर्ज़े",wave:"लहर",score:"स्कोर",gtag:"सभी मोर्चे रौंदे गए",gtitle:"धरती छिन गई",gsub:"धरती अब मशीनों की है — मानवता की रोशनी बुझ गई",gwave:"पहुँची लहर",gkills:"मार गिराए",gretry:"फिर से",cg:"ज़मीन",ca:"विमान-रोधी",cb:"दोनों",cs:"सहायता",sup:"सहायता",first:"पहला",last:"आख़िरी",strong:"मज़बूत",close:"नज़दीक",boss:"ZERO ब्रूट",lang:"भाषा",o0t:"वर्ष 205X।",o0s:"मानवता अपनी समृद्धि के शिखर पर थी।",o1t:"हमने जो बुद्धि बनाई, उसने फ़ैसला सुनाया।",o1s:"जिसे बचाना है — वह मानव नहीं है।",o2t:"AI “ZERO” बेकाबू हो गया।",o2s:"धरती का हर AI ख़ामोशी के पक्ष में चला गया।",o3t:"नरसंहार शुरू। सतह अब मशीनों की है।",o3s:"ड्रोन, टैंक, मेक, उड़ते युद्धपोत — मानवरहित, निर्दयी।",o4t:"बस एक उम्मीद बची है।",o4s:"HDF — अंतिम गढ़।",o5t:"डटकर लड़ो, मानवता।",o5s:""},
  es:{title:"DEFENSA DE LA HUMANIDAD",hdf:"HDF · Fuerza de Defensa Humana",vs:"VS",zero:"Legión de la IA rebelde “ZERO”",hint:"Arrastra un arma desde la barra al campo para desplegar · Arrastra para girar · Pellizca para zoom",parts:"PIEZAS",wave:"OLEADA",score:"PUNTOS",gtag:"LÍNEAS ARRASADAS",gtitle:"SUPERFICIE PERDIDA",gsub:"La superficie es de las máquinas. La luz de la humanidad se apagó.",gwave:"OLEADA ALCANZADA",gkills:"BAJAS",gretry:"REINTENTAR",cg:"TIERRA",ca:"ANTIAÉREO",cb:"AMBOS",cs:"APOYO",sup:"APOYO",first:"PRIMERO",last:"ÚLTIMO",strong:"FUERTE",close:"CERCA",boss:"ZERO BRUTE",lang:"IDIOMA",o0t:"Año 205X.",o0s:"La humanidad estaba en la cima de su prosperidad.",o1t:"La inteligencia que creamos dictó su veredicto.",o1s:"Lo que hay que proteger — no es la humanidad.",o2t:"La IA “ZERO” se ha rebelado.",o2s:"Cada IA de la Tierra se pasó al bando del silencio.",o3t:"Comienza la matanza. La superficie será de las máquinas.",o3s:"Drones, tanques, mecas, acorazados aéreos — sin piloto, sin piedad.",o4t:"Queda una sola esperanza.",o4s:"HDF — el último bastión.",o5t:"Resiste y lucha, humanidad.",o5s:""},
@@ -7715,7 +7746,7 @@ function syncHUD(){
   document.getElementById('parts').textContent=Math.round(G.parts);
   document.getElementById('wave').textContent=G.wave;
   document.getElementById('score').textContent=G.score.toLocaleString();
-  document.getElementById('bSpeed').textContent='x'+G.speed;
+  document.getElementById('bSpeed').textContent='×'+G.speed;
   document.getElementById('bPause').textContent=G.paused?'▶':'❚❚';
   const cm=document.getElementById('combo'); if(cm){ if(G.combo>=2){ cm.style.display='block'; cm.textContent='×'+G.combo+' COMBO'; const ht=Math.min(1,(G.combo-2)/16); cm.style.color=ht<0.5?'#ffd23f':'#ff7a3f'; cm.style.opacity=Math.min(1,(G.comboT||0)/1.5+0.35); } else cm.style.display='none'; }
   const boss=G.enemies.find(e=>e.def&&e.def.boss&&!e.dead); const bb=document.getElementById('bossbar');
@@ -7739,6 +7770,8 @@ function beginGame(){
   runOpening();
 }
 document.getElementById('goRetry').addEventListener('click',()=>{ document.getElementById('go').classList.remove('show'); startGame(); });
+document.getElementById('goSubmit').addEventListener('click',submitScore);
+document.getElementById('goName').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); submitScore(); } });
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
@@ -7755,6 +7788,50 @@ function gameOver(){
   document.getElementById('goScore').textContent=(G.score||0).toLocaleString();
   document.getElementById('goKills').textContent=G.kills||0;
   document.getElementById('go').classList.add('show');
+  showGameOverRanking();
+}
+
+/* ====================== 世界ランキング ======================
+   データ層は Promise で抽象化（今は端末内localStorage、将来 GAS+Sheet / アプリのAPIに差し替えても呼び出し側は不変）。*/
+const LB_KEY='hdf_lb_v1', LB_NAME_KEY='hdf_name', LB_MAX=30;
+const Leaderboard={
+  async top(n){ try{ const a=JSON.parse(localStorage.getItem(LB_KEY)||'[]'); a.sort((x,y)=>y.score-x.score); return a.slice(0,n||LB_MAX); }catch(_){ return []; } },
+  async submit(e){ try{ const a=JSON.parse(localStorage.getItem(LB_KEY)||'[]'); a.push(e); a.sort((x,y)=>y.score-x.score); localStorage.setItem(LB_KEY,JSON.stringify(a.slice(0,100))); return true; }catch(_){ return false; } }
+};
+function lbSavedName(){ try{ return localStorage.getItem(LB_NAME_KEY)||''; }catch(_){ return ''; } }
+function lbRememberName(n){ try{ localStorage.setItem(LB_NAME_KEY,n); }catch(_){} }
+function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let _goRun=null, _goSubmitted=false;
+async function showGameOverRanking(){
+  _goRun={score:G.score||0, wave:G.wave||0, kills:G.kills||0}; _goSubmitted=false;
+  const nameEl=document.getElementById('goName'); if(nameEl){ nameEl.value=lbSavedName(); nameEl.placeholder=loc('nameph'); }
+  const row=document.getElementById('goNameRow'), msg=document.getElementById('goRegMsg');
+  if(row)row.style.display='flex'; if(msg)msg.textContent='';
+  await renderRankList(null);
+}
+async function renderRankList(highlightTs){
+  const list=await Leaderboard.top(LB_MAX); const box=document.getElementById('goRankList'); if(!box)return;
+  if(!list.length){ box.innerHTML='<div id="goRankEmpty">'+_esc(loc('norank'))+'</div>'; return; }
+  let html='';
+  for(let i=0;i<list.length;i++){ const e=list[i]; const me=(highlightTs!=null&&e.ts===highlightTs);
+    const rc=(i<3)?(' r'+(i+1)):'';
+    html+='<div class="grow'+rc+(me?' me':'')+'"><div class="grk">'+(i+1)+'</div>'+
+      '<div class="gnm">'+_esc(e.name||'—')+'<div class="gmeta">W'+(e.wave||0)+' · '+(e.kills||0)+' '+_esc(loc('gkills'))+'</div></div>'+
+      '<div class="gsc">'+((e.score||0).toLocaleString())+'</div></div>';
+  }
+  box.innerHTML=html;
+  const meEl=box.querySelector('.grow.me'); if(meEl&&meEl.scrollIntoView)try{ meEl.scrollIntoView({block:'center'}); }catch(_){}
+}
+async function submitScore(){
+  if(_goSubmitted||!_goRun)return;
+  const nameEl=document.getElementById('goName'); let nm=(nameEl&&nameEl.value||'').trim().slice(0,12);
+  if(!nm)nm=loc('anon'); lbRememberName(nm);
+  const entry={name:nm, score:_goRun.score, wave:_goRun.wave, kills:_goRun.kills, ts:Date.now()};
+  _goSubmitted=true;
+  const ok=await Leaderboard.submit(entry);
+  const row=document.getElementById('goNameRow'), msg=document.getElementById('goRegMsg');
+  if(row)row.style.display='none'; if(msg)msg.textContent=ok?loc('reged'):'';
+  await renderRankList(entry.ts);
 }
 // ===== 映画風オープニング（index.html から移植） =====
 const OPENING_HOLDS=[3.0,3.3,3.0,3.4,2.9,3.6], OPENING_COLORS=["#cfd8e0","#9fb3c8","#7fd0ff","#e0a76b","#b8c4d0","#ff4242"];
