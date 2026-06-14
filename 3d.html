@@ -202,7 +202,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 56（タイトルに「世界ランキング」閲覧ボタン追加＝プレイ前でもいつでもTOP30を確認できる閲覧モーダル。全世界共有ランキング/HUD改善は継続）</div>
+  <div id="badge">3D MVP · build 57（敵の色を渋い軍用色に寄せた＝彩度を抑え暗め・発光は上位Mkのみ僅か。色相での種類判別は維持。世界ランキング/HUD改善は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7369,11 +7369,12 @@ for(let _i=0;_i<ENEMIES.length;_i++){ const _e=ENEMIES[_i],_a=_e.arch; if(!_ARCH
 function enemyPower(def){ const h=_ARCH_HP[def.arch]; if(!h||h.max<=h.min)return 0.6; return Math.max(0,Math.min(1,(def.hp-h.min)/(h.max-h.min))); }
 // メッシュ全体を指定色相に染める。pw(強さ0..1)が高いほど彩度・明度・発光を上げて「強そう」に。発光アクセント（赤い単眼/リング）は保持、各パーツの明暗は維持して立体感を残す
 function tintEnemy(obj,hex,pw){ if(hex==null||!obj)return; pw=(pw==null?0.6:pw); const _t={}; new THREE.Color(hex).getHSL(_t);
-  const _sat=Math.min(1,Math.max(0.4,_t.s)*(0.72+0.30*pw)), _lmul=0.86+0.22*pw, _glow=0.02+0.40*pw;   // 弱い個体＝鈍く暗め／強い個体＝濃く明るく縁が発光
+  // カラフルすぎたので渋い軍用色に寄せる：色相（見分け）は残しつつ彩度を大きく抑え・暗め・発光はほぼ無し
+  const _sat=Math.min(0.38,Math.max(0.12,_t.s)*(0.26+0.22*pw)), _lmul=0.74+0.16*pw, _glow=Math.max(0,(pw-0.6))*0.18;   // 強個体だけ僅かに彩度↑＆かすかな発光
   obj.traverse(function(n){ const ms=n.material; if(!ms)return; const arr=Array.isArray(ms)?ms:[ms];
     for(let k=0;k<arr.length;k++){ const m=arr[k]; if(!m||!m.color)continue; if(m.emissiveIntensity>0.5)continue;   // 発光アクセント（眼/リング）はそのまま
-      const _c={}; m.color.getHSL(_c); const l=Math.min(0.62,Math.max(0.14,_c.l)*_lmul); m.color.setHSL(_t.h, _sat, l);
-      if(m.emissive){ m.emissive.setHSL(_t.h, Math.min(1,_t.s), 0.5); m.emissiveIntensity=_glow; } } }); }   // 強い個体ほど弱発光で縁が光る＝一目で強さが伝わる
+      const _c={}; m.color.getHSL(_c); const l=Math.min(0.36,Math.max(0.10,_c.l)*_lmul); m.color.setHSL(_t.h, _sat, l);
+      if(m.emissive && _glow>0.01){ m.emissive.setHSL(_t.h, Math.min(1,_t.s), 0.4); m.emissiveIntensity=_glow; } } }); }   // 発光は上位Mkだけ控えめ
 function makeEnemyMesh(def){
   const g=new THREE.Group();
   let vis; try{ vis = ENEMY_BUILDERS[def.arch] ? ENEMY_BUILDERS[def.arch](def) : genericEnemyBody(def); }catch(e){ vis=genericEnemyBody(def); }
