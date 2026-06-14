@@ -157,7 +157,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 51（電池消費を抑える描画間引き＝モバイル30fps/待機8fps・索敵最適化／飛行敵HP-30%・MGを近距離速射に・CANNON値下げ）</div>
+  <div id="badge">3D MVP · build 52（敵をアーキタイプ別にカラフル化＝種類が一目で判別／空中=青系・ボス=赤系・地上=個別色。電池/索敵最適化・飛行HP-30%・MG/CANNON調整は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7302,9 +7302,17 @@ function genericEnemyBody(def){
   for(const s of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.42,10), dk(0x171519)); leg.position.set(0.12,0.2,s*0.24); leg.castShadow=true; g.add(leg); }
   return g;
 }
+// アーキタイプ別カラー：機械が全部ダークで見分けづらかったので種類ごとに色相を付与（空中=青系で統一・ボス=赤系）
+const ARCH_COLOR={swarmling:0x9be33a,crawler:0xff8a1e,walker:0xb35cff,spider:0xff3ea0,wartank:0xf5c518,serpent:0x35e0a0,shielded:0x3f7bff,drone:0x2fd4ff,gunship:0x18b8d6,hovertank:0x7fb0ff,brute:0xff3030,siege:0xc81e3c};
+// メッシュ全体を指定色相に染める。発光部（赤い単眼/リング）は保持、各パーツの明暗は維持して立体感を残す＝「カラフルだけど機械の陰影は残る」
+function tintEnemy(obj,hex){ if(hex==null||!obj)return; const _t={}; new THREE.Color(hex).getHSL(_t);
+  obj.traverse(function(n){ const ms=n.material; if(!ms)return; const arr=Array.isArray(ms)?ms:[ms];
+    for(let k=0;k<arr.length;k++){ const m=arr[k]; if(!m||!m.color)continue; if(m.emissiveIntensity>0.5)continue;   // 発光アクセント（眼/リング）はそのまま
+      const _c={}; m.color.getHSL(_c); const l=Math.min(0.6,Math.max(0.18,_c.l)); m.color.setHSL(_t.h, Math.max(0.5,_t.s*0.9), l); } }); }
 function makeEnemyMesh(def){
   const g=new THREE.Group();
   let vis; try{ vis = ENEMY_BUILDERS[def.arch] ? ENEMY_BUILDERS[def.arch](def) : genericEnemyBody(def); }catch(e){ vis=genericEnemyBody(def); }
+  try{ tintEnemy(vis, ARCH_COLOR[def.arch]); }catch(_){}
   g.add(vis); g.userData.body=(vis.userData&&vis.userData.body)||vis; g.userData.spin=vis.userData&&vis.userData.spin; g.userData.rotor=vis.userData&&vis.userData.rotor;
   g.scale.setScalar(def.scale*0.95);
   const _armored=defArmor(def)>0;
