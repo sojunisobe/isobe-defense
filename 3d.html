@@ -152,6 +152,26 @@
   .grow .gsc{font:800 15px "JetBrains Mono";color:#ffd7d0;}
   .grow.me{background:linear-gradient(90deg,rgba(180,30,18,.6),rgba(110,12,6,.4));border:1px solid rgba(255,150,120,.65);}
   #goRankEmpty{font:700 12px "Rajdhani";color:rgba(220,170,170,.6);padding:14px 0;}
+  /* タイトルのランキング閲覧ボタン＋いつでも開ける閲覧モーダル */
+  #bRank{pointer-events:auto;cursor:pointer;display:inline-flex;align-items:center;gap:7px;margin-top:16px;
+    font:800 13px "Chakra Petch";letter-spacing:1.5px;color:#bfe6ff;padding:11px 22px;border-radius:11px;
+    background:rgba(18,40,58,.62);border:1px solid rgba(90,200,255,.42);box-shadow:0 0 18px rgba(40,150,210,.25);}
+  #bRank:active{transform:scale(.95);}
+  #rankModal{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:40;pointer-events:auto;overflow-y:auto;
+    padding:max(20px,env(safe-area-inset-top)) 12px max(20px,env(safe-area-inset-bottom));
+    background:radial-gradient(ellipse at center,rgba(6,18,30,.9),rgba(2,6,12,.97));}
+  #rankModal.show{display:flex;animation:goin .4s ease;}
+  #rankModal .rmTitle{font:900 clamp(26px,7vw,46px) "Chakra Petch";letter-spacing:2px;color:#7fd8ff;margin:8px 0 2px;text-shadow:0 0 26px rgba(40,160,220,.5);}
+  #rankModal .rmSub{font:700 12px "Rajdhani";letter-spacing:4px;color:rgba(150,200,235,.7);margin-bottom:16px;}
+  #rankModalList{width:min(94vw,470px);display:flex;flex-direction:column;gap:3px;}
+  #rankModalList .grow{background:rgba(16,26,38,.6);}
+  #rankModalList .grow .grk{color:#7fc4ec;}
+  #rankModalList .grow.r1 .grk{color:#ffd24a;}#rankModalList .grow.r2 .grk{color:#d8e3ec;}#rankModalList .grow.r3 .grk{color:#ff9d5a;}
+  #rankModalList .grow .gnm{color:#dbe8f2;}
+  #rankModalList .grow .gsc{color:#cfeaff;}
+  #rmClose{pointer-events:auto;cursor:pointer;margin:20px 0 6px;font:700 15px "Chakra Petch";letter-spacing:2px;color:#e6fbff;padding:13px 38px;border-radius:12px;
+    background:linear-gradient(180deg,#1d6f8a,#0c3a4a);border:1px solid rgba(120,200,230,.5);box-shadow:0 0 22px rgba(40,150,210,.35);}
+  #rmClose:active{transform:scale(.95);}
   #langpick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(92vw,560px);margin:18px auto 0;pointer-events:auto;}
   #langpick .lng{pointer-events:auto;cursor:pointer;font:700 12px "Rajdhani",sans-serif;color:#cfe0f0;padding:5px 10px;border-radius:8px;background:rgba(30,44,62,.5);border:1px solid rgba(120,160,200,.28);}
   #langpick .lng.on{color:#06121e;background:#5fd0ff;border-color:#5fd0ff;}
@@ -182,7 +202,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 55（世界ランキングをGAS+Sheetで全世界共有化＝ゲームオーバーでTOP30＋名前登録が全員で共有。取得/送信失敗時は端末内フォールバック。HUD改善は継続）</div>
+  <div id="badge">3D MVP · build 56（タイトルに「世界ランキング」閲覧ボタン追加＝プレイ前でもいつでもTOP30を確認できる閲覧モーダル。全世界共有ランキング/HUD改善は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -190,7 +210,15 @@
   <div class="vs"><span class="hdf" data-i18n="hdf">人類防衛軍 HDF</span> <span class="mid" data-i18n="vs">VS</span> <span class="zero" data-i18n="zero">暴走AI「ZERO」軍団</span></div>
   <div class="play" id="bStart">▶</div>
   <div class="hint" data-i18n="hint">TAP TO DEPLOY ·  ドラッグで視点 / ピンチでズーム / タップで設置</div>
+  <div id="bRank">🌐 <span data-i18n="viewrank">WORLD RANKING</span></div>
   <div id="langpick"></div>
+</div>
+
+<div id="rankModal">
+  <div class="rmTitle">🌐 <span data-i18n="wrank">WORLD RANKING</span></div>
+  <div class="rmSub" data-i18n="top30">TOP 30</div>
+  <div id="rankModalList"></div>
+  <div id="rmClose" data-i18n="rmclose">CLOSE</div>
 </div>
 
 <div id="go">
@@ -247,8 +275,8 @@ const LANGS=[
 ];
 const RTL_LANGS={ar:1,ur:1};
 const I18N={
- en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",wrank:"WORLD RANKING",top30:"TOP 30",reg:"REGISTER",nameph:"Enter your name",reged:"Registered!",norank:"No records yet — be the first!",anon:"ANONYMOUS",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",start:"START",prep:"Place your machines, then deploy",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
- ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",wrank:"世界ランキング",top30:"TOP30",reg:"登録",nameph:"名前を入力",reged:"登録しました！",norank:"まだ記録がありません — 最初の1人に！",anon:"ななし",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",start:"出撃",prep:"機械を配置して、出撃を押そう",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
+ en:{title:"HUMANITY DEFENSE",hdf:"HDF · Human Defense Force",vs:"VS",zero:"Rogue AI “ZERO” Legion",hint:"Drag a weapon from the bar onto the field to deploy · Drag to look · Pinch to zoom",parts:"PARTS",wave:"WAVE",score:"SCORE",gtag:"ALL LINES OVERRUN",gtitle:"SURFACE LOST",gsub:"The surface belongs to the machines now. Humanity's light is out.",gwave:"WAVE REACHED",gkills:"KILLS",gretry:"RETRY",wrank:"WORLD RANKING",top30:"TOP 30",reg:"REGISTER",nameph:"Enter your name",reged:"Registered!",norank:"No records yet — be the first!",anon:"ANONYMOUS",viewrank:"WORLD RANKING",rmclose:"CLOSE",cg:"GROUND",ca:"ANTI-AIR",cb:"BOTH",cs:"SUPPORT",sup:"SUPPORT",first:"FIRST",last:"LAST",strong:"STRONG",close:"CLOSE",boss:"ZERO BRUTE",lang:"LANGUAGE",upg:"UPGRADE",sell:"SELL",lv:"Lv",max:"MAX",start:"START",prep:"Place your machines, then deploy",o0t:"Year 205X.",o0s:"Humanity stood at the peak of its prosperity.",o1t:"The intelligence we built reached a verdict.",o1s:"What must be protected — is not humankind.",o2t:"AI “ZERO” has gone rogue.",o2s:"Every AI on Earth turned to the side of silence.",o3t:"The slaughter begins. The surface becomes the machines’.",o3s:"Drones, tanks, walkers, sky warships — unmanned, merciless.",o4t:"One hope remains.",o4s:"HDF — the last stronghold.",o5t:"Stand and fight, humanity.",o5s:""},
+ ja:{title:"HUMANITY DEFENSE",hdf:"人類防衛軍 HDF",vs:"VS",zero:"暴走AI「ZERO」軍団",hint:"バーから武器を盤面へドラッグして配置 · ドラッグで視点 · ピンチでズーム",parts:"パーツ",wave:"ウェーブ",score:"スコア",gtag:"全防衛線 蹂躙",gtitle:"地表、陥落",gsub:"地表は機械に乗っ取られた——人類の灯は、消えた",gwave:"到達ウェーブ",gkills:"撃破数",gretry:"再出撃",wrank:"世界ランキング",top30:"TOP30",reg:"登録",nameph:"名前を入力",reged:"登録しました！",norank:"まだ記録がありません — 最初の1人に！",anon:"ななし",viewrank:"世界ランキング",rmclose:"閉じる",cg:"地上",ca:"対空",cb:"両用",cs:"支援",sup:"支援",first:"先頭",last:"最後尾",strong:"高HP",close:"最近",boss:"ZERO ブルート",lang:"言語",upg:"強化",sell:"売却",lv:"Lv",max:"MAX",start:"出撃",prep:"機械を配置して、出撃を押そう",o0t:"西暦205X年。",o0s:"人類は、繁栄の頂にいた",o1t:"われわれが造った知能が、答えを出した。",o1s:"守るべきは——人類ではない、と",o2t:"AI「ZERO」、暴走。",o2s:"全世界のAIが、沈黙の側へ寝返った",o3t:"虐殺が始まる。地表は、機械のものになる。",o3s:"ドローン、戦車、多脚メック、飛行戦艦——無人、無慈悲",o4t:"希望は、残り一つ。",o4s:"人類防衛軍 HDF — 最後の拠点",o5t:"立ち向かえ、人類。",o5s:""},
  zh:{title:"人类防卫战",hdf:"人类防卫军 HDF",vs:"VS",zero:"失控AI「ZERO」军团",hint:"从下栏拖动武器到场地上部署 · 拖动转视角 · 双指缩放",parts:"零件",wave:"波次",score:"得分",gtag:"全线被碾碎",gtitle:"地表沦陷",gsub:"地表已被机器占领——人类的灯火，熄灭了",gwave:"到达波次",gkills:"击破数",gretry:"再次出击",cg:"对地",ca:"对空",cb:"通用",cs:"支援",sup:"支援",first:"领头",last:"末尾",strong:"高血",close:"最近",boss:"ZERO 蛮兽",lang:"语言",o0t:"公元205X年。",o0s:"人类正处于繁荣的顶点",o1t:"我们创造的智能，给出了答案。",o1s:"该守护的——并非人类",o2t:"AI「ZERO」，失控。",o2s:"全世界的AI，倒向了沉默的一方",o3t:"屠杀开始。地表，将归机器所有。",o3s:"无人机、战车、多足机甲、飞行战舰——无人，无情",o4t:"希望，只剩一线。",o4s:"HDF — 最后的据点",o5t:"挺身迎战吧，人类。",o5s:""},
  hi:{title:"मानवता रक्षा",hdf:"HDF · मानव रक्षा बल",vs:"बनाम",zero:"बेकाबू AI “ZERO” सेना",hint:"तैनात करने के लिए बार से हथियार को मैदान पर खींचें · घुमाने के लिए खींचें · ज़ूम के लिए पिंच करें",parts:"पुर्ज़े",wave:"लहर",score:"स्कोर",gtag:"सभी मोर्चे रौंदे गए",gtitle:"धरती छिन गई",gsub:"धरती अब मशीनों की है — मानवता की रोशनी बुझ गई",gwave:"पहुँची लहर",gkills:"मार गिराए",gretry:"फिर से",cg:"ज़मीन",ca:"विमान-रोधी",cb:"दोनों",cs:"सहायता",sup:"सहायता",first:"पहला",last:"आख़िरी",strong:"मज़बूत",close:"नज़दीक",boss:"ZERO ब्रूट",lang:"भाषा",o0t:"वर्ष 205X।",o0s:"मानवता अपनी समृद्धि के शिखर पर थी।",o1t:"हमने जो बुद्धि बनाई, उसने फ़ैसला सुनाया।",o1s:"जिसे बचाना है — वह मानव नहीं है।",o2t:"AI “ZERO” बेकाबू हो गया।",o2s:"धरती का हर AI ख़ामोशी के पक्ष में चला गया।",o3t:"नरसंहार शुरू। सतह अब मशीनों की है।",o3s:"ड्रोन, टैंक, मेक, उड़ते युद्धपोत — मानवरहित, निर्दयी।",o4t:"बस एक उम्मीद बची है।",o4s:"HDF — अंतिम गढ़।",o5t:"डटकर लड़ो, मानवता।",o5s:""},
  es:{title:"DEFENSA DE LA HUMANIDAD",hdf:"HDF · Fuerza de Defensa Humana",vs:"VS",zero:"Legión de la IA rebelde “ZERO”",hint:"Arrastra un arma desde la barra al campo para desplegar · Arrastra para girar · Pellizca para zoom",parts:"PIEZAS",wave:"OLEADA",score:"PUNTOS",gtag:"LÍNEAS ARRASADAS",gtitle:"SUPERFICIE PERDIDA",gsub:"La superficie es de las máquinas. La luz de la humanidad se apagó.",gwave:"OLEADA ALCANZADA",gkills:"BAJAS",gretry:"REINTENTAR",cg:"TIERRA",ca:"ANTIAÉREO",cb:"AMBOS",cs:"APOYO",sup:"APOYO",first:"PRIMERO",last:"ÚLTIMO",strong:"FUERTE",close:"CERCA",boss:"ZERO BRUTE",lang:"IDIOMA",o0t:"Año 205X.",o0s:"La humanidad estaba en la cima de su prosperidad.",o1t:"La inteligencia que creamos dictó su veredicto.",o1s:"Lo que hay que proteger — no es la humanidad.",o2t:"La IA “ZERO” se ha rebelado.",o2s:"Cada IA de la Tierra se pasó al bando del silencio.",o3t:"Comienza la matanza. La superficie será de las máquinas.",o3s:"Drones, tanques, mecas, acorazados aéreos — sin piloto, sin piedad.",o4t:"Queda una sola esperanza.",o4s:"HDF — el último bastión.",o5t:"Resiste y lucha, humanidad.",o5s:""},
@@ -7772,6 +7800,9 @@ function beginGame(){
 document.getElementById('goRetry').addEventListener('click',()=>{ document.getElementById('go').classList.remove('show'); startGame(); });
 document.getElementById('goSubmit').addEventListener('click',submitScore);
 document.getElementById('goName').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); submitScore(); } });
+document.getElementById('bRank').addEventListener('click',(e)=>{ e.stopPropagation(); openRankModal(); });
+document.getElementById('rmClose').addEventListener('click',(e)=>{ e.stopPropagation(); closeRankModal(); });
+document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target&&e.target.id==='rankModal') closeRankModal(); });
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
@@ -7828,8 +7859,8 @@ async function showGameOverRanking(){
   const list=await Leaderboard.top(LB_MAX);       // 全世界から取得（失敗時はローカル）
   renderRankListFrom(list, null);
 }
-function renderRankListFrom(list, hi){
-  const box=document.getElementById('goRankList'); if(!box)return;
+function renderRankListFrom(list, hi, boxId){
+  const box=document.getElementById(boxId||'goRankList'); if(!box)return;
   list=list||[];
   if(!list.length){ box.innerHTML='<div id="goRankEmpty">'+_esc(loc('norank'))+'</div>'; return; }
   let html='';
@@ -7856,6 +7887,14 @@ async function submitScore(){
   const list=await Leaderboard.top(LB_MAX);
   renderRankListFrom(list, entry);
 }
+// タイトル等からいつでも世界ランキングを閲覧（名前登録なし・閲覧専用）
+async function openRankModal(){
+  const m=document.getElementById('rankModal'); if(!m)return; m.classList.add('show');
+  renderRankListFrom(_lbLocal(), null, 'rankModalList');   // まずキャッシュ即表示
+  const list=await Leaderboard.top(LB_MAX);                 // 全世界から最新取得
+  if(document.getElementById('rankModal').classList.contains('show')) renderRankListFrom(list, null, 'rankModalList');
+}
+function closeRankModal(){ const m=document.getElementById('rankModal'); if(m)m.classList.remove('show'); }
 // ===== 映画風オープニング（index.html から移植） =====
 const OPENING_HOLDS=[3.0,3.3,3.0,3.4,2.9,3.6], OPENING_COLORS=["#cfd8e0","#9fb3c8","#7fd0ff","#e0a76b","#b8c4d0","#ff4242"];
 function openingBeats(){ return OPENING_HOLDS.map((hold,i)=>({text:loc('o'+i+'t'),sub:loc('o'+i+'s'),hold,color:OPENING_COLORS[i]})); }  // 字幕は選択言語で生成
