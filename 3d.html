@@ -182,7 +182,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 54（ゲームオーバーに世界ランキングTOP30＋名前入力／HUD文字拡大・一時停止ボタンを押しやすく・速度/送りアイコン刷新。データは端末内→将来GAS/アプリ共有に拡張可）</div>
+  <div id="badge">3D MVP · build 55（世界ランキングをGAS+Sheetで全世界共有化＝ゲームオーバーでTOP30＋名前登録が全員で共有。取得/送信失敗時は端末内フォールバック。HUD改善は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7792,28 +7792,48 @@ function gameOver(){
 }
 
 /* ====================== 世界ランキング ======================
-   データ層は Promise で抽象化（今は端末内localStorage、将来 GAS+Sheet / アプリのAPIに差し替えても呼び出し側は不変）。*/
+   データ層は GAS+Sheet の Web API（全世界共有）。取得/送信失敗時は端末内localStorageにフォールバック。
+   将来アプリ化時も同APIを再利用できる（呼び出し側 Leaderboard.top/submit は不変）。*/
+const LB_ENDPOINT='https://script.google.com/macros/s/AKfycbz-Fl73xbf7v4Fy9eww68ClTxan-HltkUBAQ3Y8B92oQbMFyWxGD4vuIYeS8khtpPt0TQ/exec';
 const LB_KEY='hdf_lb_v1', LB_NAME_KEY='hdf_name', LB_MAX=30;
+function _lbLocal(){ try{ const a=JSON.parse(localStorage.getItem(LB_KEY)||'[]'); a.sort((x,y)=>y.score-x.score); return a; }catch(_){ return []; } }
+function _lbLocalAdd(e){ try{ const a=_lbLocal(); a.push(e); a.sort((x,y)=>y.score-x.score); localStorage.setItem(LB_KEY,JSON.stringify(a.slice(0,100))); }catch(_){} }
+function _lbCacheSet(list){ try{ localStorage.setItem(LB_KEY,JSON.stringify((list||[]).slice(0,100))); }catch(_){} }
+async function _lbFetch(url,opt,ms){ const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),ms||6500);
+  try{ const r=await fetch(url,Object.assign({signal:ctrl.signal},opt||{})); clearTimeout(to); return await r.json(); }
+  finally{ clearTimeout(to); } }
 const Leaderboard={
-  async top(n){ try{ const a=JSON.parse(localStorage.getItem(LB_KEY)||'[]'); a.sort((x,y)=>y.score-x.score); return a.slice(0,n||LB_MAX); }catch(_){ return []; } },
-  async submit(e){ try{ const a=JSON.parse(localStorage.getItem(LB_KEY)||'[]'); a.push(e); a.sort((x,y)=>y.score-x.score); localStorage.setItem(LB_KEY,JSON.stringify(a.slice(0,100))); return true; }catch(_){ return false; } }
+  async top(n){ n=n||LB_MAX;
+    try{ const j=await _lbFetch(LB_ENDPOINT+'?n='+n); if(j&&j.ok&&Array.isArray(j.top)){ _lbCacheSet(j.top); return j.top.slice(0,n); } }catch(_){}
+    return _lbLocal().slice(0,n);   // フォールバック（オフライン/未認可時はキャッシュ表示）
+  },
+  async submit(e){
+    _lbLocalAdd(e);   // ローカルにも反映（即時表示＆フォールバック）
+    try{ const body=JSON.stringify({name:e.name,score:e.score,wave:e.wave,kills:e.kills,ua:(navigator.userAgent||'').slice(0,80)});
+      const j=await _lbFetch(LB_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body}); return !!(j&&j.ok);
+    }catch(_){ return false; }
+  }
 };
 function lbSavedName(){ try{ return localStorage.getItem(LB_NAME_KEY)||''; }catch(_){ return ''; } }
 function lbRememberName(n){ try{ localStorage.setItem(LB_NAME_KEY,n); }catch(_){} }
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _sameEntry(a,b){ return !!a&&!!b&&a.name===b.name&&a.score===b.score&&a.wave===b.wave&&a.kills===b.kills; }
 let _goRun=null, _goSubmitted=false;
 async function showGameOverRanking(){
   _goRun={score:G.score||0, wave:G.wave||0, kills:G.kills||0}; _goSubmitted=false;
   const nameEl=document.getElementById('goName'); if(nameEl){ nameEl.value=lbSavedName(); nameEl.placeholder=loc('nameph'); }
   const row=document.getElementById('goNameRow'), msg=document.getElementById('goRegMsg');
   if(row)row.style.display='flex'; if(msg)msg.textContent='';
-  await renderRankList(null);
+  renderRankListFrom(_lbLocal(), null);          // 即時（前回キャッシュ）で待ち時間ゼロ表示
+  const list=await Leaderboard.top(LB_MAX);       // 全世界から取得（失敗時はローカル）
+  renderRankListFrom(list, null);
 }
-async function renderRankList(highlightTs){
-  const list=await Leaderboard.top(LB_MAX); const box=document.getElementById('goRankList'); if(!box)return;
+function renderRankListFrom(list, hi){
+  const box=document.getElementById('goRankList'); if(!box)return;
+  list=list||[];
   if(!list.length){ box.innerHTML='<div id="goRankEmpty">'+_esc(loc('norank'))+'</div>'; return; }
   let html='';
-  for(let i=0;i<list.length;i++){ const e=list[i]; const me=(highlightTs!=null&&e.ts===highlightTs);
+  for(let i=0;i<list.length;i++){ const e=list[i]; const me=_sameEntry(e,hi);
     const rc=(i<3)?(' r'+(i+1)):'';
     html+='<div class="grow'+rc+(me?' me':'')+'"><div class="grk">'+(i+1)+'</div>'+
       '<div class="gnm">'+_esc(e.name||'—')+'<div class="gmeta">W'+(e.wave||0)+' · '+(e.kills||0)+' '+_esc(loc('gkills'))+'</div></div>'+
@@ -7828,10 +7848,13 @@ async function submitScore(){
   if(!nm)nm=loc('anon'); lbRememberName(nm);
   const entry={name:nm, score:_goRun.score, wave:_goRun.wave, kills:_goRun.kills, ts:Date.now()};
   _goSubmitted=true;
-  const ok=await Leaderboard.submit(entry);
-  const row=document.getElementById('goNameRow'), msg=document.getElementById('goRegMsg');
-  if(row)row.style.display='none'; if(msg)msg.textContent=ok?loc('reged'):'';
-  await renderRankList(entry.ts);
+  const btn=document.getElementById('goSubmit'); if(btn)btn.classList.add('off');
+  const msg=document.getElementById('goRegMsg'); if(msg)msg.textContent='…';
+  await Leaderboard.submit(entry);
+  const row=document.getElementById('goNameRow'); if(row)row.style.display='none';
+  if(msg)msg.textContent=loc('reged');
+  const list=await Leaderboard.top(LB_MAX);
+  renderRankListFrom(list, entry);
 }
 // ===== 映画風オープニング（index.html から移植） =====
 const OPENING_HOLDS=[3.0,3.3,3.0,3.4,2.9,3.6], OPENING_COLORS=["#cfd8e0","#9fb3c8","#7fd0ff","#e0a76b","#b8c4d0","#ff4242"];
