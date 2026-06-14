@@ -202,7 +202,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 57（敵の色を渋い軍用色に寄せた＝彩度を抑え暗め・発光は上位Mkのみ僅か。色相での種類判別は維持。世界ランキング/HUD改善は継続）</div>
+  <div id="badge">3D MVP · build 58（終盤のソフトロック修正＝タワー迷路でフロー罠に嵌った敵がウェーブを終わらせないバグを、進捗しない敵を本部へ直進させるアンチスタックで根治。色/ランキング/HUDは継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7500,7 +7500,7 @@ function updateFx(dt){
 /* ====================== 更新 ====================== */
 function update(dt){
   if(G.scene!=='playing') return;
-  if(G.flowDirty){ buildFlow(); G.flowDirty=false; }
+  if(G.flowDirty){ buildFlow(); G.flowDirty=false; for(const e of G.enemies){ e._minDist=null; e._stuckT=0; } }   // 経路が変わったら進捗計測をリセット（アンチスタックの誤検知防止）
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
@@ -7517,6 +7517,7 @@ function update(dt){
       e.bobP+=dt; }
     else if(e.entering){ const ent=entryWorld(); dirx=ent.x-e.x; dirz=ent.z-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl;   // 盤外→一列目中央へ入場
       if(e.x>=ent.x-0.02){ e.entering=false; } }
+    else if(e._home){ const bx=cellToWorld(GOAL_C,BASE_R).x, bz=cellToWorld(GOAL_C,BASE_R).z; dirx=bx-e.x; dirz=bz-e.z; const dl=Math.hypot(dirx,dirz)||1; dirx/=dl; dirz/=dl; }   // アンチスタック：長時間進捗しない敵は本部へ直進（ソフトロック防止）
     else { const cell=worldToCell(e.x,e.z); let c=Math.max(0,Math.min(COLS-1,cell.c)), r=Math.max(0,Math.min(ROWS-1,cell.r)); const ii=idx(c,r); let fc=flowC[ii], fr=flowR[ii]; if(fc===0&&fr===0){ fc=1; fr=0; } const len=Math.hypot(fc,fr)||1; dirx=fc/len; dirz=fr/len; }   // 一列目から上/下/前へ（迷路で分岐）
     e.x+=dirx*sp*dt*CELL; e.z+=dirz*sp*dt*CELL;
     e.mesh.position.set(e.x, e.flying?(e.y+Math.sin(e.bobP*3)*0.06):0, e.z);
@@ -7525,7 +7526,11 @@ function update(dt){
     const hb=e.mesh.userData.hpbar; if(hb){ hb.scale.x=Math.max(0.001,e.hp/e.maxhp); hb.position.x=-(1-e.hp/e.maxhp)*0.5; hb.lookAt(camera.position); }
     // 本部(多セル)到達判定
     const rc=worldToCell(e.x,e.z); const rcc=Math.max(0,Math.min(COLS-1,rc.c)), rcr=Math.max(0,Math.min(ROWS-1,rc.r)); const _ci=idx(rcc,rcr);
-    e._key=distF[_ci]>=0?distF[_ci]:9999;   // 索敵用の先頭距離キーを1体1回だけ算出（タワー×敵ループ内の二重worldToCellを除去＝多数敵時のカクつき軽減）
+    const _d=distF[_ci]; e._key=_d>=0?_d:9999;   // 索敵用の先頭距離キーを1体1回だけ算出（タワー×敵ループ内の二重worldToCellを除去＝多数敵時のカクつき軽減）
+    if(!e.flying && !e.entering && !e._home){   // アンチスタック：本部までのBFS距離が縮まらない敵を検出
+      if(_d>=0 && (e._minDist==null || _d<e._minDist)){ e._minDist=_d; e._stuckT=0; }
+      else if(e.slowT<=0){ e._stuckT=(e._stuckT||0)+dt; if(e._stuckT>4.5){ e._home=true; } }   // 減速中は加算しない（意図的な遅さ）。4.5秒進捗ゼロ＝詰まり→本部へ直進
+    }
     if(goalCell[_ci] || e.x>=cellToWorld(BASE_C0,BASE_R).x-0.5){ damageBase(e); G.enemies.splice(i,1); }
   }
   // タワー：索敵・射撃・旋回
