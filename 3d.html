@@ -38,8 +38,8 @@
   #bottom::-webkit-scrollbar{display:none;}
   .wbtn{pointer-events:auto;flex:0 0 auto;min-width:56px;padding:2px 6px 4px;cursor:pointer;position:relative;text-align:center;line-height:1.02;
     background:linear-gradient(180deg,rgba(46,66,90,.42),rgba(10,16,26,.5));border-radius:9px;}
-  .wbtn .wn{font:800 10.5px "Rajdhani";letter-spacing:.3px;color:#eef7ff;}
-  .wbtn .wc{font:700 10.5px "JetBrains Mono";color:#ffb22e;}
+  .wbtn .wn{font:800 15px "Rajdhani";letter-spacing:.2px;color:#f3f9ff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6);}   /* 兵器名＝識別の要なので大きく。名前はステータス行より短い＝幅は不変（高さのみ僅か増） */
+  .wbtn .wc{font:700 12.5px "JetBrains Mono";color:#ffc24a;}
   .wbtn::after{content:"";position:absolute;left:9px;right:9px;bottom:2px;height:2px;background:var(--sc,#33e0ff);box-shadow:0 0 6px var(--sc,#33e0ff);opacity:.5;}
   .wbtn .wic{height:25px;display:flex;align-items:center;justify-content:center;margin:0 0 1px;pointer-events:none;}
   .wbtn .wic img{height:25px;width:auto;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));}
@@ -203,7 +203,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 61（build60のW18前後の固まり=メッシュプールのGPUメモリ膨張を修正。保持総数を24個に固定し古い順に破棄＝メモリ有界でコンテキスト消失を防止。発熱減/がたつき根治/難易度緩和/GUN・MG差別化/対空強化は継続）</div>
+  <div id="badge">3D MVP · build 62（武器バーの兵器名を大きく＝何の兵器か判別しやすく。名前はステータス行より短いのでボタン幅は不変・高さのみ僅か増。W18固まり修正/発熱減/がたつき根治/難易度緩和/GUN・MG差別化/対空強化は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
