@@ -203,7 +203,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 62（武器バーの兵器名を大きく＝何の兵器か判別しやすく。名前はステータス行より短いのでボタン幅は不変・高さのみ僅か増。W18固まり修正/発熱減/がたつき根治/難易度緩和/GUN・MG差別化/対空強化は継続）</div>
+  <div id="badge">3D MVP · build 63（発熱/がたつき/早送り不発の真因を特定＝モデル過密でドローコール9000超。モバイル限定でモデルのサブメッシュをマテリアル別に結合し9053→894(約1/10)・1描画30→4.4ms。回転砲塔/ローター等のアニメは保持。併せてモバイルはブルームOFF＋pixelRatio0.8。PCはフル精細のまま）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -626,7 +626,7 @@ function initScene(){
   const cv=document.getElementById('cv');
   const _isMobile=(typeof navigator!=='undefined'&&/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||''))||(typeof window!=='undefined'&&Math.min(window.innerWidth,window.innerHeight)<=820);
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:!_isMobile});   // モバイルはMSAA切ってGPU負荷減
-  renderer.setPixelRatio(Math.min(_isMobile?1.0:1.6,window.devicePixelRatio||1));   // 発熱対策：モバイルはpixelRatio=1.0に下げて塗りピクセル数を約40%削減（1.3→1.0）。PCは現状維持
+  renderer.setPixelRatio(Math.min(_isMobile?0.8:1.6,window.devicePixelRatio||1));   // 発熱対策：モバイルはpixelRatio=0.8まで下げ塗りピクセル数をさらに削減（1.0→0.8＝約36%減）。3Dは少し甘くなるがGPU発熱を優先。PCは現状維持
   window.__isMobile=_isMobile;
   renderer.shadowMap.enabled=!_isMobile; renderer.shadowMap.type=THREE.PCFSoftShadowMap;   // スマホは影を無効化＝メモリ/GPU負荷を大きく削減（重い波/ボスでの固まり対策）
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
@@ -676,6 +676,7 @@ function initScene(){
 let _ctxLost=false;
 function buildComposer(){ try{
     const _isMobile=window.__isMobile;
+    if(_isMobile){ composer=null; bloomPass=null; return; }   // 【発熱対策・最大効果】モバイルはブルーム(UnrealBloom=多段ガウシアン合成)を完全OFF＝GPU負荷とrAF遅延を激減。loopは composer 無→renderer.render(直接描画)にフォールバック。発光面は残る（halo無し）。早送りが回らなくなる症状もこれで解消
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
     const _br=_isMobile?0.45:0.55;
@@ -5051,7 +5052,33 @@ return g;
 
 }
 const _BUILDERS={gun:buildGun,cannon:buildCannon,frost:buildFrost,sniper:buildSniper,mortar:buildMortar,laser:buildLaser,tesla:buildTesla,mg:buildMg,flame:buildFlame,poison:buildPoison,rail:buildRail,aa:buildAa,gatling_air:buildGatAir,barrier:buildBarrier,booster:buildBooster};
-function makeTowerMesh(def){ return (_BUILDERS[def.key]||buildGun)(def); }
+// 【発熱/がたつき/早送りの真因＝ドローコール爆発の対策】タワー1個=128〜291メッシュ・敵1体=40〜171メッシュが
+// 各々別ドローコールになり、重い波で9000超→モバイルGPUが飽和(発熱)＆rAF遅延(早送りが回らない)。
+// そこでモバイル限定で、各モデルの静的サブメッシュを「同一マテリアルごとに1つのジオメトリへ結合」し
+// ドローコールを十数分の一に削減。回転する砲塔/結晶/ローター/スピン部はpivotとして保持＝アニメは維持。PCは無加工(フル精細)。
+function _matKey(m){ return m.type+'|'+(m.color?m.color.getHexString():'')+'|'+(m.emissive?m.emissive.getHexString():'')+'|'+(m.emissiveIntensity||0)+'|'+(+(m.metalness||0)).toFixed(2)+'|'+(+(m.roughness||0)).toFixed(2)+'|'+(+(m.opacity==null?1:m.opacity)).toFixed(2)+'|'+(m.transparent?1:0)+'|'+(m.map?m.map.uuid:'')+'|'+m.side+'|'+(m.flatShading?1:0); }
+function _mergeGeos(geos){ let total=0; const parts=[];
+  for(let g of geos){ if(g.index)g=g.toNonIndexed(); const p=g.attributes.position; if(!p)continue; const n=g.attributes.normal, u=g.attributes.uv; parts.push({p:p.array,n:n?n.array:null,u:u?u.array:null,c:p.count}); total+=p.count; }
+  const pos=new Float32Array(total*3), nor=new Float32Array(total*3), uv=new Float32Array(total*2); let oi=0,uo=0;
+  for(const pt of parts){ pos.set(pt.p,oi); if(pt.n)nor.set(pt.n,oi); if(pt.u)uv.set(pt.u,uo); oi+=pt.c*3; uo+=pt.c*2; }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('normal',new THREE.BufferAttribute(nor,3)); geo.setAttribute('uv',new THREE.BufferAttribute(uv,2)); return geo; }
+function collapseMobile(root){ if(!root) return root; try{
+    root.updateWorldMatrix(true,true);
+    const pivots=[]; const add=n=>{ if(n)pivots.push(n); };
+    const collect=o=>{ const ud=o.userData||{}; add(ud.turret); add(ud.crystal); add(ud.rotor); if(Array.isArray(ud.spin))ud.spin.forEach(add); };
+    collect(root); root.traverse(collect);
+    const pivotSet=new Set(pivots); const mergeRoots=[root,...pivots];
+    for(const mr of mergeRoots){ mr.updateWorldMatrix(true,false); const inv=mr.matrixWorld.clone().invert();
+      const buckets=new Map(); const toRemove=[]; const stack=mr.children.slice();
+      while(stack.length){ const o=stack.pop(); if(pivotSet.has(o))continue;   // 別pivot配下はそのpivotで処理
+        if(o.isMesh&&o.geometry&&o.material&&!Array.isArray(o.material)){ o.updateWorldMatrix(true,false);
+          const k=_matKey(o.material); let b=buckets.get(k); if(!b){ b={mat:o.material,geos:[]}; buckets.set(k,b); }
+          const g=o.geometry.clone(); g.applyMatrix4(inv.clone().multiply(o.matrixWorld)); b.geos.push(g); toRemove.push(o); }
+        if(o.children) for(const c of o.children){ if(!pivotSet.has(c)) stack.push(c); } }
+      for(const o of toRemove){ if(o.parent)o.parent.remove(o); }
+      buckets.forEach(b=>{ if(!b.geos.length)return; const mesh=new THREE.Mesh(_mergeGeos(b.geos),b.mat); mesh.castShadow=false; mesh.receiveShadow=false; mr.add(mesh); }); }
+  }catch(e){ if(typeof console!=='undefined')console.warn('collapseMobile失敗(元のまま継続):',e); } return root; }
+function makeTowerMesh(def){ const g=(_BUILDERS[def.key]||buildGun)(def); if(window.__isMobile) collapseMobile(g); return g; }
 function shade(hex,amt){ let r=(hex>>16)&255,g=(hex>>8)&255,b=hex&255; if(amt<0){const f=1+amt;r*=f;g*=f;b*=f;}else{r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;} return ((r&255)<<16)|((g&255)<<8)|(b&255); }
 function buildEDrone(def){
 var g=new THREE.Group();
@@ -7380,6 +7407,7 @@ function makeEnemyMesh(def){
   const g=new THREE.Group();
   let vis; try{ vis = ENEMY_BUILDERS[def.arch] ? ENEMY_BUILDERS[def.arch](def) : genericEnemyBody(def); }catch(e){ vis=genericEnemyBody(def); }
   try{ tintEnemy(vis, ARCH_COLOR[def.arch], enemyPower(def)); }catch(_){}
+  if(window.__isMobile) collapseMobile(vis);   // モバイルはドローコール削減（spin/rotorはpivot保持＝回転継続）。tint後に結合し色を確定
   g.add(vis); g.userData.body=(vis.userData&&vis.userData.body)||vis; g.userData.spin=vis.userData&&vis.userData.spin; g.userData.rotor=vis.userData&&vis.userData.rotor;
   g.scale.setScalar(def.scale*0.95);
   const _armored=defArmor(def)>0;
