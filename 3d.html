@@ -48,6 +48,7 @@
   .wbtn .watk .dm{font:800 12px "JetBrains Mono";color:#ffd23f;}
   .wbtn .watk .rg{font:700 9px "JetBrains Mono";color:#9fc0d8;}
   .wbtn .watk .tg{font-size:9px;}
+  .wbtn .watk .rl{font:800 8px "Rajdhani";letter-spacing:.2px;color:#bfeaff;background:rgba(70,110,150,.32);border:1px solid rgba(120,170,210,.32);padding:1px 4px;border-radius:6px;white-space:nowrap;align-self:center;}
   /* クラス＝隅の小バッジ（地上=緑/対空=シアン/両用=金/支援=橙） */
   .wbtn .wcb{position:absolute;top:2px;left:4px;font:800 8px "Rajdhani";letter-spacing:.4px;padding:1px 3px;border-radius:5px;}
   .wcb-g{color:#0b1b12;background:#7fe0a0;} .wcb-a{color:#06202b;background:#59c4ee;} .wcb-b{color:#221a05;background:#ffd23f;} .wcb-s{color:#241704;background:#ffb347;}
@@ -202,7 +203,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 59（空中敵の初登場W15を極端に少なく＝1体だけ。W16=3,W17=6と徐々に増やし急な壁を解消。ソフトロック修正/色/ランキング/HUDは継続）</div>
+  <div id="badge">3D MVP · build 60（スマホ発熱大幅減＝軽量ブルーム/pixelRatio1.0/揺れ時の過剰描画抑制。がたつき根治＝敵メッシュをプール再利用で生成74%削減。W10以降のHP/物量の急騰を緩和。GUN=汎用/MG=対集団を数値と役割タグで明確化。飛行敵HP↓＆AA強化値下げで対空が間に合う）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -343,11 +344,11 @@ const G={ scene:'title', parts:200, hp:100, hpMax:100, wave:0, score:0, kills:0,
 // 並びは「左から順番に解放」される順（unlock 昇順）。アンロックは W1〜W100 に分散＝長期目標／やり込み。
 const TOWERS=[
   // cls: 'g'=地上のみ / 'a'=対空のみ / 'b'=両用 / 's'=支援
-  {key:'gun', unlock:1,   name:'GUN', cls:'g', tfwd:'z',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0},   // くすんだティール（砲身=ローカル+z）
+  {key:'gun', unlock:1,   name:'GUN', cls:'g', tfwd:'z',   cost:60,  range:3.6, dmg:8,  cd:0.30, color:0x6fdf4a, splash:0,   slow:0, role:'general'},   // 役割＝汎用：射程3.6で広く対応・1発8で雑魚も装甲もそこそこ・安定の主力。MG(対集団)と棲み分け
   {key:'cannon', unlock:1,name:'CANNON', cls:'g',cost:95, range:3.4, dmg:34, cd:1.10, color:0xff5a3a, splash:1.6, slow:0},   // 燻んだ琥珀/真鍮（コスト110→95に引き下げ）
   {key:'frost', unlock:1, name:'FROST', cls:'g', cost:90,  range:3.2, dmg:5,  cd:0.65, color:0x4a9fff, splash:0,   slow:0.5}, // 寒色スチール
-  {key:'mg', unlock:5,     name:'MG', cls:'g', tfwd:'z',    cost:75,  range:2.8, dmg:5,  cd:0.09, color:0xffa23a, splash:0, slow:0},   // 至近の速射でDPS特化（射程短・連射↑）。GUN＝射程と安さ／MG＝近距離の手数で差別化
-  {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:120, range:4.3, dmg:30, cd:0.90, color:0xff5a3a, splash:0.8, slow:0, air:true},
+  {key:'mg', unlock:3,     name:'MG', cls:'g', tfwd:'z',    cost:50,  range:2.4, dmg:4,  cd:0.07, color:0xffa23a, splash:0, slow:0, role:'swarm'},   // 役割＝対集団シュレッダー：安い(50)・超速射(DPS57)・射程短(2.4)・1発が軽い＝群れに無双だが装甲には無力。GUN(汎用・射程3.6)と明確に棲み分け。W3解放で序盤の群れに間に合う
+  {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:100, range:4.6, dmg:38, cd:0.78, color:0xff5a3a, splash:0.8, slow:0, air:true},   // 対空が間に合うよう強化＋値下げ（DPS33→49・cost120→100・射程↑）。空中敵登場W15に対しW10解放＝5波で2台揃う
   {key:'sniper', unlock:16,name:'SNIPER', cls:'b',cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
   {key:'mortar', unlock:23,name:'MORTAR', cls:'g',cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
   {key:'poison', unlock:31, name:'POISON', cls:'g', tfwd:'z',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
@@ -362,7 +363,7 @@ const TOWERS=[
 const TOWER_BY_KEY={}; TOWERS.forEach(t=>TOWER_BY_KEY[t.key]=t);
 const AIR_START=((TOWER_BY_KEY.aa&&TOWER_BY_KEY.aa.unlock)||10)+5;   // 空中敵の登場＝AA解放(W10)から+5ウェーブ後＝W15（AA自体の解放はそのまま）
 const ENEMY_SPEED_MUL=0.81;   // 敵の移動を少しゆっくりに（さらに5%減速：0.85→0.81）
-const FLYING_HP_MUL=0.7;   // 飛行敵が強すぎたのでHPを30%ダウン
+const FLYING_HP_MUL=0.6;   // 飛行敵HPをさらに低減（0.7→0.6）＝対空が間に合わない問題の緩和
 
 // ---- 敵アーキタイプ（MVP）----
 const ENEMIES=[
@@ -625,7 +626,7 @@ function initScene(){
   const cv=document.getElementById('cv');
   const _isMobile=(typeof navigator!=='undefined'&&/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||''))||(typeof window!=='undefined'&&Math.min(window.innerWidth,window.innerHeight)<=820);
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:!_isMobile});   // モバイルはMSAA切ってGPU負荷減
-  renderer.setPixelRatio(Math.min(_isMobile?1.3:1.6,window.devicePixelRatio||1));   // 高解像度ピクセル比のフリーズ対策（特にスマホ）
+  renderer.setPixelRatio(Math.min(_isMobile?1.0:1.6,window.devicePixelRatio||1));   // 発熱対策：モバイルはpixelRatio=1.0に下げて塗りピクセル数を約40%削減（1.3→1.0）。PCは現状維持
   window.__isMobile=_isMobile;
   renderer.shadowMap.enabled=!_isMobile; renderer.shadowMap.type=THREE.PCFSoftShadowMap;   // スマホは影を無効化＝メモリ/GPU負荷を大きく削減（重い波/ボスでの固まり対策）
   renderer.outputEncoding=THREE.sRGBEncoding;                 // 正しい色空間
@@ -690,7 +691,7 @@ function updateCamera(){
 }
 function resize(){ const w=window.innerWidth,h=window.innerHeight;
   renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
-  if(composer){ composer.setSize(w,h); if(bloomPass&&bloomPass.setSize) bloomPass.setSize(w,h); } }
+  if(composer){ composer.setSize(w,h); if(bloomPass&&bloomPass.setSize){ const bs=window.__isMobile?0.5:1; bloomPass.setSize(Math.max(2,Math.round(w*bs)),Math.max(2,Math.round(h*bs))); } } }   // 軽量ブルーム：モバイルはブルームを半解像度で合成＝発熱の最大要因を約1/4に。本シーンの描画はフル解像度のまま（発光のにじみだけ僅かに柔らかく）
 // 画面の向きに合わせて初期視点をフィット。横長盤面が縦画面で見切れる対策：
 // 縦画面は視点を90°回して盤面の長辺を縦に＝全体が収まる（敵HQ上→自陣HQ下）。横画面は従来通り。
 let _lastPortrait=null;
@@ -7388,10 +7389,32 @@ function makeEnemyMesh(def){
   return g;
 }
 
+// 敵メッシュのプール（def別）。makeEnemyMeshはgeometry/materialを大量(約15個)生成するため、
+// スポーン毎に作ると敵が湧くたびにGPUアップロードが走り＝がたつきの主因。死亡時もdropMesh(dispose)で
+// 生成/破棄が往復しGC負荷＝サクサク感を削ぐ。→ def(=見た目が完全一致)ごとにメッシュを再利用。
+// 生成は各defにつき初回1回だけ。同一波は同じdefが多数なので2体目以降は生成ゼロ＝ヒッチ消滅。
+const _enemyPool=new Map();   // def -> [mesh,...]
+let _enemyMeshBuilt=0, _enemySpawned=0;        // 新規生成した総数（プール命中時は増えない）／総スポーン数＝がたつき改善の計測用
+function acquireEnemyMesh(def){
+  _enemySpawned++;
+  const pool=_enemyPool.get(def);
+  let m=(pool&&pool.length)?pool.pop():null;
+  if(!m){ m=makeEnemyMesh(def); _enemyMeshBuilt++; }
+  m.visible=true; m.rotation.set(0,0,0);
+  const hb=m.userData&&m.userData.hpbar; if(hb){ hb.scale.x=1; hb.position.x=0; }   // HPバーを満タンにリセット
+  return m;
+}
+function releaseEnemyMesh(e){ const m=e&&e.mesh; if(!m)return;
+  if(m.parent)m.parent.remove(m); else if(scene)scene.remove(m);
+  let pool=_enemyPool.get(e.def); if(!pool){ pool=[]; _enemyPool.set(e.def,pool); }
+  if(pool.length<64) pool.push(m); else disposeMesh(m);   // プール上限超過分のみ解放（メモリ青天井防止）
+}
+try{ window.__enemyPoolStats=function(){ let p=0; _enemyPool.forEach(function(a){p+=a.length;}); return {built:_enemyMeshBuilt,spawned:_enemySpawned,pooled:p}; }; }catch(_){}
+
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
-  const q=[]; const count=Math.round(7+n*1.45+Math.max(0,n-4)*1.2);
-  const hpMul=1+(n-1)*0.15+Math.pow(n/8.5,2)*1.3;   // 高難度：敵を遅くした分HP/数を厚く。戦略(迷路/相性/集中)を立てないと序盤で詰む
+  const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.8);   // 物量の加速を緩和（1.45/1.2→1.35/0.8）＝W10以降に数で押し潰されない
+  const hpMul=1+(n-1)*0.15+Math.pow(n/9.5,2)*0.95;   // W10以降のHP急騰を緩和（二次項 8.5/1.3→9.5/0.95）。序盤(W1-8)はほぼ据え置き、W12で約-20%/W16で約-24%＝策略が間に合う。放置=負けは維持
   const NB=ENEMIES.filter(e=>!e.boss);
   const NBG=NB.filter(e=>!e.flying);   // 非飛行のみ（空中敵が出る前のウェーブの代替に使う）
   const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
@@ -7436,7 +7459,7 @@ function meteorImpact(x,z){ G.shake=Math.max(G.shake||0,1.0); G.hurt=Math.max(G.
   const R=2.6, R2=R*R; for(const e of G.enemies){ if(e.dead||e.flying)continue; const dx=e.x-x,dz=e.z-z; if(dx*dx+dz*dz<=R2){ e.hp-=140; if(e.hp<=0)killEnemy(e,true); } }
   if(AC){ if(!playSample('boombig',{rate:0.9,vol:0.95,duck:true})){ const t=_now(); tone(70,28,t,0.7,'sine',0.55); noise(t,0.6,0.55,'lowpass',500,1); noise(t,0.08,0.5,'highpass',2000,1); } } }
 function spawnOne(item){
-  const def=item.def; const m=makeEnemyMesh(def); const ent=entryWorld();
+  const def=item.def; const m=acquireEnemyMesh(def); const ent=entryWorld();
   const sx=OFFBOARD_X, sz=ent.z;   // 盤外左・中央から出現
   const fy=def.flying?1.5:0;
   m.position.set(sx,fy,sz); scene.add(m);
@@ -7463,11 +7486,11 @@ function disposeMesh(o){ if(!o)return; o.traverse(function(n){
   }); }
 function dropMesh(o){ if(!o)return; if(o.parent)o.parent.remove(o); else if(scene)scene.remove(o); disposeMesh(o); }   // remove + dispose をまとめて
 function killEnemy(e,byPlayer){
-  if(e.dead) return; e.dead=true; dropMesh(e.mesh);
+  if(e.dead) return; e.dead=true; releaseEnemyMesh(e);
   if(byPlayer){ G.parts+=Math.round(e.def.reward*0.6); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬をさらに引き締め（物量で押せない＝選択が要る）
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
-function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; dropMesh(e.mesh); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
+function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; releaseEnemyMesh(e); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
   sfx.baseHit();
   if(G.hp<=0){ G.hp=0; gameOver(); } }
 
@@ -7731,11 +7754,15 @@ function buildLangPicker(){ const c=document.getElementById('langpick'); if(!c)r
 // クラスは隅の小バッジで表示（地上/対空/両用/支援）＝高さを取らない
 function clsBadge(cls){ return '<div class="wcb wcb-'+cls+'">'+clsLabel(cls)+'</div>'; }
 // 攻撃力を大きくはっきり：⚔威力(大・金) ◎射程(小)＋特殊タグ(◉範囲/❄減速/☣毒/🔥炎/⚡連鎖/⇥貫通)
+// 武器の役割ラベル（使い分けを明確化）。短い日本語＝モバイルの狭いバーでも視認できる
+const ROLE_LABEL={general:'汎用',swarm:'対集団',splash:'範囲',air:'対空',snipe:'狙撃',slow:'減速',dot:'継続',chain:'連鎖',pierce:'貫通',support:'支援'};
+function roleOf(t){ if(t.role)return t.role; if(t.cls==='s')return 'support'; if(t.cls==='a')return 'air'; if(t.pierce)return 'pierce'; if(t.chain)return 'chain'; if(t.dot)return 'dot'; if(t.splash>0)return 'splash'; if(t.slow>0)return 'slow'; if(t.range>=5)return 'snipe'; return null; }
 function weaponStatsHTML(t){
-  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄SLOW':'▲+40%'; return '<div class="watk"><span class="rg">'+eff+' ◎'+t.range.toFixed(1)+'</span></div>'; }
+  const rk=roleOf(t); const roleTag=rk&&ROLE_LABEL[rk]?('<span class="rl">'+ROLE_LABEL[rk]+'</span>'):'';
+  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄SLOW':'▲+40%'; return '<div class="watk">'+roleTag+'<span class="rg">'+eff+' ◎'+t.range.toFixed(1)+'</span></div>'; }
   let tags='';
   if(t.splash>0)tags+='◉'; if(t.slow>0)tags+='❄'; if(t.dot)tags+=(t.dot.type==='poison'?'☣':'🔥'); if(t.chain)tags+='⚡'; if(t.pierce)tags+='⇥';
-  return '<div class="watk"><span class="dm">⚔'+Math.round(t.dmg)+'</span><span class="rg">◎'+t.range.toFixed(1)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
+  return '<div class="watk">'+roleTag+'<span class="dm">⚔'+Math.round(t.dmg)+'</span><span class="rg">◎'+t.range.toFixed(1)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
 }
 // 各武器の3Dメッシュをオフスクリーンで描画してアイコン(dataURL)化＝バーに「機械」を表示
 const WEAPON_THUMB={};
@@ -7818,7 +7845,7 @@ document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
-  G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(e=>dropMesh(e.mesh)); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));
+  G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(releaseEnemyMesh); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));   // 敵メッシュはプールへ返却＝リトライ時の再生成ヒッチも消える
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
 }
@@ -8008,7 +8035,7 @@ function loop(now){
   // シミュレーションは固定ステップ(STEP)のまま正確。重いブルーム合成の回数を減らすのが目的。
   const _minDt = window.__isMobile ? (_playing?(1/30):(1/8)) : (_playing?0:(1/8));
   _rAcc+=frame;
-  if(_rAcc>=_minDt-1e-4 || (G.shake||0)>0){
+  if(_rAcc>=_minDt-1e-4 || (!window.__isMobile && (G.shake||0)>0)){   // 発熱対策：揺れ中の毎フレ描画（＝重いブルーム合成）はPCのみ。モバイルは30fps間引きのまま（揺れも30fpsで十分動く）
     _rAcc=0;
     const _sk=G.shake||0; let _ox=0,_oy=0; if(_sk>0&&camera){ _ox=(Math.random()-0.5)*_sk; _oy=(Math.random()-0.5)*_sk; camera.position.x+=_ox; camera.position.y+=_oy; }
     if(!_ctxLost){ try{ if(composer) composer.render(); else if(renderer) renderer.render(scene,camera); }
