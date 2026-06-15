@@ -203,7 +203,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 63（発熱/がたつき/早送り不発の真因を特定＝モデル過密でドローコール9000超。モバイル限定でモデルのサブメッシュをマテリアル別に結合し9053→894(約1/10)・1描画30→4.4ms。回転砲塔/ローター等のアニメは保持。併せてモバイルはブルームOFF＋pixelRatio0.8。PCはフル精細のまま）</div>
+  <div id="badge">3D MVP · build 64（経済調整：ウェーブクリアボーナスを3倍／ボス撃破ボーナス+500%=6倍）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7526,7 +7526,7 @@ function disposeMesh(o){ if(!o)return; o.traverse(function(n){
 function dropMesh(o){ if(!o)return; if(o.parent)o.parent.remove(o); else if(scene)scene.remove(o); disposeMesh(o); }   // remove + dispose をまとめて
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; releaseEnemyMesh(e);
-  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.6); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬をさらに引き締め（物量で押せない＝選択が要る）
+  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.6*((e.def&&e.def.boss)?6:1)); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬：通常は0.6倍、ボスは+500%(=6倍)ボーナス
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
 function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; releaseEnemyMesh(e); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
@@ -7571,7 +7571,7 @@ function update(dt){
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
-    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=6+Math.round(G.wave*0.9); G.parts+=cb; sfx.waveClear(); }   // ウェーブ報酬をさらに引き締め（部品が溜まりすぎない）
+    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=Math.round((6+G.wave*0.9)*3); G.parts+=cb; sfx.waveClear(); }   // ウェーブクリアボーナスを3倍に
   } else if(!G.awaitStart){ G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }   // 最初の出撃待ち中は自動進行しない（好きに配置できる）
   if(G.era>=1 && G.waveActive && G.disasterT!=null){ G.disasterT-=dt; if(G.disasterT<=0){ const n=G.era; for(let m=0;m<n;m++) meteorStrike(); G.disasterT=Math.max(5,11-G.era*1.5); } }
   // 敵移動（フローフィールド）
