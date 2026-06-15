@@ -203,7 +203,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 60（スマホ発熱大幅減＝軽量ブルーム/pixelRatio1.0/揺れ時の過剰描画抑制。がたつき根治＝敵メッシュをプール再利用で生成74%削減。W10以降のHP/物量の急騰を緩和。GUN=汎用/MG=対集団を数値と役割タグで明確化。飛行敵HP↓＆AA強化値下げで対空が間に合う）</div>
+  <div id="badge">3D MVP · build 61（build60のW18前後の固まり=メッシュプールのGPUメモリ膨張を修正。保持総数を24個に固定し古い順に破棄＝メモリ有界でコンテキスト消失を防止。発熱減/がたつき根治/難易度緩和/GUN・MG差別化/対空強化は継続）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7393,23 +7393,34 @@ function makeEnemyMesh(def){
 // スポーン毎に作ると敵が湧くたびにGPUアップロードが走り＝がたつきの主因。死亡時もdropMesh(dispose)で
 // 生成/破棄が往復しGC負荷＝サクサク感を削ぐ。→ def(=見た目が完全一致)ごとにメッシュを再利用。
 // 生成は各defにつき初回1回だけ。同一波は同じdefが多数なので2体目以降は生成ゼロ＝ヒッチ消滅。
+// 【重要・GPUメモリ有界】プールは保持しすぎるとスマホのGPUメモリを食い潰しWebGLコンテキスト消失＝
+// 「画面が固まる/勝手にリロード」を招く（build60でW18前後の固まりとして発生）。そこで保持総数を
+// POOL_CAP個に固定し、超過時は「解放が最も古い＝旧waveの使われないメッシュ」から破棄(FIFO)。
+// これで保持量は従来の生存敵数程度に収まりつつ、同一wave内の連続スポーンは再利用＝がたつきは消える。
 const _enemyPool=new Map();   // def -> [mesh,...]
-let _enemyMeshBuilt=0, _enemySpawned=0;        // 新規生成した総数（プール命中時は増えない）／総スポーン数＝がたつき改善の計測用
+const _poolOrder=[];          // 解放順FIFO（古い順に退避）{def,mesh}
+let _poolTotal=0, _enemyMeshBuilt=0, _enemySpawned=0;
+const POOL_CAP=24;            // 保持メッシュ総数の上限（GPUメモリを抑えコンテキスト消失を防止）
 function acquireEnemyMesh(def){
   _enemySpawned++;
   const pool=_enemyPool.get(def);
   let m=(pool&&pool.length)?pool.pop():null;
-  if(!m){ m=makeEnemyMesh(def); _enemyMeshBuilt++; }
+  if(m){ for(let i=_poolOrder.length-1;i>=0;i--){ if(_poolOrder[i].mesh===m){ _poolOrder.splice(i,1); break; } } _poolTotal--; }   // FIFOからも除去
+  else { m=makeEnemyMesh(def); _enemyMeshBuilt++; }
   m.visible=true; m.rotation.set(0,0,0);
   const hb=m.userData&&m.userData.hpbar; if(hb){ hb.scale.x=1; hb.position.x=0; }   // HPバーを満タンにリセット
   return m;
 }
 function releaseEnemyMesh(e){ const m=e&&e.mesh; if(!m)return;
   if(m.parent)m.parent.remove(m); else if(scene)scene.remove(m);
+  while(_poolTotal>=POOL_CAP && _poolOrder.length){   // 上限超過：最古を破棄してメモリ有界に（GPUメモリ消失=固まり防止）
+    const old=_poolOrder.shift(); const op=_enemyPool.get(old.def); if(op){ const k=op.indexOf(old.mesh); if(k>=0)op.splice(k,1); }
+    disposeMesh(old.mesh); _poolTotal--;
+  }
   let pool=_enemyPool.get(e.def); if(!pool){ pool=[]; _enemyPool.set(e.def,pool); }
-  if(pool.length<64) pool.push(m); else disposeMesh(m);   // プール上限超過分のみ解放（メモリ青天井防止）
+  pool.push(m); _poolOrder.push({def:e.def,mesh:m}); _poolTotal++;
 }
-try{ window.__enemyPoolStats=function(){ let p=0; _enemyPool.forEach(function(a){p+=a.length;}); return {built:_enemyMeshBuilt,spawned:_enemySpawned,pooled:p}; }; }catch(_){}
+try{ window.__enemyPoolStats=function(){ return {built:_enemyMeshBuilt,spawned:_enemySpawned,pooled:_poolTotal,cap:POOL_CAP}; }; }catch(_){}
 
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
