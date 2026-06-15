@@ -93,6 +93,19 @@
   @keyframes sbp{0%,100%{box-shadow:0 0 22px rgba(60,220,150,.45);}50%{box-shadow:0 0 36px rgba(60,220,150,.85);}}
   #prepHint{position:absolute;left:50%;bottom:188px;transform:translateX(-50%);display:none;font:700 13px 'Rajdhani';letter-spacing:1px;color:#bfe9d2;text-shadow:0 1px 6px rgba(0,0,0,.85);background:rgba(8,14,22,.6);padding:5px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;z-index:18;}
   #prepHint.show{display:block;}
+  /* メテオ必殺ボタン（右下・下バーの上） */
+  #bMeteor{position:absolute;right:12px;bottom:64px;width:64px;height:64px;border-radius:50%;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 38%,#3a1612,#160707);border:2px solid #6a2f2f;cursor:pointer;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;z-index:19;
+    box-shadow:0 4px 14px rgba(0,0,0,.55);transition:opacity .18s;}
+  #bMeteor.cooling{opacity:.62;}
+  #bMeteor .mfill{position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(#ff5a2a calc(var(--p,0)*1%),rgba(255,90,42,0) 0);
+    -webkit-mask:radial-gradient(circle,transparent 26px,#000 27px);mask:radial-gradient(circle,transparent 26px,#000 27px);pointer-events:none;}
+  #bMeteor .mic{font-size:28px;line-height:1;color:#ffb89a;text-shadow:0 0 8px rgba(255,120,60,.5);pointer-events:none;}
+  #bMeteor .mcd{position:absolute;bottom:5px;font:700 11px 'Chakra Petch';color:#ffd0b0;pointer-events:none;}
+  #bMeteor.ready{border-color:#ff3b54;animation:meteorPulse .85s infinite;}
+  #bMeteor.ready .mic{color:#fff;text-shadow:0 0 12px #ff5a3a,0 0 22px #ff3b54;}
+  #bMeteor.ready .mfill{background:conic-gradient(#ff5a2a 100%,#ff5a2a 0);}
+  @keyframes meteorPulse{0%,100%{box-shadow:0 0 6px #ff3b54,0 0 2px #ff3b54;}50%{box-shadow:0 0 20px #ff3b54,0 0 38px rgba(255,59,84,.8);}}
 #ctxToast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;font:700 16px 'Rajdhani';letter-spacing:1px;color:#cfe6ff;background:rgba(10,16,26,.88);padding:14px 24px;border-radius:12px;border:1px solid rgba(120,160,200,.35);z-index:40;pointer-events:auto;cursor:pointer;}
   #ctxToast small{display:block;margin-top:5px;font-size:11px;color:#9ab;}
   #bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
@@ -196,6 +209,7 @@
     </div>
   </div>
   <div id="bottom"></div>
+  <div id="bMeteor" title="meteor"><div class="mfill"></div><div class="mic">☄</div><div class="mcd" id="meteorCd"></div></div>
   <div id="prepHint" data-i18n="prep"></div>
   <div id="startBtn"><span class="sb1">▶</span><span class="sb2" data-i18n="start">START</span></div>
   <div id="ctxToast">⟳ 描画を復旧中…<br><small>戻らない場合はタップで再読み込み</small></div>
@@ -203,7 +217,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 64（経済調整：ウェーブクリアボーナスを3倍／ボス撃破ボーナス+500%=6倍）</div>
+  <div id="badge">3D MVP · build 66（軽量化：HUDを参照キャッシュ＋差分更新化＝毎フレのgetElementById×15と無条件DOM書き込みを廃止しstyle recalc削減／boss判定のクロージャ毎フレ生成を撤廃。build64/65で重くなっていないことを実測確認・14波soakで例外0）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -311,6 +325,9 @@ function setLang(code){ if(!I18N[code])return; LANG=code; try{localStorage.setIt
 // ---- 盤面定数 ----
 const COLS=24, ROWS=13, CELL=1.4;   // マス1.5倍
 const WW=COLS*CELL, WD=ROWS*CELL;
+const METEOR_DMG=700;          // メテオ必殺の威力（地上・対空とも／装甲貫通）
+const METEOR_CD=90;            // メテオのリチャージ秒数（「10ターンに一度ぐらい」。ここ1つで頻度調整）
+const METEOR_HALF=3*CELL;      // 6マス四方＝中心から±3マス
 const GOAL_C=COLS-1, BASE_R=Math.floor(ROWS/2);   // 基地（味方）を右側へ＝敵味方の位置を真逆に
 const SPAWN_C=0, SPAWN_R=Math.floor(ROWS/2);       // 敵スポーンを左側へ
 const idx=(c,r)=>r*COLS+c;
@@ -7497,6 +7514,19 @@ function meteorImpact(x,z){ G.shake=Math.max(G.shake||0,1.0); G.hurt=Math.max(G.
   const fl=new THREE.Mesh(new THREE.SphereGeometry(1.6,12,12), new THREE.MeshBasicMaterial({color:0xffcaa0,transparent:true,opacity:0.9})); fl.position.set(x,0.6,z); scene.add(fl); G.fx.push({mesh:fl,life:0.3,max:0.3,kind:'flash'});
   const R=2.6, R2=R*R; for(const e of G.enemies){ if(e.dead||e.flying)continue; const dx=e.x-x,dz=e.z-z; if(dx*dx+dz*dz<=R2){ e.hp-=140; if(e.hp<=0)killEnemy(e,true); } }
   if(AC){ if(!playSample('boombig',{rate:0.9,vol:0.95,duck:true})){ const t=_now(); tone(70,28,t,0.7,'sine',0.55); noise(t,0.6,0.55,'lowpass',500,1); noise(t,0.08,0.5,'highpass',2000,1); } } }
+// プレイヤーのメテオ必殺：指定地点へ大隕石を落とす（着弾は meteorImpactBig）
+function playerMeteor(x,z){ if(!scene)return;
+  const met=new THREE.Mesh(new THREE.SphereGeometry(0.55,16,16), new THREE.MeshBasicMaterial({color:0xff7a2a})); met.position.set(x,16,z); scene.add(met);
+  G.fx.push({mesh:met,life:0.7,max:0.7,kind:'meteor',tx:x,tz:z,big:true});
+  // 6マス四方の着弾予告リング（赤）
+  const wr=new THREE.Mesh(new THREE.RingGeometry(METEOR_HALF-0.5,METEOR_HALF+0.35,48), new THREE.MeshBasicMaterial({color:0xff3b2a,transparent:true,opacity:0.55,side:THREE.DoubleSide})); wr.rotation.x=-Math.PI/2; wr.position.set(x,0.07,z); scene.add(wr);
+  G.fx.push({mesh:wr,life:0.7,max:0.7,kind:'metwarn',tx:x,tz:z}); }
+// メテオ必殺の着弾：6マス四方の地上＋対空に大ダメージ（装甲貫通／自陣HPは無傷）
+function meteorImpactBig(x,z){ G.shake=Math.max(G.shake||0,1.4);
+  spawnBurst(x,z,0xff8a3a,42); spawnRing(x,z,0xff5a2a); spawnRing(x,z,0xffcaa0);
+  const fl=new THREE.Mesh(new THREE.SphereGeometry(3.6,18,18), new THREE.MeshBasicMaterial({color:0xffcaa0,transparent:true,opacity:0.92})); fl.position.set(x,0.9,z); scene.add(fl); G.fx.push({mesh:fl,life:0.42,max:0.42,kind:'flash'});
+  for(const e of G.enemies){ if(e.dead)continue; const dx=e.x-x,dz=e.z-z; if(Math.abs(dx)<=METEOR_HALF&&Math.abs(dz)<=METEOR_HALF){ e.hp-=METEOR_DMG; if(e.hp<=0)killEnemy(e,true); } }   // 地上・対空とも／装甲貫通
+  if(AC){ if(!playSample('boombig',{rate:0.78,vol:1.0,duck:true})){ const t=_now(); tone(58,24,t,0.9,'sine',0.6); noise(t,0.8,0.6,'lowpass',420,1); noise(t,0.1,0.55,'highpass',1800,1); } } }
 function spawnOne(item){
   const def=item.def; const m=acquireEnemyMesh(def); const ent=entryWorld();
   const sx=OFFBOARD_X, sz=ent.z;   // 盤外左・中央から出現
@@ -7559,7 +7589,7 @@ function updateFx(dt){
     else if(f.kind==='puff'){ f.mesh.position.y+=f.vy*dt; f.mesh.material.opacity=0.8*(f.life/f.max); }
     else if(f.kind==='flame'){ f.mesh.position.y+=f.vy*dt; f.vy*=0.93; const k=f.life/f.max; f.mesh.material.opacity=0.95*k; f.mesh.scale.setScalar(0.5+k*0.85); }
     else if(f.kind==='flamecol'){ const k=f.life/f.max; f.mesh.material.opacity=0.82*k; f.mesh.scale.y=0.6+(1-k)*1.5; }
-    else if(f.kind==='meteor'){ const k=1-f.life/f.max; f.mesh.position.y=13*(1-k)+0.4; if(f.life<=dt){ meteorImpact(f.tx,f.tz); } }
+    else if(f.kind==='meteor'){ const k=1-f.life/f.max; f.mesh.position.y=13*(1-k)+0.4; if(f.life<=dt){ if(f.big)meteorImpactBig(f.tx,f.tz); else meteorImpact(f.tx,f.tz); } }
     else if(f.kind==='metwarn'){ f.mesh.material.opacity=0.55*(0.5+0.5*Math.sin((f.max-f.life)*18)); }
     if(f.life<=0){ dropMesh(f.mesh); G.fx.splice(i,1); } }
 }
@@ -7567,6 +7597,7 @@ function updateFx(dt){
 /* ====================== 更新 ====================== */
 function update(dt){
   if(G.scene!=='playing') return;
+  if(G.meteorCD>0){ G.meteorCD=Math.max(0,G.meteorCD-dt); }   // メテオ必殺のリチャージ（ゲーム内時間・倍速に追従／ポーズ中は止まる）
   if(G.flowDirty){ buildFlow(); G.flowDirty=false; for(const e of G.enemies){ e._minDist=null; e._stuckT=0; } }   // 経路が変わったら進捗計測をリセット（アンチスタックの誤検知防止）
   // スポーン
   if(G.waveActive){
@@ -7782,6 +7813,25 @@ window.addEventListener('pointermove',e=>{ if(!_place) return;
 window.addEventListener('pointerup',()=>{ if(_place) endPlaceDrag(); });
 window.addEventListener('pointercancel',()=>{ if(_place){ if(_place.ghost)dropMesh(_place.ghost); if(_place.ring)dropMesh(_place.ring); _place=null; } });
 
+/* ---- メテオ必殺：ボタンをドラッグ→盤面で照準→離して落下 ---- */
+let _meteor=null;
+function startMeteorDrag(ev){ if(G.scene!=='playing'||G.paused) return; if(G.meteorCD>0){ sfx.error&&sfx.error(); return; }
+  _meteor={active:false,sx:ev?ev.clientX:0,sy:ev?ev.clientY:0,ring:null,cell:null,valid:false}; }
+function updateMeteorDrag(cx,cy){ if(!_meteor||!_meteor.active) return; const cell=raycastCell(cx,cy-PLACE_LIFT);
+  if(!cell){ if(_meteor.ring)_meteor.ring.visible=false; _meteor.cell=null; _meteor.valid=false; return; }
+  const w=cellToWorld(cell.c,cell.r); _meteor.cell=cell; _meteor.valid=true;
+  if(!_meteor.ring){ _meteor.ring=new THREE.Mesh(new THREE.RingGeometry(METEOR_HALF-0.5,METEOR_HALF+0.35,48), new THREE.MeshBasicMaterial({color:0xff3b2a,transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false,fog:false})); _meteor.ring.rotation.x=-Math.PI/2; scene.add(_meteor.ring); }
+  _meteor.ring.visible=true; _meteor.ring.position.set(w.x,0.07,w.z); }
+function endMeteorDrag(){ if(!_meteor) return; const m=_meteor; _meteor=null; if(m.ring)dropMesh(m.ring);
+  if(m.active && m.valid && m.cell && G.meteorCD<=0){ const w=cellToWorld(m.cell.c,m.cell.r); playerMeteor(w.x,w.z); G.meteorCD=G.meteorMax; G.shake=Math.max(G.shake||0,0.25); sfx.ui&&sfx.ui(); }
+  else if(m.active){ sfx.error&&sfx.error(); } }
+window.addEventListener('pointermove',e=>{ if(!_meteor) return;
+  if(!_meteor.active){ const dx=e.clientX-_meteor.sx, dy=e.clientY-_meteor.sy; if(dx*dx+dy*dy<90) return; _meteor.active=true; }
+  e.preventDefault(); updateMeteorDrag(e.clientX,e.clientY); },{passive:false});
+window.addEventListener('pointerup',()=>{ if(_meteor) endMeteorDrag(); });
+window.addEventListener('pointercancel',()=>{ if(_meteor){ if(_meteor.ring)dropMesh(_meteor.ring); _meteor=null; } });
+(function(){ const mb=document.getElementById('bMeteor'); if(mb){ mb.addEventListener('pointerdown',ev=>{ startMeteorDrag(ev); try{mb.setPointerCapture(ev.pointerId);}catch(_){} ev.preventDefault(); }); } })();
+
 /* ====================== HUD ====================== */
 // 地上=戦車アイコン / 対空=ジェットアイコン。撃てる対象だけ点灯＝言語に依存せず一目でわかる。
 const TANK_SVG='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="8" width="5" height="3" rx="1"/><rect x="10" y="9" width="9" height="2" rx="1"/><rect x="3" y="11" width="14" height="5" rx="1.5"/><rect x="2" y="17" width="16" height="2.4" rx="1.2"/></svg>';
@@ -7844,22 +7894,40 @@ function buildWeaponBar(){ const bar=document.getElementById('bottom'); bar.inne
     }
     bar.appendChild(b); });
 }
+// 【軽量化】HUDは毎フレ呼ばれる。getElementById総当たり＋無条件DOM書き込みはstyle recalcを誘発＝発熱源。
+// → 要素参照をキャッシュし、値が変化したときだけ書き込む（差分更新）。変化なしフレームはDOM操作ゼロ。
+const _hud=Object.create(null), _hudP=Object.create(null);
+function _el(id){ let e=_hud[id]; if(e===undefined)e=_hud[id]=document.getElementById(id); return e; }
+function _txt(id,v){ if(_hudP['t'+id]!==v){ _hudP['t'+id]=v; const e=_el(id); if(e)e.textContent=v; } }
+function _sty(id,p,v){ const k=id+'$'+p; if(_hudP[k]!==v){ _hudP[k]=v; const e=_el(id); if(e)e.style[p]=v; } }
+function _cls(id,n,on){ const k=id+'#'+n; if(_hudP[k]!==on){ _hudP[k]=on; const e=_el(id); if(e)e.classList.toggle(n,on); } }
 function syncHUD(){
-  document.getElementById('hpfill').style.width=Math.max(0,G.hp/G.hpMax*100)+'%';
-  document.getElementById('hpfill').style.background=G.hp>G.hpMax*0.5?'#2fd06a':G.hp>G.hpMax*0.25?'#ffb22e':'#ff3b54';
-  document.getElementById('hptxt').textContent=Math.ceil(G.hp)+'/'+G.hpMax;
-  document.getElementById('parts').textContent=Math.round(G.parts);
-  document.getElementById('wave').textContent=G.wave;
-  document.getElementById('score').textContent=G.score.toLocaleString();
-  document.getElementById('bSpeed').textContent='×'+G.speed;
-  document.getElementById('bPause').textContent=G.paused?'▶':'❚❚';
-  const cm=document.getElementById('combo'); if(cm){ if(G.combo>=2){ cm.style.display='block'; cm.textContent='×'+G.combo+' COMBO'; const ht=Math.min(1,(G.combo-2)/16); cm.style.color=ht<0.5?'#ffd23f':'#ff7a3f'; cm.style.opacity=Math.min(1,(G.comboT||0)/1.5+0.35); } else cm.style.display='none'; }
-  const boss=G.enemies.find(e=>e.def&&e.def.boss&&!e.dead); const bb=document.getElementById('bossbar');
-  if(boss){ bb.style.display='block'; document.getElementById('bossfill').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%'; document.getElementById('bossname').textContent='☠ '+loc('boss'); } else if(bb) bb.style.display='none';
-  const bw=document.getElementById('bossWarn'); if(bw){ if((G.bossWarnT||0)>0){ bw.style.display='block'; bw.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); } else bw.style.display='none'; }
-  const showStart=(G.scene==='playing'&&G.awaitStart&&!G.waveActive);   // 最初の出撃ボタン＆ヒント
-  const sb=document.getElementById('startBtn'); if(sb) sb.classList.toggle('show',showStart);
-  const ph=document.getElementById('prepHint'); if(ph) ph.classList.toggle('show',showStart);
+  _sty('hpfill','width',Math.max(0,G.hp/G.hpMax*100)+'%');
+  _sty('hpfill','background',G.hp>G.hpMax*0.5?'#2fd06a':G.hp>G.hpMax*0.25?'#ffb22e':'#ff3b54');
+  _txt('hptxt',Math.ceil(G.hp)+'/'+G.hpMax);
+  _txt('parts',Math.round(G.parts));
+  _txt('wave',G.wave);
+  _txt('score',G.score.toLocaleString());
+  _txt('bSpeed','×'+G.speed);
+  _txt('bPause',G.paused?'▶':'❚❚');
+  const playing=(G.scene==='playing');
+  _sty('bMeteor','display',playing?'flex':'none');
+  if(playing){ const ready=(G.meteorCD<=0); const pct=ready?100:Math.round((1-G.meteorCD/(G.meteorMax||METEOR_CD))*100);
+    _cls('bMeteor','ready',ready); _cls('bMeteor','cooling',!ready);
+    if(_hudP.mp!==pct){ _hudP.mp=pct; const mb=_el('bMeteor'); if(mb)mb.style.setProperty('--p',pct); }
+    _txt('meteorCd',ready?'':Math.ceil(G.meteorCD)+'s'); }
+  const comboOn=(G.combo>=2);
+  _sty('combo','display',comboOn?'block':'none');
+  if(comboOn){ _txt('combo','×'+G.combo+' COMBO'); const ht=Math.min(1,(G.combo-2)/16); _sty('combo','color',ht<0.5?'#ffd23f':'#ff7a3f'); const e=_el('combo'); if(e)e.style.opacity=Math.min(1,(G.comboT||0)/1.5+0.35); }
+  let boss=null; for(let i=0;i<G.enemies.length;i++){ const e=G.enemies[i]; if(e.def&&e.def.boss&&!e.dead){ boss=e; break; } }   // find+クロージャの毎フレ生成を回避
+  _sty('bossbar','display',boss?'block':'none');
+  if(boss){ _sty('bossfill','width',Math.max(0,boss.hp/boss.maxhp*100)+'%'); _txt('bossname','☠ '+loc('boss')); }
+  const warnOn=((G.bossWarnT||0)>0);
+  _sty('bossWarn','display',warnOn?'block':'none');
+  if(warnOn){ const e=_el('bossWarn'); if(e)e.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); }
+  const showStart=(playing&&G.awaitStart&&!G.waveActive);   // 最初の出撃ボタン＆ヒント
+  _cls('startBtn','show',showStart);
+  _cls('prepHint','show',showStart);
 }
 document.getElementById('bNext').addEventListener('click',()=>{ if(G.scene==='playing'&&!G.waveActive){ startWave(true); } });
 document.getElementById('startBtn').addEventListener('click',()=>{ if(G.scene==='playing'&&G.awaitStart){ startWave(true); sfx.wave&&sfx.wave(); } });
@@ -7884,6 +7952,7 @@ document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
+  G.meteorMax=METEOR_CD; G.meteorCD=0;   // メテオ必殺：開始時はチャージ済み（すぐ撃てる）
   G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(releaseEnemyMesh); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));   // 敵メッシュはプールへ返却＝リトライ時の再生成ヒッチも消える
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
@@ -8066,7 +8135,7 @@ function loop(now){
   const _playing=!G.paused && G.scene==='playing';
   if(_playing){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
-  if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=document.getElementById('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
+  if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=_el('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
   if(typeof updateBgm==='function')updateBgm();
   syncHUD();
   if(G.shake>0){ G.shake*=0.88; if(G.shake<0.01)G.shake=0; }
