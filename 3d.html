@@ -217,7 +217,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 67（メテオをパーツ消費制に＝クールダウン廃止。初回200・使用のたび×1.25（200→250→313→391→489…）。初期160<200で序盤は撃てず＝難度維持。ボタンは必要パーツ表示＋足りれば赤点滅・不足は貯まり具合ゲージ）</div>
+  <div id="badge">3D MVP · build 68（縦画面で武器バーが横スワイプでスクロール可に＝設置は上ドラッグ／横はバー送りで両立。難易度緩和：敵の強化スピード-10%（HP線形0.135・二次0.78）＋物量微減＋撃破報酬0.72倍＋強化コスト0.65/1.6＋初期175＝倒せる・育てられるテンポに）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -7470,8 +7470,8 @@ try{ window.__enemyPoolStats=function(){ return {built:_enemyMeshBuilt,spawned:_
 
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
-  const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.8);   // 物量の加速を緩和（1.45/1.2→1.35/0.8）＝W10以降に数で押し潰されない
-  const hpMul=1+(n-1)*0.15+Math.pow(n/9.5,2)*0.95;   // W10以降のHP急騰を緩和（二次項 8.5/1.3→9.5/0.95）。序盤(W1-8)はほぼ据え置き、W12で約-20%/W16で約-24%＝策略が間に合う。放置=負けは維持
+  const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.65);   // 物量の加速をさらに緩和（0.8→0.65）＝倒した実感が出る
+  const hpMul=1+(n-1)*0.135+Math.pow(n/10,2)*0.78;   // 敵の強化スピードをさらに-10%（線形0.15→0.135）＋硬すぎ解消で二次項も圧縮（9.5/0.95→10/0.78）。W8 2.72→2.44/W12 4.16→3.61/W16 5.94→5.02。序盤は据え置き＝放置負けは維持
   const NB=ENEMIES.filter(e=>!e.boss);
   const NBG=NB.filter(e=>!e.flying);   // 非飛行のみ（空中敵が出る前のウェーブの代替に使う）
   const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
@@ -7557,7 +7557,7 @@ function disposeMesh(o){ if(!o)return; o.traverse(function(n){
 function dropMesh(o){ if(!o)return; if(o.parent)o.parent.remove(o); else if(scene)scene.remove(o); disposeMesh(o); }   // remove + dispose をまとめて
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; releaseEnemyMesh(e);
-  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.6*((e.def&&e.def.boss)?6:1)); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬：通常は0.6倍、ボスは+500%(=6倍)ボーナス
+  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.72*((e.def&&e.def.boss)?6:1)); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬：通常は0.72倍に増（0.6→0.72＝倒すほど資源が貯まりマシン強化の余裕）、ボスは+500%(=6倍)ボーナス
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
 function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; releaseEnemyMesh(e); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
@@ -7671,7 +7671,7 @@ function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeomet
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
 function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); e.dotType=dot.type||'burn'; }
 function lvlStat(def,lv){ const k=(lv||1)-1; return { range:def.range*(1+0.07*k), dmg:def.dmg*Math.pow(1.4,k), cd:def.cd*Math.pow(0.93,k) }; }
-function upCost(def,lv){ return Math.round(def.cost*0.75*Math.pow(1.7,(lv||1)-1)); }   // 強化コストを高めに（部品が余っても全強化はできない＝選択が必要）
+function upCost(def,lv){ return Math.round(def.cost*0.65*Math.pow(1.6,(lv||1)-1)); }   // 強化コストを現実的に緩和（0.75/1.7→0.65/1.6＝マシンをレベルアップする暇を作る）
 function sellValue(tw){ return Math.round((tw.invested||tw.def.cost)*0.7); }
 function towerAt(c,r){ for(const t of G.towers) if(t.c===c&&t.r===r) return t; return null; }
 let _tp=null;
@@ -7785,7 +7785,7 @@ function hideSelRange(){ if(_selRing){ dropMesh(_selRing); _selRing=null; } }
 
 /* ===== バーから盤面へドラッグして設置 ===== */
 let _place=null;           // {key, active, ghost, ring, def, valid, cell}
-function startPlaceDrag(key,ev){ if(G.scene!=='playing'||G.paused) return; const def=TOWER_BY_KEY[key]; if(!def) return; _place={key,def,active:false,ghost:null,ring:null,valid:false,cell:null,sx:ev?ev.clientX:0,sy:ev?ev.clientY:0}; }
+function startPlaceDrag(key,ev){ if(G.scene!=='playing'||G.paused) return; const def=TOWER_BY_KEY[key]; if(!def) return; _place={key,def,active:false,scroll:false,lastX:ev?ev.clientX:0,ghost:null,ring:null,valid:false,cell:null,sx:ev?ev.clientX:0,sy:ev?ev.clientY:0}; }
 function buildGhost(def){ const g=new THREE.Group();
   const post=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.40,0.7,16), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.5,depthWrite:false,fog:false})); post.position.y=0.35; g.add(post);
   const cap=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10), new THREE.MeshBasicMaterial({color:def.color,transparent:true,opacity:0.55,depthWrite:false,fog:false})); cap.position.y=0.78; g.add(cap);
@@ -7807,8 +7807,11 @@ function endPlaceDrag(){ if(!_place) return; const p=_place; _place=null;
   if(p.active && p.cell && p.valid){ G.sel=p.key; placeTower(p.cell.c,p.cell.r); }
   else if(p.active){ sfx.error&&sfx.error(); } }
 window.addEventListener('pointermove',e=>{ if(!_place) return;
-  if(!_place.active){ const dx=e.clientX-_place.sx, dy=e.clientY-_place.sy; if(dx*dx+dy*dy<90) return;   // 少し動かしたら（方向問わず）設置モード開始
-    _place.active=true; G.sel=_place.key; }
+  if(!_place.active && !_place.scroll){ const dx=e.clientX-_place.sx, dy=e.clientY-_place.sy; if(dx*dx+dy*dy<90) return;   // 少し動かしたら方向で分岐
+    if(Math.abs(dx)>Math.abs(dy)){ _place.scroll=true; _place.lastX=e.clientX; }   // 横移動が主＝武器バーをスクロール（縦画面でも触れる箇所がボタンしかなく捕捉でネイティブ送りが効かないため手動で送る）
+    else { _place.active=true; G.sel=_place.key; }   // 縦移動が主＝盤面へ設置
+  }
+  if(_place.scroll){ const bar=document.getElementById('bottom'); if(bar)bar.scrollLeft-=(e.clientX-_place.lastX); _place.lastX=e.clientX; e.preventDefault(); return; }
   e.preventDefault(); updatePlaceDrag(e.clientX,e.clientY); },{passive:false});
 window.addEventListener('pointerup',()=>{ if(_place) endPlaceDrag(); });
 window.addEventListener('pointercancel',()=>{ if(_place){ if(_place.ghost)dropMesh(_place.ghost); if(_place.ring)dropMesh(_place.ring); _place=null; } });
@@ -7955,7 +7958,7 @@ document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
-  G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
+  G.scene='playing'; G.parts=175; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源を少し緩和（160→175＝序盤に1台＋強化の余裕）
   G.meteorCost=METEOR_COST;   // メテオはパーツ消費制（クールダウンなし）。初期160<200なので序盤は撃てない
   G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(releaseEnemyMesh); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));   // 敵メッシュはプールへ返却＝リトライ時の再生成ヒッチも消える
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
