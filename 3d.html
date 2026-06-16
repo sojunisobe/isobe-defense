@@ -217,7 +217,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 66（軽量化：HUDを参照キャッシュ＋差分更新化＝毎フレのgetElementById×15と無条件DOM書き込みを廃止しstyle recalc削減／boss判定のクロージャ毎フレ生成を撤廃。build64/65で重くなっていないことを実測確認・14波soakで例外0）</div>
+  <div id="badge">3D MVP · build 67（メテオをパーツ消費制に＝クールダウン廃止。初回200・使用のたび×1.25（200→250→313→391→489…）。初期160<200で序盤は撃てず＝難度維持。ボタンは必要パーツ表示＋足りれば赤点滅・不足は貯まり具合ゲージ）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -326,7 +326,8 @@ function setLang(code){ if(!I18N[code])return; LANG=code; try{localStorage.setIt
 const COLS=24, ROWS=13, CELL=1.4;   // マス1.5倍
 const WW=COLS*CELL, WD=ROWS*CELL;
 const METEOR_DMG=700;          // メテオ必殺の威力（地上・対空とも／装甲貫通）
-const METEOR_CD=90;            // メテオのリチャージ秒数（「10ターンに一度ぐらい」。ここ1つで頻度調整）
+const METEOR_COST=200;         // メテオ初回のパーツ消費（初期パーツ160<200＝最初は撃てない）
+const METEOR_COST_MUL=1.25;    // 使用のたびにコスト×1.25（連発抑止＝難度維持）
 const METEOR_HALF=3*CELL;      // 6マス四方＝中心から±3マス
 const GOAL_C=COLS-1, BASE_R=Math.floor(ROWS/2);   // 基地（味方）を右側へ＝敵味方の位置を真逆に
 const SPAWN_C=0, SPAWN_R=Math.floor(ROWS/2);       // 敵スポーンを左側へ
@@ -7597,7 +7598,6 @@ function updateFx(dt){
 /* ====================== 更新 ====================== */
 function update(dt){
   if(G.scene!=='playing') return;
-  if(G.meteorCD>0){ G.meteorCD=Math.max(0,G.meteorCD-dt); }   // メテオ必殺のリチャージ（ゲーム内時間・倍速に追従／ポーズ中は止まる）
   if(G.flowDirty){ buildFlow(); G.flowDirty=false; for(const e of G.enemies){ e._minDist=null; e._stuckT=0; } }   // 経路が変わったら進捗計測をリセット（アンチスタックの誤検知防止）
   // スポーン
   if(G.waveActive){
@@ -7815,7 +7815,7 @@ window.addEventListener('pointercancel',()=>{ if(_place){ if(_place.ghost)dropMe
 
 /* ---- メテオ必殺：ボタンをドラッグ→盤面で照準→離して落下 ---- */
 let _meteor=null;
-function startMeteorDrag(ev){ if(G.scene!=='playing'||G.paused) return; if(G.meteorCD>0){ sfx.error&&sfx.error(); return; }
+function startMeteorDrag(ev){ if(G.scene!=='playing'||G.paused) return; if(G.parts<(G.meteorCost||METEOR_COST)){ sfx.error&&sfx.error(); return; }   // パーツ不足は発射不可
   _meteor={active:false,sx:ev?ev.clientX:0,sy:ev?ev.clientY:0,ring:null,cell:null,valid:false}; }
 function updateMeteorDrag(cx,cy){ if(!_meteor||!_meteor.active) return; const cell=raycastCell(cx,cy-PLACE_LIFT);
   if(!cell){ if(_meteor.ring)_meteor.ring.visible=false; _meteor.cell=null; _meteor.valid=false; return; }
@@ -7823,7 +7823,10 @@ function updateMeteorDrag(cx,cy){ if(!_meteor||!_meteor.active) return; const ce
   if(!_meteor.ring){ _meteor.ring=new THREE.Mesh(new THREE.RingGeometry(METEOR_HALF-0.5,METEOR_HALF+0.35,48), new THREE.MeshBasicMaterial({color:0xff3b2a,transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false,fog:false})); _meteor.ring.rotation.x=-Math.PI/2; scene.add(_meteor.ring); }
   _meteor.ring.visible=true; _meteor.ring.position.set(w.x,0.07,w.z); }
 function endMeteorDrag(){ if(!_meteor) return; const m=_meteor; _meteor=null; if(m.ring)dropMesh(m.ring);
-  if(m.active && m.valid && m.cell && G.meteorCD<=0){ const w=cellToWorld(m.cell.c,m.cell.r); playerMeteor(w.x,w.z); G.meteorCD=G.meteorMax; G.shake=Math.max(G.shake||0,0.25); sfx.ui&&sfx.ui(); }
+  const cost=G.meteorCost||METEOR_COST;
+  if(m.active && m.valid && m.cell && G.parts>=cost){ const w=cellToWorld(m.cell.c,m.cell.r);
+    G.parts-=cost; G.meteorCost=Math.round(cost*METEOR_COST_MUL);   // 消費＆次回コストを×1.25
+    playerMeteor(w.x,w.z); G.shake=Math.max(G.shake||0,0.25); sfx.ui&&sfx.ui(); }
   else if(m.active){ sfx.error&&sfx.error(); } }
 window.addEventListener('pointermove',e=>{ if(!_meteor) return;
   if(!_meteor.active){ const dx=e.clientX-_meteor.sx, dy=e.clientY-_meteor.sy; if(dx*dx+dy*dy<90) return; _meteor.active=true; }
@@ -7912,10 +7915,11 @@ function syncHUD(){
   _txt('bPause',G.paused?'▶':'❚❚');
   const playing=(G.scene==='playing');
   _sty('bMeteor','display',playing?'flex':'none');
-  if(playing){ const ready=(G.meteorCD<=0); const pct=ready?100:Math.round((1-G.meteorCD/(G.meteorMax||METEOR_CD))*100);
+  if(playing){ const cost=G.meteorCost||METEOR_COST; const ready=(G.parts>=cost);
+    const pct=Math.min(100,Math.round(G.parts/cost*100));   // 扇ゲージ＝コストまでの貯まり具合
     _cls('bMeteor','ready',ready); _cls('bMeteor','cooling',!ready);
     if(_hudP.mp!==pct){ _hudP.mp=pct; const mb=_el('bMeteor'); if(mb)mb.style.setProperty('--p',pct); }
-    _txt('meteorCd',ready?'':Math.ceil(G.meteorCD)+'s'); }
+    _txt('meteorCd','⚙'+cost); }
   const comboOn=(G.combo>=2);
   _sty('combo','display',comboOn?'block':'none');
   if(comboOn){ _txt('combo','×'+G.combo+' COMBO'); const ht=Math.min(1,(G.combo-2)/16); _sty('combo','color',ht<0.5?'#ffd23f':'#ff7a3f'); const e=_el('combo'); if(e)e.style.opacity=Math.min(1,(G.comboT||0)/1.5+0.35); }
@@ -7952,7 +7956,7 @@ document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
   G.scene='playing'; G.parts=160; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源をさらに引き締め
-  G.meteorMax=METEOR_CD; G.meteorCD=0;   // メテオ必殺：開始時はチャージ済み（すぐ撃てる）
+  G.meteorCost=METEOR_COST;   // メテオはパーツ消費制（クールダウンなし）。初期160<200なので序盤は撃てない
   G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(releaseEnemyMesh); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));   // 敵メッシュはプールへ返却＝リトライ時の再生成ヒッチも消える
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
   G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
