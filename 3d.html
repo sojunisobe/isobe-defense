@@ -217,7 +217,7 @@
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 69（盤面の大きなグレー3D壁を撤去＝タイトル文字を盤面のすぐ奥に低く配置。盤面の上下1列を削除（ROWS13→11）。SNIPERをW16→W14（2波早め）、以降の武器解放をW14から6波ごとの等間隔に整理＝展開が読める）</div>
+  <div id="badge">3D MVP · build 70（W22-23付近のバランス・ピンポイント緩和：POISON解放W26→W17で装甲の壁に対抗手段／hpMul二次項圧縮で中〜終盤の硬さ急上昇をなだらか化／敵ティア進行1.9→1.75でW12の段差をならす／空中体数の後半上限を段階制にしてW23-25の空中スパイク抑制）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -369,7 +369,7 @@ const TOWERS=[
   {key:'aa', unlock:10,     name:'AA', cls:'a',   cost:100, range:4.6, dmg:38, cd:0.78, color:0xff5a3a, splash:0.8, slow:0, air:true},   // 対空が間に合うよう強化＋値下げ（DPS33→49・cost120→100・射程↑）。空中敵登場W15に対しW10解放＝5波で2台揃う
   {key:'sniper', unlock:14,name:'SNIPER', cls:'b',cost:130, range:5.6, dmg:62, cd:1.70, color:0xffb24a, splash:0,   slow:0},
   {key:'mortar', unlock:20,name:'MORTAR', cls:'g',cost:120, range:4.0, dmg:26, cd:1.50, color:0xffae42, splash:2.2, slow:0},
-  {key:'poison', unlock:26, name:'POISON', cls:'g', tfwd:'z',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},
+  {key:'poison', unlock:17, name:'POISON', cls:'g', tfwd:'z',cost:100, range:3.4, dmg:2,  cd:0.80, color:0x9bd445, splash:0, slow:0, dot:{dps:18,dur:3.5,type:'poison'}},   // 解放W26→W17：DoTは装甲貫通＝装甲の壁(W18〜)に間に合う対抗手段
   {key:'flame', unlock:32,  name:'FLAME', cls:'g', cost:95,  range:2.3, dmg:6,  cd:0.18, color:0xff6a18, splash:0, slow:0, dot:{dps:14,dur:2.0,type:'burn'}},
   {key:'tesla', unlock:38, name:'TESLA', cls:'b', cost:110, range:3.3, dmg:10, cd:0.55, color:0x18d0ff, splash:0,   slow:0, chain:3},
   {key:'gatling_air', unlock:44, name:'AA-GAT', cls:'a', cost:130, range:3.7, dmg:7, cd:0.14, color:0x46f08a, splash:0, slow:0, air:true},
@@ -7471,14 +7471,14 @@ try{ window.__enemyPoolStats=function(){ return {built:_enemyMeshBuilt,spawned:_
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
   const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.65);   // 物量の加速をさらに緩和（0.8→0.65）＝倒した実感が出る
-  const hpMul=1+(n-1)*0.135+Math.pow(n/10,2)*0.78;   // 敵の強化スピードをさらに-10%（線形0.15→0.135）＋硬すぎ解消で二次項も圧縮（9.5/0.95→10/0.78）。W8 2.72→2.44/W12 4.16→3.61/W16 5.94→5.02。序盤は据え置き＝放置負けは維持
+  const hpMul=1+(n-1)*0.125+Math.pow(n/10,2)*0.62;   // ピンポイント緩和（線形0.135→0.125／二次0.78→0.62）＝中〜終盤の硬さ急上昇をなだらかに。W12 3.61→3.27/W16 5.02→4.46/W20 6.69→5.86/W22 7.61→6.63/W25 9.12→7.88。序盤(W1-8)はほぼ据え置き＝放置負け維持
   const NB=ENEMIES.filter(e=>!e.boss);
   const NBG=NB.filter(e=>!e.flying);   // 非飛行のみ（空中敵が出る前のウェーブの代替に使う）
-  const center=Math.min(NB.length-1, Math.round((n-1)*1.9));
+  const center=Math.min(NB.length-1, Math.round((n-1)*1.75));   // 敵ティアの進行を少し遅く（1.9→1.75）＝W12前後の段差をならす（硬い装甲アーキの登場を緩やかに）
   const lo=Math.max(0,center-7), hi=Math.min(NB.length-1,center+2);
   // 空中敵の上限：登場前(W15未満)は0、初登場W15は極端に少なく(1体)、以降ゆるやかに増やす（W16=3, W17=6, W18+=自然）
   const k=n-AIR_START;
-  const FLY_CAP = (n<AIR_START) ? 0 : (k===0 ? 1 : k===1 ? 3 : k===2 ? 6 : 9999);
+  const FLY_CAP = (n<AIR_START) ? 0 : (k===0 ? 1 : k===1 ? 3 : k===2 ? 6 : Math.min(count, 6+(k-2)*2));   // 後半も青天井にせず段階的に（W18=8/W22=16/W25=22）＝W23-25の空中スパイクを抑制
   let _flyN=0;
   for(let i=0;i<count;i++){
     let def=NB[lo+Math.floor(Math.random()*(hi-lo+1))];
