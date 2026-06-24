@@ -109,6 +109,9 @@
 #ctxToast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;font:700 16px 'Rajdhani';letter-spacing:1px;color:#cfe6ff;background:rgba(10,16,26,.88);padding:14px 24px;border-radius:12px;border:1px solid rgba(120,160,200,.35);z-index:40;pointer-events:auto;cursor:pointer;}
   #ctxToast small{display:block;margin-top:5px;font-size:11px;color:#9ab;}
   #bossWarn{position:absolute;left:50%;top:36%;transform:translateX(-50%);font:700 30px 'Chakra Petch';letter-spacing:3px;color:#ff3b54;text-shadow:0 0 16px #ff3b54;display:none;pointer-events:none;white-space:nowrap;}
+  #zoneBanner{position:absolute;left:50%;top:19%;transform:translateX(-50%);display:none;opacity:0;text-align:center;pointer-events:none;white-space:nowrap;}
+  #zoneBanner .zb-sub{font:700 13px 'Rajdhani';letter-spacing:6px;color:#7fe3ff;text-shadow:0 0 10px rgba(60,180,230,.7);}
+  #zoneBanner .zb-main{font:700 27px 'Chakra Petch';letter-spacing:4px;color:#e6f4ff;text-shadow:0 0 18px rgba(80,190,235,.9);margin-top:3px;}
   #bossbar{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:46%;max-width:560px;display:none;pointer-events:none;text-align:center;}
   #bossname{font:700 12px 'Chakra Petch';letter-spacing:2px;color:#ff95a3;margin-bottom:3px;text-shadow:0 0 8px #ff3b54;}
   #bossfillwrap{height:10px;background:rgba(40,10,16,.7);border:1px solid rgba(255,59,84,.45);border-radius:5px;overflow:hidden;}
@@ -214,10 +217,11 @@
   <div id="startBtn"><span class="sb1">▶</span><span class="sb2" data-i18n="start">START</span></div>
   <div id="ctxToast">⟳ 描画を復旧中…<br><small>戻らない場合はタップで再読み込み</small></div>
   <div id="bossWarn">⚠ BOSS APPROACHING ⚠</div>
+  <div id="zoneBanner"><div class="zb-sub">⚠ SECTOR 01</div><div class="zb-main">WITHERED PLAINS</div></div>
   <div id="bossbar"><div id="bossname"></div><div id="bossfillwrap"><div id="bossfill"></div></div></div>
   <div id="combo"></div>
   <div id="hurt"></div>
-  <div id="badge">3D MVP · build 70（W22-23付近のバランス・ピンポイント緩和：POISON解放W26→W17で装甲の壁に対抗手段／hpMul二次項圧縮で中〜終盤の硬さ急上昇をなだらか化／敵ティア進行1.9→1.75でW12の段差をならす／空中体数の後半上限を段階制にしてW23-25の空中スパイク抑制）</div>
+  <div id="badge">3D MVP · build 71（戦域パノラマ30枚化：10波ごとに背景が切替＝廃墟/工業/夜の都市/砂漠/雪原/夕焼け/森/荒野/霧をミックス。Polyhaven CC0、地面色も戦域連動、切替時に戦域バナー演出。W300まで重複なし／全体難易度を再引き締め：クリアボーナス×3→2.2・初期175→165・撃破報酬-8%・強化コスト増・中〜終盤の物量/HPを戻す＝序盤は据え置き）</div>
 </div>
 <div id="ov">
   <div class="yr">205X</div>
@@ -563,11 +567,41 @@ function buildSilhouettes(g,T){ const RR=82; const t=T.build;
 }
 let _backdrop=null;
 /* ===== 実写スカイボックス（戦場パノラマ写真・ポリゴン廃止） ===== */
+// 戦域パノラマ30枚（Polyhaven CC0・10波ごとに切替）。fog/ground/tintは各画像の平均色から自動算出
 const BG_PHOTOS=[
-  {key:'ruins', file:'bg/ruins.jpg', fog:0x5a4f3c, ground:0x231f18, tint:0x9a8f7c, fire:0.35, smoke:0.85},
-  {key:'fire',  file:'bg/fire.jpg',  fog:0x5e4450, ground:0x241a20, tint:0xb39aa0, fire:0.85, smoke:0.5},
-  {key:'indus', file:'bg/indus.jpg', fog:0x55626c, ground:0x1c2228, tint:0x9aa6ae, fire:0.3,  smoke:0.55},
+  {key:'autumn_field', file:'bg/autumn_field.jpg', fog:0x515243, ground:0x676544, tint:0x9facab, fire:0.41, smoke:0.61},
+  {key:'roofless_ruins', file:'bg/roofless_ruins.jpg', fog:0x4f5055, ground:0x504f57, tint:0xa1a8b8, fire:0.25, smoke:0.62},
+  {key:'cedar_bridge_sunset_2', file:'bg/cedar_bridge_sunset_2.jpg', fog:0x4f514f, ground:0x484642, tint:0xa3a9af, fire:0.28, smoke:0.63},
+  {key:'abandoned_tank_farm_05', file:'bg/abandoned_tank_farm_05.jpg', fog:0x52504d, ground:0x706b66, tint:0x9faab4, fire:0.31, smoke:0.61},
+  {key:'altanka', file:'bg/altanka.jpg', fog:0x4e524b, ground:0x5a5e5f, tint:0xa0abae, fire:0.3, smoke:0.62},
+  {key:'arboretum', file:'bg/arboretum.jpg', fog:0x545047, ground:0x5e4f40, tint:0xa9a8a5, fire:0.36, smoke:0.62},
+  {key:'goegap', file:'bg/goegap.jpg', fog:0x594e42, ground:0x9f8465, tint:0xaba6a9, fire:0.45, smoke:0.64},
+  {key:'goegap_road', file:'bg/goegap_road.jpg', fog:0x565040, ground:0x5d5a57, tint:0xa2aab0, fire:0.45, smoke:0.61},
+  {key:'klippad_dawn_1', file:'bg/klippad_dawn_1.jpg', fog:0x514f52, ground:0x585255, tint:0xa4a8b2, fire:0.28, smoke:0.59},
+  {key:'forest_grove', file:'bg/forest_grove.jpg', fog:0x50514c, ground:0x4e504b, tint:0xa4aaa9, fire:0.3, smoke:0.62},
+  {key:'niederwihl_forest', file:'bg/niederwihl_forest.jpg', fog:0x54513e, ground:0x625a41, tint:0xaba99d, fire:0.38, smoke:0.63},
+  {key:'snowy_forest', file:'bg/snowy_forest.jpg', fog:0x55513e, ground:0x5b5637, tint:0xada994, fire:0.45, smoke:0.62},
+  {key:'klippad_dawn_2', file:'bg/klippad_dawn_2.jpg', fog:0x544f4c, ground:0x5a4f4a, tint:0xa7a8ac, fire:0.32, smoke:0.6},
+  {key:'klippad_sunrise_1', file:'bg/klippad_sunrise_1.jpg', fog:0x544f4a, ground:0x5b504b, tint:0xa6a8ae, fire:0.33, smoke:0.61},
+  {key:'vignaioli_night', file:'bg/vignaioli_night.jpg', fog:0x555041, ground:0x514833, tint:0xafa897, fire:0.48, smoke:0.68},
+  {key:'cobblestone_parish_road', file:'bg/cobblestone_parish_road.jpg', fog:0x574f43, ground:0x676050, tint:0xada79e, fire:0.41, smoke:0.61},
+  {key:'derelict_airfield_02', file:'bg/derelict_airfield_02.jpg', fog:0x515149, ground:0x655e57, tint:0xa6a9aa, fire:0.33, smoke:0.61},
+  {key:'reinforced_concrete_02', file:'bg/reinforced_concrete_02.jpg', fog:0x5b4e3e, ground:0x8d7c6e, tint:0xb5a597, fire:0.53, smoke:0.62},
+  {key:'palermo_square', file:'bg/palermo_square.jpg', fog:0x4f5053, ground:0x545966, tint:0x9ea9ba, fire:0.26, smoke:0.62},
+  {key:'freight_station', file:'bg/freight_station.jpg', fog:0x574f42, ground:0x51473e, tint:0xa8a8a5, fire:0.39, smoke:0.61},
+  {key:'german_town_street', file:'bg/german_town_street.jpg', fog:0x50514c, ground:0x505355, tint:0xa2a9b1, fire:0.3, smoke:0.61},
+  {key:'overcast_industrial_courtyard', file:'bg/overcast_industrial_courtyard.jpg', fog:0x4a515b, ground:0x4c525d, tint:0xa1a9b5, fire:0.19, smoke:0.61},
+  {key:'kloofendal_28d_misty', file:'bg/kloofendal_28d_misty.jpg', fog:0x524f4e, ground:0x5b4b3b, tint:0xaaa7a7, fire:0.32, smoke:0.6},
+  {key:'kloofendal_misty_morning', file:'bg/kloofendal_misty_morning.jpg', fog:0x524f4e, ground:0x5a4b3e, tint:0xaaa7a7, fire:0.31, smoke:0.54},
+  {key:'lago_disola', file:'bg/lago_disola.jpg', fog:0x52504c, ground:0x928678, tint:0xa6a8ab, fire:0.32, smoke:0.6},
+  {key:'birchwood', file:'bg/birchwood.jpg', fog:0x4c5154, ground:0x6e8191, tint:0x9babb8, fire:0.22, smoke:0.62},
+  {key:'winter_lake_01', file:'bg/winter_lake_01.jpg', fog:0x4d5154, ground:0x6c7782, tint:0xa1aab3, fire:0.23, smoke:0.62},
+  {key:'blaubeuren_church_square', file:'bg/blaubeuren_church_square.jpg', fog:0x544f49, ground:0xb5aaa2, tint:0xada7a1, fire:0.41, smoke:0.58},
+  {key:'blaubeuren_night', file:'bg/blaubeuren_night.jpg', fog:0x5b4f38, ground:0xc69e64, tint:0xb9a685, fire:0.58, smoke:0.61},
+  {key:'blue_lagoon_night', file:'bg/blue_lagoon_night.jpg', fog:0x564e4a, ground:0xcea091, tint:0xb4a3a0, fire:0.41, smoke:0.6},
 ];
+// 戦域ラベル（バナー表示・英語ロゴ流儀／30戦域）
+const ZONE_LABEL=['WITHERED PLAINS','FALLEN RUINS','DUSK CROSSING','TANK FARM','ASH MEADOW','DEAD GROVE','BADLANDS','DUST ROAD','DAWN RIDGE','DARK WOODS','WITHERED FOREST','SNOW FOREST','ROCK RIDGE','SUNRISE HILL','NIGHT CAMP','OLD TOWN','DEAD AIRFIELD','RUBBLE ZONE','FALLEN SQUARE','FREIGHT YARD','RUINED STREET','INDUSTRIAL RUIN','MISTY QUARRY','FOG BANK','FROZEN LAKE','BIRCH SNOW','ICE FIELD','NIGHT TOWN','BLACKOUT CITY','NEON HARBOR'];
 const _bgTexCache={};
 function loadBgTex(file){ if(_bgTexCache[file])return _bgTexCache[file]; const t=new THREE.TextureLoader().load(file); t.encoding=THREE.sRGBEncoding; _bgTexCache[file]=t; return t; }
 let _smokeTex=null,_glowTex=null;
@@ -586,18 +620,29 @@ function addWarAtmosphere(g,P){ const RR=52;
   for(let i=0;i<fn;i++){ const a=(Math.random()-0.5)*2.8+Math.PI, rr=RR+(Math.random()-0.5)*30;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowSpriteTex(),transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
     const s=9+Math.random()*10; sp.scale.set(s,s*0.6,1); sp.position.set(Math.cos(a)*rr, 1.5+Math.random()*3, Math.sin(a)*rr); g.add(sp); } }
-function buildBackdrop(themeKey){ if(!scene)return; if(_backdrop){ scene.remove(_backdrop); if(typeof disposeMesh==='function')disposeMesh(_backdrop); _backdrop=null; }
-  const P=(window.__bg!=null)?BG_PHOTOS[window.__bg]:BG_PHOTOS[(Math.random()*BG_PHOTOS.length)|0]; const g=new THREE.Group();
+function buildBackdrop(idx){ if(!scene)return; if(_backdrop){ scene.remove(_backdrop); if(typeof disposeMesh==='function')disposeMesh(_backdrop); _backdrop=null; }
+  // window.__bg(headless上書き)優先。idxが数値なら戦域進行で指定、それ以外は0(開幕戦域)
+  let _i = (window.__bg!=null) ? (window.__bg|0) : (typeof idx==='number' ? idx : 0);
+  _i = ((_i % BG_PHOTOS.length)+BG_PHOTOS.length) % BG_PHOTOS.length;
+  G.bgIndex = _i;
+  const P=BG_PHOTOS[_i]; const g=new THREE.Group();
   // 実写の全天球（戦場パノラマ）
   const sky=new THREE.Mesh(new THREE.SphereGeometry(300,48,32), new THREE.MeshBasicMaterial({map:loadBgTex(P.file),color:P.tint,side:THREE.BackSide,fog:false}));
   sky.rotation.y=(window.__bgrot!=null?window.__bgrot:Math.random()*Math.PI*2); g.add(sky);
   // 足元の地面（盤面周りだけ／外側は実写の戦場が見えるよう小さめ＋霧でブレンド）
   const at=battlefieldTexture(); at.repeat.set(13,9); at.encoding=THREE.sRGBEncoding;
-  const wg=new THREE.Mesh(new THREE.PlaneGeometry(64,44), new THREE.MeshStandardMaterial({map:at,color:0xcfc4b2,roughness:1,metalness:0})); wg.rotation.x=-Math.PI/2; wg.position.y=-0.05; wg.receiveShadow=true; g.add(wg);
+  const wg=new THREE.Mesh(new THREE.PlaneGeometry(64,44), new THREE.MeshStandardMaterial({map:at,color:(P.ground||0xcfc4b2),roughness:1,metalness:0})); wg.rotation.x=-Math.PI/2; wg.position.y=-0.05; wg.receiveShadow=true; g.add(wg);
   if(scene.fog&&scene.fog.color&&scene.fog.color.setHex){ scene.fog.color.setHex(P.fog); scene.fog.near=24; scene.fog.far=82; }
   if(scene.background&&scene.background.setHex) scene.background.setHex(P.fog);
   addWarAtmosphere(g,P); scene.add(g); _backdrop=g; G.bgTheme=P.key;
 }
+// 戦域切替バナー（数秒フェード表示）
+function showZoneBanner(zi){ const el=(typeof _el==='function')?_el('zoneBanner'):document.getElementById('zoneBanner'); if(!el)return;
+  const sub=el.querySelector('.zb-sub'), main=el.querySelector('.zb-main');
+  const n=('0'+(zi+1)).slice(-2);
+  if(sub) sub.textContent='⚠ SECTOR '+n;
+  if(main) main.textContent=(ZONE_LABEL[zi]||('SECTOR '+n));
+  G.zoneBannerT=3.4; }
 
 let _bossMus=null,_bossStep=0;
 function bossStinger(){ if(!AC)return; const t=_now(); [55,82.4,110].forEach(function(f){tone(f,f,t,0.8,'sawtooth',0.2);}); tone(220,180,t,0.6,'square',0.1); noise(t,0.5,0.32,'highpass',3000,1); noise(t,0.7,0.42,'lowpass',300,1); }
@@ -678,7 +723,7 @@ function initScene(){
   // 敵HQ（盤外左・中央のAIコア）
   spawnMesh=buildEnemyHQ();
   spawnMesh.position.set(OFFBOARD_X-0.6,0,entryWorld().z); scene.add(spawnMesh);
-  buildBackdrop(pickTheme());
+  buildBackdrop(0);
   buildTitleWall();
   buildComposer();
   // WebGLコンテキスト消失からの復旧（スマホでメモリ逼迫等によりコンテキストが破棄され画面が固まる対策）
@@ -7470,8 +7515,8 @@ try{ window.__enemyPoolStats=function(){ return {built:_enemyMeshBuilt,spawned:_
 
 /* ====================== ゲーム進行 ====================== */
 function buildWave(n){
-  const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.65);   // 物量の加速をさらに緩和（0.8→0.65）＝倒した実感が出る
-  const hpMul=1+(n-1)*0.125+Math.pow(n/10,2)*0.62;   // ピンポイント緩和（線形0.135→0.125／二次0.78→0.62）＝中〜終盤の硬さ急上昇をなだらかに。W12 3.61→3.27/W16 5.02→4.46/W20 6.69→5.86/W22 7.61→6.63/W25 9.12→7.88。序盤(W1-8)はほぼ据え置き＝放置負け維持
+  const q=[]; const count=Math.round(7+n*1.35+Math.max(0,n-4)*0.78);   // build71で再引き締め（緩めすぎた0.65→0.78）＝中盤の物量を戻す。序盤(n<=4)は不変
+  const hpMul=1+(n-1)*0.125+Math.pow(n/10,2)*0.72;   // build71で再引き締め（二次0.62→0.72）＝中〜終盤に再び硬さの山。W12 3.27→3.41/W16 4.46→4.72/W20 5.86→6.26/W22 6.63→7.10。序盤(W1-8)はほぼ据え置き＝放置負け維持
   const NB=ENEMIES.filter(e=>!e.boss);
   const NBG=NB.filter(e=>!e.flying);   // 非飛行のみ（空中敵が出る前のウェーブの代替に使う）
   const center=Math.min(NB.length-1, Math.round((n-1)*1.75));   // 敵ティアの進行を少し遅く（1.9→1.75）＝W12前後の段差をならす（硬い装甲アーキの登場を緩やかに）
@@ -7498,6 +7543,8 @@ function startWave(early){
   if(early && G.wave>1) G.parts+=8+Math.round(G.wave*1.0);   // 早出しボーナス（最初の出撃は対象外）
   const ne=Math.min(3,((G.wave-1)/5)|0); if(ne!==G.era){ G.era=ne; applyEra(ne); }
   if(G.era>=1 && G.disasterT==null) G.disasterT=7;
+  const _zi=Math.floor((G.wave-1)/10)%BG_PHOTOS.length;   // 10波ごとに戦域(背景パノラマ)を切替
+  if(_zi!==G.bgIndex){ buildBackdrop(_zi); applyEra(G.era); if(typeof showZoneBanner==='function')showZoneBanner(_zi); G.shake=Math.max(G.shake||0,0.5); }
   if(typeof buildWeaponBar==='function')buildWeaponBar();
   sfx.wave();
 }
@@ -7557,7 +7604,7 @@ function disposeMesh(o){ if(!o)return; o.traverse(function(n){
 function dropMesh(o){ if(!o)return; if(o.parent)o.parent.remove(o); else if(scene)scene.remove(o); disposeMesh(o); }   // remove + dispose をまとめて
 function killEnemy(e,byPlayer){
   if(e.dead) return; e.dead=true; releaseEnemyMesh(e);
-  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.72*((e.def&&e.def.boss)?6:1)); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬：通常は0.72倍に増（0.6→0.72＝倒すほど資源が貯まりマシン強化の余裕）、ボスは+500%(=6倍)ボーナス
+  if(byPlayer){ G.parts+=Math.round(e.def.reward*0.66*((e.def&&e.def.boss)?6:1)); G.score+=e.def.reward*3; G.kills++; G.combo++; G.comboT=2.0;   // 撃破報酬：build71で引き締め（0.72→0.66＝物量押しを抑制）、ボスは+500%(=6倍)ボーナス
     const _fsz=(e.def&&e.def.boss)?2.6:(((e.def&&e.def.scale)||0.8)*1.4); deathFlame(e.x,e.z,_fsz); spawnBurst(e.x,e.z,0x46403a,Math.round(4+3*_fsz)); if(e.def&&e.def.boss){ G.shake=Math.max(G.shake||0,0.7); if(!G.enemies.some(function(x){return x.def&&x.def.boss&&!x.dead;}))stopBossMusic(); } sfx.kill(G.combo, e.def&&e.def.boss); }
 }
 function damageBase(e){ G.hp-=e.def.dmg*2.0; e.dead=true; releaseEnemyMesh(e); G.combo=0; G.shake=Math.max(G.shake||0,0.35); G.hurt=0.7;   // 漏れ被害を大きく＝漏らさない配置(戦略)が必須
@@ -7602,7 +7649,7 @@ function update(dt){
   // スポーン
   if(G.waveActive){
     if(G.spawnQueue.length>0){ G.spawnTimer-=dt; if(G.spawnTimer<=0){ const it=G.spawnQueue.shift(); spawnOne(it); G.spawnTimer=it.gap; } }
-    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=Math.round((6+G.wave*0.9)*3); G.parts+=cb; sfx.waveClear(); }   // ウェーブクリアボーナスを3倍に
+    else if(G.enemies.length===0){ G.waveActive=false; G.betweenT=5; const cb=Math.round((6+G.wave*0.9)*2.2); G.parts+=cb; sfx.waveClear(); }   // ウェーブクリアボーナス：build71で×3→×2.2（経済が緩すぎ＝パーツが余り物量押しになる主因だった）
   } else if(!G.awaitStart){ G.betweenT-=dt; if(G.betweenT<=0) startWave(false); }   // 最初の出撃待ち中は自動進行しない（好きに配置できる）
   if(G.era>=1 && G.waveActive && G.disasterT!=null){ G.disasterT-=dt; if(G.disasterT<=0){ const n=G.era; for(let m=0;m<n;m++) meteorStrike(); G.disasterT=Math.max(5,11-G.era*1.5); } }
   // 敵移動（フローフィールド）
@@ -7671,7 +7718,7 @@ function beamFx(x,z,ux,uz,len,color){ const m=new THREE.Mesh(new THREE.BoxGeomet
   m.position.set(x+ux*len/2,0.5,z+uz*len/2); m.rotation.y=-Math.atan2(uz,ux); scene.add(m); G.fx.push({mesh:m,life:0.22,max:0.22,kind:'beam'}); }
 function applyDot(e,dot){ e.dotDps=Math.max(e.dotDps||0,dot.dps); e.dotT=Math.max(e.dotT||0,dot.dur); e.dotType=dot.type||'burn'; }
 function lvlStat(def,lv){ const k=(lv||1)-1; return { range:def.range*(1+0.07*k), dmg:def.dmg*Math.pow(1.4,k), cd:def.cd*Math.pow(0.93,k) }; }
-function upCost(def,lv){ return Math.round(def.cost*0.65*Math.pow(1.6,(lv||1)-1)); }   // 強化コストを現実的に緩和（0.75/1.7→0.65/1.6＝マシンをレベルアップする暇を作る）
+function upCost(def,lv){ return Math.round(def.cost*0.7*Math.pow(1.65,(lv||1)-1)); }   // 強化コスト：build71で引き締め（0.65/1.6→0.7/1.65）＝余剰パーツを抑える
 function sellValue(tw){ return Math.round((tw.invested||tw.def.cost)*0.7); }
 function towerAt(c,r){ for(const t of G.towers) if(t.c===c&&t.r===r) return t; return null; }
 let _tp=null;
@@ -7688,8 +7735,8 @@ function refreshTowerPanel(t){ const p=towerPanel(); if(!t){ p.style.display='no
   let pips=''; for(let i=0;i<5;i++) pips+='<span class="lvp'+(i<t.lv?' on':'')+'"></span>';
   p.querySelector('#tpName').innerHTML='<b>'+t.def.name+'</b> <span class="tpLv">'+loc('lv')+' '+t.lv+'/5</span> <span class="tpPips">'+pips+'</span>';
   p.querySelector('#tpStat').innerHTML = t.def.support
-    ? (loc('sup')+' · ◎'+st.range.toFixed(1))
-    : ('<b class="atk">⚔'+Math.round(st.dmg)+'</b> 攻撃力 · ◎'+st.range.toFixed(1)+' · ⟳'+(st.cd>0?(1/st.cd).toFixed(1):'0')+'/s');
+    ? loc('sup')
+    : ('<b class="atk">⚔'+weaponDPS(st.dmg,st.cd,t.def.dot)+'</b> 毎秒火力 · ⟳'+(st.cd>0?(1/st.cd).toFixed(1):'0')+'/s');
   const up=p.querySelector('#tpUp');
   if(t.lv>=5){ up.innerHTML='<b>'+loc('max')+'</b>'; up.classList.add('off'); }
   else { const c=upCost(t.def,t.lv); up.innerHTML='<b>⬆ '+loc('upg')+'</b><span>Lv'+(t.lv+1)+' ⚙'+c+'</span>'; up.classList.toggle('off',G.parts<c); }
@@ -7852,12 +7899,14 @@ function clsBadge(cls){ return '<div class="wcb wcb-'+cls+'">'+clsLabel(cls)+'</
 // 武器の役割ラベル（使い分けを明確化）。短い日本語＝モバイルの狭いバーでも視認できる
 const ROLE_LABEL={general:'汎用',swarm:'対集団',splash:'範囲',air:'対空',snipe:'狙撃',slow:'減速',dot:'継続',chain:'連鎖',pierce:'貫通',support:'支援'};
 function roleOf(t){ if(t.role)return t.role; if(t.cls==='s')return 'support'; if(t.cls==='a')return 'air'; if(t.pierce)return 'pierce'; if(t.chain)return 'chain'; if(t.dot)return 'dot'; if(t.splash>0)return 'splash'; if(t.slow>0)return 'slow'; if(t.range>=5)return 'snipe'; return null; }
+// 毎秒火力（DPS）＝1発威力÷連射間隔。DoT(毒/炎)は継続ダメージも実火力なので加算（単体に1スタック想定）
+function weaponDPS(dmg,cd,dot){ let d=(cd>0)?(dmg/cd):dmg; if(dot&&dot.dps)d+=dot.dps; return Math.round(d); }
 function weaponStatsHTML(t){
   const rk=roleOf(t); const roleTag=rk&&ROLE_LABEL[rk]?('<span class="rl">'+ROLE_LABEL[rk]+'</span>'):'';
-  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄SLOW':'▲+40%'; return '<div class="watk">'+roleTag+'<span class="rg">'+eff+' ◎'+t.range.toFixed(1)+'</span></div>'; }
+  if(t.cls==='s'){ const eff=(t.support==='slow')?'❄SLOW':'▲+40%'; return '<div class="watk">'+roleTag+'<span class="rg">'+eff+'</span></div>'; }
   let tags='';
   if(t.splash>0)tags+='◉'; if(t.slow>0)tags+='❄'; if(t.dot)tags+=(t.dot.type==='poison'?'☣':'🔥'); if(t.chain)tags+='⚡'; if(t.pierce)tags+='⇥';
-  return '<div class="watk">'+roleTag+'<span class="dm">⚔'+Math.round(t.dmg)+'</span><span class="rg">◎'+t.range.toFixed(1)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
+  return '<div class="watk">'+roleTag+'<span class="dm">⚔'+weaponDPS(t.dmg,t.cd,t.dot)+'</span>'+(tags?'<span class="tg">'+tags+'</span>':'')+'</div>';
 }
 // 各武器の3Dメッシュをオフスクリーンで描画してアイコン(dataURL)化＝バーに「機械」を表示
 const WEAPON_THUMB={};
@@ -7932,6 +7981,8 @@ function syncHUD(){
   const warnOn=((G.bossWarnT||0)>0);
   _sty('bossWarn','display',warnOn?'block':'none');
   if(warnOn){ const e=_el('bossWarn'); if(e)e.style.opacity=(0.55+0.45*Math.sin(performance.now()*0.02)); }
+  const _zbT=(G.zoneBannerT||0); const _zb=_el('zoneBanner');   // 戦域バナーのフェードイン/ホールド/アウト
+  if(_zb){ if(_zbT>0){ _zb.style.display='block'; _zb.style.opacity=Math.max(0,Math.min(1,Math.min((3.4-_zbT)/0.45,_zbT/0.9))); } else if(_zb.style.display!=='none'){ _zb.style.display='none'; _zb.style.opacity=0; } }
   const showStart=(playing&&G.awaitStart&&!G.waveActive);   // 最初の出撃ボタン＆ヒント
   _cls('startBtn','show',showStart);
   _cls('prepHint','show',showStart);
@@ -7958,11 +8009,11 @@ document.getElementById('rankModal').addEventListener('click',(e)=>{ if(e.target
 
 function startGame(){
   document.getElementById('ov').classList.add('hidden');
-  G.scene='playing'; G.parts=175; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源を少し緩和（160→175＝序盤に1台＋強化の余裕）
+  G.scene='playing'; G.parts=165; G.hp=100; G.wave=0; G.score=0; G.kills=0; G.combo=0;   // 初期資源：build71で175→165に引き締め（序盤の余裕を少し削る）
   G.meteorCost=METEOR_COST;   // メテオはパーツ消費制（クールダウンなし）。初期160<200なので序盤は撃てない
   G.towers.forEach(t=>dropMesh(t.mesh)); G.enemies.forEach(releaseEnemyMesh); G.shots.forEach(s=>dropMesh(s.mesh)); G.fx.forEach(f=>dropMesh(f.mesh));   // 敵メッシュはプールへ返却＝リトライ時の再生成ヒッチも消える
   G.towers=[]; G.enemies=[]; G.shots=[]; G.fx=[]; occ.fill(0); applyStaticOcc(); G.flowDirty=true; buildFlow();
-  G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(pickTheme()); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
+  G.waveActive=false; G.betweenT=3; G.awaitStart=true; G.paused=false; G.sel='gun'; G.selTower=null; G.era=0; G.disasterT=null; if(typeof applyEra==='function')applyEra(0); if(typeof buildBackdrop==='function')buildBackdrop(0); hideTowerPanel(); buildWeaponBar(); if(typeof fitView==='function')fitView(true); if(typeof refitSoon==='function')refitSoon(); initAudio(); stopAmbience(); stopBossMusic(); stopBgm();   // 最初は出撃待ち＝好きに配置できる。レイアウト確定後に数回 refit
 }
 function gameOver(){
   G.scene='gameover'; stopAmbience(); stopBossMusic(); stopBgm();
@@ -8142,6 +8193,7 @@ function loop(now){
   const _playing=!G.paused && G.scene==='playing';
   if(_playing){ acc+=frame*G.speed; if(acc>STEP*5)acc=STEP*5; while(acc>=STEP){ update(STEP); acc-=STEP; } }
   if((G.bossWarnT||0)>0) G.bossWarnT-=frame;
+  if((G.zoneBannerT||0)>0) G.zoneBannerT-=frame;
   if((G.hurt||0)>0){ G.hurt-=frame*1.4; const hu=_el('hurt'); if(hu) hu.style.opacity=Math.max(0,G.hurt); }
   if(typeof updateBgm==='function')updateBgm();
   syncHUD();
